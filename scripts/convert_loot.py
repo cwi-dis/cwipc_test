@@ -1,10 +1,14 @@
 import sys
+import os
 import open3d
 import numpy as np
 import cwipc
+import cwipc.codec
+import time
 
 VOXEL_SIZE = 3.5    # Larger numbers mean smaller output size
 SCALE_FACTOR = 500  # Conversion factor from loot xyz values to our xyz values
+TIME_INCREMENT = 33333 # Increment in timestamp between successive pointclouds
 
 def read_loot_ply_o3d(filename):
     """Read PLY file using open3d, scale it and downsample it. Returns open3d pointcloud"""
@@ -58,7 +62,7 @@ def write_ply_cwipc(filename, pc):
     """Write cwipc pointcloud to PLY file"""
     cwipc.cwipc_write(filename, pc)
     
-def main():
+def _test():
     o3dpc = read_loot_ply_o3d(sys.argv[1])
     #draw_o3d(o3dpc)
     write_ply_o3d(sys.argv[2], o3dpc)
@@ -66,6 +70,53 @@ def main():
     write_ply_cwipc(sys.argv[3], pc)
     o3dpc2 = cwipc_to_o3d(pc)
     write_ply_o3d(sys.argv[4], o3dpc2)
+    
+def main():
+    if len(sys.argv) != 4:
+        print('Usage: %s loot-source-ply-dir dest-ply-dir dest-cwicpc-dir' % sys.argv[0])
+        sys.exit(1)
+    loot_source_dir = sys.argv[1]
+    ply_dest_dir = sys.argv[2]
+    cwicpc_dest_dir = sys.argv[3]
+    os.mkdir(ply_dest_dir)
+    os.mkdir(cwicpc_dest_dir)
+    
+    startTime = time.time()
+    count = 0
+    timestamp = 0
+    for filename in os.listdir(loot_source_dir):
+        if os.path.splitext(filename)[1] != '.ply':
+            continue
+        pathname = os.path.join(loot_source_dir, filename)
+        print(pathname, '...')
+        basename = os.path.splitext(filename)[0]
+        ply_dest_pathname = os.path.join(ply_dest_dir, filename)
+        cwicpc_dest_pathname = os.path.join(cwicpc_dest_dir, basename + '.cwicpc')
+        
+        # Read original loot, downsample and scale.
+        o3dpc = read_loot_ply_o3d(pathname)
+
+        # Save as a plyfile
+        write_ply_o3d(ply_dest_pathname, o3dpc)
+
+        # Convert to cwipc, compress and save
+        pc = o3d_to_cwipc(o3dpc, timestamp)
+        enc = cwipc.codec.cwipc_new_encoder()
+        enc.feed(pc)
+        gotData = enc.available(True)
+        assert gotData
+        data = enc.get_bytes()
+        assert data
+        with open(cwicpc_dest_pathname, 'wb') as ofp:
+            ofp.write(data)
+        pc.free()
+        enc.free()
+        
+        timestamp += TIME_INCREMENT
+        count += 1
+        
+    now = time.time()
+    print("Converted %d pointclouds in %f seconds" % (count, now-startTime))
     
 if __name__ == '__main__':
     main()
