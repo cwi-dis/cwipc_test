@@ -8,7 +8,7 @@ ADD_RELEASE=../Deployment/addReleaseToGitLab
 all: deliverables/loot-ply.zip deliverables/loot-cwicpc.zip
 
 release: deliverables/loot-ply.zip deliverables/loot-cwicpc.zip
-	python3 ${ADD_RELEASE}
+	python3 ${ADD_RELEASE} --curdir
 	
 prereq:
 	python3 -m pip install -r scripts/requirements.txt
