@@ -7,15 +7,6 @@ import numpy as np
 import cwipc
 import cwipc.codec
 
-def read_cpc_from_socket(hostname='localhost', port=4303):
-    with socket.socket() as s:
-        s.connect((hostname, port))
-        rv = b''
-        while True:
-            data = s.recv(8192)
-            if not data: break
-            rv += data
-        return rv
     
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
@@ -33,10 +24,46 @@ def cwipc_to_o3d(pc):
     rv.points = points_v
     rv.colors = colors_v
     return rv
+        
+class SinkClient:
+    def __init__(self, hostname='localhost', port=4303):
+        self.hostname = hostname
+        self.port = port
 
-def draw_o3d(o3dpc):
-    """Draw open3d pointcloud"""
-    open3d.draw_geometries([o3dpc])
+    def read_cpc_from_socket(self):
+        with socket.socket() as s:
+            s.connect((self.hostname, self.port))
+            rv = b''
+            while True:
+                data = s.recv(8192)
+                if not data: break
+                rv += data
+            return rv
+            
+    def receiver_loop(self):
+        while True:
+            cpc = self.read_cpc_from_socket()
+            pc = self.decompress(cpc)
+            self.show(pc)
+            
+    def decompress(self, cpc):
+        decomp = cwipc.codec.cwipc_new_decoder()
+        decomp.feed(cpc)
+        gotData = decomp.available(True)
+        assert gotData
+        pc = decomp.get()
+        return pc
+        
+    def show(self, pc):
+        o3dpc = cwipc_to_o3d(pc)
+        self.draw_o3d(o3dpc)
+            
+    def draw_o3d(self, o3dpc):
+        """Draw open3d pointcloud"""
+        open3d.draw_geometries([o3dpc])
+
+    def run(self):
+        self.receiver_loop()
         
 def main():
     if len(sys.argv) > 3 or (len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}):
@@ -48,15 +75,8 @@ def main():
         hostname = sys.argv[1]
     if len(sys.argv) > 2:
         port = int(sys.argv[2])
-    while True:
-        cpc = read_cpc_from_socket(hostname, port)
-        decomp = cwipc.codec.cwipc_new_decoder()
-        decomp.feed(cpc)
-        gotData = decomp.available(True)
-        assert gotData
-        pc = decomp.get()
-        o3dpc = cwipc_to_o3d(pc)
-        draw_o3d(o3dpc)
+    clt = SinkClient(hostname, port)
+    clt.run()
     
 if __name__ == '__main__':
     main()
