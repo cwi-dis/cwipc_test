@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import socket
+import argparse
 import cwipc
 import cwipc.codec
 import cwipc.realsense2
@@ -32,13 +33,10 @@ class SourceServer:
             s.close()
             
 def main():
-    if len(sys.argv) > 2 or (len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}):
-        print('Usage: %s [port]' % sys.argv[0])
-        sys.exit(1)
-    port = 4303
-    if len(sys.argv) > 1:
-        port = int(sys.argv[1])
-    srv = SourceServer(port)
+    parser = argparse.ArgumentParser(description="Start server to send compressed pointclouds to a cwipc_sourceserver_sink")
+    parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
+    args = parser.parse_args()
+    srv = SourceServer(args.port)
     srv.serve()
     
 if __name__ == '__main__':

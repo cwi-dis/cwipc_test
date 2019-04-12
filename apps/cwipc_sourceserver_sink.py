@@ -2,6 +2,7 @@ import sys
 import os
 import time
 import socket
+import argparse
 import open3d
 import numpy as np
 import cwipc
@@ -32,7 +33,11 @@ class SinkClient:
 
     def read_cpc_from_socket(self):
         with socket.socket() as s:
-            s.connect((self.hostname, self.port))
+            try:
+                s.connect((self.hostname, self.port))
+            except socket.error as err:
+                print('connecting to {}:{}: {}'.format(self.hostname, self.port, err))
+                sys.exit(1)
             rv = b''
             while True:
                 data = s.recv(8192)
@@ -60,22 +65,21 @@ class SinkClient:
             
     def draw_o3d(self, o3dpc):
         """Draw open3d pointcloud"""
-        open3d.draw_geometries([o3dpc])
+        v = open3d.Visualizer()
+        v.create_window()
+        v.add_geometry(o3dpc)
+        v.run()
+        v.destroy_window()
 
     def run(self):
         self.receiver_loop()
         
 def main():
-    if len(sys.argv) > 3 or (len(sys.argv) > 1 and sys.argv[1] in {'-h', '--help'}):
-        print('Usage: %s [hostname [port]]' % sys.argv[0])
-        sys.exit(1)
-    hostname = 'localhost'
-    port = 4303
-    if len(sys.argv) > 1:
-        hostname = sys.argv[1]
-    if len(sys.argv) > 2:
-        port = int(sys.argv[2])
-    clt = SinkClient(hostname, port)
+    parser = argparse.ArgumentParser(description="Receive compressed pointclouds from a cwipc_sourceserver_source and display them")
+    parser.add_argument("--hostname", action="store", metavar="HOSTNAME", help="Host or IP address to connect to", default="localhost")
+    parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
+    args = parser.parse_args()
+    clt = SinkClient(args.hostname, args.port)
     clt.run()
     
 if __name__ == '__main__':
