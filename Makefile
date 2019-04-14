@@ -19,7 +19,12 @@ lootPly lootCwicpc:
 	PYTHONPATH=/usr/local/share/cwipc_util/python python3 scripts/convert_loot.py ${LOOT_PLY_DIR} lootPly lootCwicpc
 	
 deliverables/loot-ply.zip: lootPly
+	mkdir -p deliverables
 	zip -r deliverables/loot-ply.zip lootPly
 	
 deliverables/loot-cwicpc.zip: lootCwicpc
+	mkdir -p deliverables
 	zip -r deliverables/loot-cwicpc.zip lootCwicpc
+
+clean:
+	rm -rf lootPly lootCwicpc

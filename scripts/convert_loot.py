@@ -62,15 +62,6 @@ def write_ply_cwipc(filename, pc):
     """Write cwipc pointcloud to PLY file"""
     cwipc.cwipc_write(filename, pc)
     
-def _test():
-    o3dpc = read_loot_ply_o3d(sys.argv[1])
-    #draw_o3d(o3dpc)
-    write_ply_o3d(sys.argv[2], o3dpc)
-    pc = o3d_to_cwipc(o3dpc, 0)
-    write_ply_cwipc(sys.argv[3], pc)
-    o3dpc2 = cwipc_to_o3d(pc)
-    write_ply_o3d(sys.argv[4], o3dpc2)
-    
 def main():
     if len(sys.argv) != 4:
         print('Usage: %s loot-source-ply-dir dest-ply-dir dest-cwicpc-dir' % sys.argv[0])
@@ -96,11 +87,13 @@ def main():
         # Read original loot, downsample and scale.
         o3dpc = read_loot_ply_o3d(pathname)
 
-        # Save as a plyfile
-        write_ply_o3d(ply_dest_pathname, o3dpc)
-
-        # Convert to cwipc, compress and save
+        # Convert to cwipc
         pc = o3d_to_cwipc(o3dpc, timestamp)
+
+        # Save as a plyfile
+        write_ply_cwipc(ply_dest_pathname, pc)
+        
+        # compress and save
         enc = cwipc.codec.cwipc_new_encoder()
         enc.feed(pc)
         gotData = enc.available(True)

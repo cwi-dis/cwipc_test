@@ -3,10 +3,10 @@
 "private_token":"HkS6wGP5swoXoQ7Gj9t5",
 "GitLab_API_base_url":"https://baltig.viaccess-orca.com:8443/api/v4/projects/",
 "project_name":"cwipc_test",
-"tag_name":"v1.0",
+"tag_name":"v1.1",
 "branch_to_tag":"master",
-"release_name":"v1.0",
-"release_description":"10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files",
+"release_name":"v1.1",
+"release_description":"10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files. Ply files fixed for cwipc compatibility.",
 "assets": [
 	{
 		"file_to_upload":"loot-ply.zip",
