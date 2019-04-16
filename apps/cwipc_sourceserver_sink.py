@@ -8,7 +8,6 @@ import open3d
 import numpy as np
 import cwipc
 import cwipc.codec
-
     
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
@@ -27,20 +26,12 @@ def cwipc_to_o3d(pc):
     rv.colors = colors_v
     return rv
         
-class SinkClient:
-    def __init__(self, hostname='localhost', port=4303, count=None, display=False):
+class CpcSocketSource:
+    def __init__(self, hostname, port):
         self.hostname = hostname
         self.port = port
-        self.count = count
-        self.display = display
-        self.times_recv = []
-        self.times_decode = []
-        self.times_latency = []
-        self.times_completeloop = []
-        self.visualiser = None
-        self.visualiser_o3dpc = None
 
-    def read_cpc_from_socket(self):
+    def read_cpc(self):
         with socket.socket() as s:
             try:
                 s.connect((self.hostname, self.port))
@@ -53,11 +44,33 @@ class SinkClient:
                 if not data: break
                 rv += data
             return rv
-            
+
+class CpcSubSource:
+    def __init__(self, url):
+        self.url = url
+        
+    def read_cpc(self):
+        raise RuntimeError("Not yet implemented")
+        
+class SinkClient:
+    def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None):
+        if sub:
+            self.source = CpcSubSource(sub)
+        else:
+            self.source = CpcSocketSource(hostname, port)
+        self.count = count
+        self.display = display
+        self.times_recv = []
+        self.times_decode = []
+        self.times_latency = []
+        self.times_completeloop = []
+        self.visualiser = None
+        self.visualiser_o3dpc = None
+
     def receiver_loop(self):
         while True:
             t0 = time.time()
-            cpc = self.read_cpc_from_socket()
+            cpc = self.source.read_cpc()
             t1 = time.time()
             pc = self.decompress(cpc)
             t2 = time.time()
@@ -137,10 +150,11 @@ def main():
     parser = argparse.ArgumentParser(description="Receive compressed pointclouds from a cwipc_sourceserver_source and optionally display them")
     parser.add_argument("--hostname", action="store", metavar="HOSTNAME", help="Host or IP address to connect to", default="localhost")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
+    parser.add_argument("--sub", action="store", metavar="URL", help="Don't use direct socket connection but use Signals-Unity-Bridge connection to URL")
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop receiving after N requests")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     args = parser.parse_args()
-    clt = SinkClient(args.hostname, args.port, args.count, args.display)
+    clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub)
     try:
         clt.run()
     except (Exception, KeyboardInterrupt):
