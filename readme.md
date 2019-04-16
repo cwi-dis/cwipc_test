@@ -16,6 +16,8 @@ Then you need to install the prerequisites:
 python3 -m pip install -r apps/requirements.txt
 ```
 
+On windows you may have to use `python` in stead of `python3`.
+
 You also need to have the directory with the Python `cwipc` module on your PYTHONPATH. The path to that directory will be something like `.../share/cwipc_util/python` depending on where you installed *cwipc_util*.
 
 ### cwipc\_sourceserver\_source.py
@@ -35,6 +37,20 @@ By default the server should run on `localhost`, use the `--host` option to conn
 When the program terminates (for example because it is killed with control-C) it prints statistics on how long grabbing, compressing and transmitting took.
 
 The program can optionally display the received pointclouds, limit the number of pointclouds requested, etc. Use `--help` for more information.
+
+### first test
+
+As a first test, run the following commands in two different shells/command windows:
+
+```
+python3 apps/cwipc_sourceserver_source.py --count 10
+```
+
+```
+python3 apps/cwipc_sourceserver_sink.py
+```
+
+This will transmit 10 pointclouds (either grabbed from a realsense camera, or watermelons if no realsense is attached to your system) and print out the statistics.
 
 ## loot datasets
 
