@@ -40,12 +40,47 @@ class cwipc_plydir_source:
     def free(self):
         self.filenames = []
         
+class cwicpcdir_source:
+    def __init__(self, dirname):
+        self.dirname = dirname
+        self._loadfilenames()
+        
+    def _loadfilenames(self):
+        filenames = os.listdir(self.dirname)
+        filenames = list(filter(lambda fn: fn[-7:] == '.cwicpc', filenames))
+        filenames = sorted(filenames, reverse=True)
+        self.filenames = list(map(lambda fn: os.path.join(self.dirname, fn), filenames))
+        
+    def _nextfilename(self):
+        assert self.filenames
+        rv = self.filenames.pop()
+        if len(self.filenames) == 0:
+            self._loadfilenames()
+        return rv
+            
+    def eof(self):
+        return len(self.filenames) == 0
+        
+    def available(self, wait):
+        return True
+        
+    def get(self):
+        fn = self._nextfilename()
+        cpc = open(fn, 'rb').read()
+        return cpc
+        
+    def free(self):
+        self.filenames = []
+        
 class SourceServer:
-    def __init__(self, port=4303, count=None, plydir=None):
+    def __init__(self, port=4303, count=None, plydir=None, cwicpcdir=None):
         self.socket = socket.socket()
         self.socket.bind(('', port))
         self.socket.listen()
-        if plydir:
+        if cwicpcdir:
+            self.cpcSource = cwicpcdir_source(cwicpcdir)
+            self.grabber = None
+        elif plydir:
             self.grabber = cwipc_plydir_source(plydir)
         else:
             self.grabber = cwipc.realsense2.cwipc_realsense2()
@@ -72,10 +107,14 @@ class SourceServer:
         while True:
             s, _ = self.socket.accept()
             t0 = time.time()
-            pc = self.grab_pc()
-            t1 = time.time()
-            data = self.encode_pc(pc)
-            t2 = time.time()
+            if self.grabber:
+                pc = self.grab_pc()
+                t1 = time.time()
+                data = self.encode_pc(pc)
+                t2 = time.time()
+            else:
+                data = self.cpcSource.get()
+                t1 = t2 = time.time()
             s.sendall(data)
             s.close()
             t3 = time.time()
@@ -107,8 +146,9 @@ def main():
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR in stead of grabbing them from the camera")
+    parser.add_argument("--cwicpcdir", action="store", metavar="DIR", help="Load cwicpc files from DIR in stead of grabbing them from the camera and compressing them")
     args = parser.parse_args()
-    srv = SourceServer(args.port, args.count, args.plydir)
+    srv = SourceServer(args.port, args.count, args.plydir, args.cwicpcdir)
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
