@@ -6,6 +6,18 @@ Repo for pointcloud tests.
 
 There are two applications currently. Both written in Python (Python 3 only), and they require all three of _cwipc\_util_, _cwipc\_util_ and _cwipc\_codec_ to be installed. _PYTHONPATH_ must include `.../share/cwipc_util/python` so the programs can import the `cwipc` python module.
 
+### Prerequisites
+
+You need Python 3 installed, and you need to have it installed for all users. So, for windows, it should be in `C:\Python3` and not somewhere in your per-user stuff.
+
+Then you need to install the prerequisites:
+
+```
+python3 -m pip install -r apps/requirements.txt
+```
+
+You also need to have the directory with the Python `cwipc` module on your PYTHONPATH. The path to that directory will be something like `.../share/cwipc_util/python` depending on where you installed *cwipc_util*.
+
 ### cwipc\_sourceserver\_source.py
 
 Creates a TCP server on port 4303. Every time a connection is opened a single pointcloud is grabbed from a realsense camera, compressed and transmitted to the client.
@@ -23,7 +35,6 @@ By default the server should run on `localhost`, use the `--host` option to conn
 When the program terminates (for example because it is killed with control-C) it prints statistics on how long grabbing, compressing and transmitting took.
 
 The program can optionally display the received pointclouds, limit the number of pointclouds requested, etc. Use `--help` for more information.
-
 
 ## loot datasets
 

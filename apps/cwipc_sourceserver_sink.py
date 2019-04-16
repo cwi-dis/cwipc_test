@@ -62,7 +62,7 @@ class SinkClient:
             self.times_recv.append(t1-t0)
             self.times_decode.append(t2-t1)
             sinkTime = time.time()
-            sourceTime = pc.timestamp() / 1000000
+            sourceTime = pc.timestamp() / 1000.0
             self.times_latency.append(sinkTime-sourceTime)
             if self.display:
                 self.show(pc)

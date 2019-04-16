@@ -8,7 +8,7 @@ import time
 
 VOXEL_SIZE = 3.5    # Larger numbers mean smaller output size
 SCALE_FACTOR = 500  # Conversion factor from loot xyz values to our xyz values
-TIME_INCREMENT = 33333 # Increment in timestamp between successive pointclouds
+TIME_INCREMENT = 33 # Increment in timestamp between successive pointclouds
 
 def read_loot_ply_o3d(filename):
     """Read PLY file using open3d, scale it and downsample it. Returns open3d pointcloud"""

@@ -34,7 +34,7 @@ class cwipc_plydir_source:
         
     def get(self):
         fn = self._nextfilename()
-        pc = cwipc.cwipc_read(fn, int(time.time()*1000000))
+        pc = cwipc.cwipc_read(fn, int(time.time()*1000))
         return pc
         
     def free(self):
