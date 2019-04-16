@@ -73,7 +73,7 @@ class cwicpcdir_source:
         self.filenames = []
         
 class SourceServer:
-    def __init__(self, port=4303, count=None, plydir=None, cwicpcdir=None):
+    def __init__(self, port=4303, count=None, plydir=None, cwicpcdir=None, params=None):
         self.socket = socket.socket()
         self.socket.bind(('', port))
         self.socket.listen()
@@ -88,13 +88,14 @@ class SourceServer:
         self.times_encode = []
         self.times_send = []
         self.count = count
+        self.params = params
         
     def grab_pc(self):
         pc = self.grabber.get()
         return pc
 
     def encode_pc(self, pc):
-        enc = cwipc.codec.cwipc_new_encoder()
+        enc = cwipc.codec.cwipc_new_encoder(params=self.params)
         enc.feed(pc)
         gotData = enc.available(True)
         assert gotData
@@ -147,8 +148,16 @@ def main():
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR in stead of grabbing them from the camera")
     parser.add_argument("--cwicpcdir", action="store", metavar="DIR", help="Load cwicpc files from DIR in stead of grabbing them from the camera and compressing them")
+    parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
+    parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     args = parser.parse_args()
-    srv = SourceServer(args.port, args.count, args.plydir, args.cwicpcdir)
+    params = cwipc.codec.cwipc_encoder_params(1, False, 1, 0, 7, 8, 85, 16)
+    if args.octree_bits or args.jpeg_quality:
+        if args.octree_bits:
+            params.octree_bits = args.octree_bits
+        if args.jpeg_quality:
+            params.jpeg_quality = args.jpeg_quality
+    srv = SourceServer(args.port, args.count, args.plydir, args.cwicpcdir, params)
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
