@@ -37,6 +37,8 @@ class SinkClient:
         self.times_decode = []
         self.times_latency = []
         self.times_completeloop = []
+        self.visualiser = None
+        self.visualiser_o3dpc = None
 
     def read_cpc_from_socket(self):
         with socket.socket() as s:
@@ -86,16 +88,34 @@ class SinkClient:
         o3dpc = cwipc_to_o3d(pc)
         self.draw_o3d(o3dpc)
             
+    def start_o3d(self):
+        self.visualiser = open3d.Visualizer()
+        self.visualiser.create_window()
+
     def draw_o3d(self, o3dpc):
         """Draw open3d pointcloud"""
-        v = open3d.Visualizer()
-        v.create_window()
-        v.add_geometry(o3dpc)
-        v.run()
-        v.destroy_window()
+        if self.visualiser_o3dpc == None:
+            self.visualiser_o3dpc = o3dpc
+            self.visualiser.add_geometry(o3dpc)
+        else:
+            self.visualiser_o3dpc.points = o3dpc.points
+            self.visualiser_o3dpc.colors = o3dpc.colors
+        print(len(self.visualiser_o3dpc.points), 'points')
+        self.visualiser.update_geometry()
+        self.visualiser.update_renderer()
+        self.visualiser.poll_events()
+        
+    def stop_o3d(self):
+        self.visualiser.destroy_window()
 
     def run(self):
-        self.receiver_loop()
+        if self.display:
+            self.start_o3d()
+        try:
+            self.receiver_loop()
+        finally:
+            if self.display:
+                self.stop_o3d()
 
     def statistics(self):
         self.print1stat('recv', self.times_recv)
