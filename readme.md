@@ -76,3 +76,7 @@ To create the loot datasets for testing:
    ```
    make release
    ```
+
+## Helper scripts
+
+The are scripts `buildall.sh`, `cleanall.sh` and `buildall-win.sh` which build and clean checked out copies of the cwipc_* modules, but probably only if your layout is the same as for Jack.
