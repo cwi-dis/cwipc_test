@@ -8,6 +8,7 @@ import open3d
 import numpy as np
 import cwipc
 import cwipc.codec
+from subsource import CpcSubSource
     
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
@@ -44,13 +45,6 @@ class CpcSocketSource:
                 if not data: break
                 rv += data
             return rv
-
-class CpcSubSource:
-    def __init__(self, url):
-        self.url = url
-        
-    def read_cpc(self):
-        raise RuntimeError("Not yet implemented")
         
 class SinkClient:
     def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None):
