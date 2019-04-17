@@ -47,7 +47,7 @@ class CpcSocketSource:
             return rv
         
 class SinkClient:
-    def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None):
+    def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None, savedir=None):
         if sub:
             self.source = CpcSubSource(sub)
         else:
@@ -60,22 +60,32 @@ class SinkClient:
         self.times_completeloop = []
         self.visualiser = None
         self.visualiser_o3dpc = None
+        self.savedir = savedir
 
     def receiver_loop(self):
+        seqno = 1
         while True:
             t0 = time.time()
             cpc = self.source.read_cpc()
+            if not cpc: break
             t1 = time.time()
             pc = self.decompress(cpc)
             t2 = time.time()
             self.times_recv.append(t1-t0)
             self.times_decode.append(t2-t1)
             sinkTime = time.time()
-            sourceTime = pc.timestamp() / 1000.0
-            self.times_latency.append(sinkTime-sourceTime)
-            if self.display:
+            if pc:
+                sourceTime = pc.timestamp() / 1000.0
+                self.times_latency.append(sinkTime-sourceTime)
+            if cpc and self.savedir:
+                savefile = 'pointcloud-%05d.cwicpc' % seqno
+                seqno += 1
+                with open(os.path.join(self.savedir, savefile), 'wb') as fp:
+                    fp.write(cpc)
+            if pc and self.display:
                 self.show(pc)
-            pc.free()
+            if pc:
+                pc.free()
             if self.count != None:
                 self.count -= 1
                 if self.count <= 0:
@@ -85,9 +95,10 @@ class SinkClient:
             
     def decompress(self, cpc):
         decomp = cwipc.codec.cwipc_new_decoder()
+        print('xxxjack cpc', cpc)
         decomp.feed(cpc)
         gotData = decomp.available(True)
-        assert gotData
+        if not gotData: return None
         pc = decomp.get()
         return pc
         
@@ -147,8 +158,9 @@ def main():
     parser.add_argument("--sub", action="store", metavar="URL", help="Don't use direct socket connection but use Signals-Unity-Bridge connection to URL")
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop receiving after N requests")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
+    parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     args = parser.parse_args()
-    clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub)
+    clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc)
     try:
         clt.run()
     except (Exception, KeyboardInterrupt):

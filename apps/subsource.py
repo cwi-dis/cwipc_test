@@ -1,5 +1,6 @@
 import ctypes
 import ctypes.util
+import time
 
 _signals_unity_bridge_dll_reference = None
 
@@ -34,7 +35,7 @@ def _signals_unity_bridge_dll(libname=None):
     _signals_unity_bridge_dll_reference.sub_play.argtypes = [sub_handle_p, ctypes.c_char_p]
     _signals_unity_bridge_dll_reference.sub_play.restype = ctypes.c_bool
     
-    _signals_unity_bridge_dll_reference.sub_grab_frame.argtypes = [sub_handle_p, ctypes.c_int, ctypes.POINTER(ctypes.c_byte), ctypes.c_size_t, ctypes.POINTER(FrameInfo)]
+    _signals_unity_bridge_dll_reference.sub_grab_frame.argtypes = [sub_handle_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     _signals_unity_bridge_dll_reference.sub_grab_frame.restype = ctypes.c_size_t
     
     return _signals_unity_bridge_dll_reference
@@ -66,8 +67,11 @@ class CpcSubSource:
     def read_cpc(self):
         assert self.handle
         assert self.dll
-        length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
-        print('xxxjack read_cpc: length:', length)
+        while True:
+            length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
+            print('xxxjack read_cpc: length:', length)
+            if length: break
+            time.sleep(1)
         rv = bytearray(length)
         ptr_char = (ctypes.c_char * length).from_buffer(rv)
         ptr = ctypes.cast(ptr_char, ctypes.c_void_p)
