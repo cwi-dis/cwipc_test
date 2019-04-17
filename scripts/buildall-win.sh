@@ -12,10 +12,6 @@ for i in cwipc_util cwipc_realsense2 cwipc_codec ; do
 	git pull
 	(
 		cd build
-		cmake ..
-		make
-		make test
-		make install
 		cmake .. -G "Visual Studio 15 2017 Win64" -DCMAKE_INSTALL_PREFIX="$instdir" -DJPEG_Turbo_INCLUDE_DIR="C:/libjpeg-turbo64/include" -DJPEG_Turbo_LIBRARY="C:/libjpeg-turbo64/lib/jpeg.lib"
 		cmake --build . --config Release
 		cmake --build . --config Release --target RUN_TESTS
