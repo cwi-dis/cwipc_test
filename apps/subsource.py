@@ -41,7 +41,7 @@ def _signals_unity_bridge_dll(libname=None):
     return _signals_unity_bridge_dll_reference
  
 class CpcSubSource:
-    def __init__(self, url):
+    def __init__(self, url, streamIndex=0):
         self.url = url
         self.dll = None
         self.handle = None
@@ -51,9 +51,9 @@ class CpcSubSource:
         ok = self.dll.sub_play(self.handle, url.encode('utf8'))
         assert ok
         nstreams = self.dll.sub_get_stream_count(self.handle)
-        print('SUBsource: number of streams:', nstreams)
-        assert nstreams >= 1
-        self.streamIndex = 0
+        assert nstreams > streamIndex
+        self.streamIndex = streamIndex
+        self.firstRead = True
         
     def __del__(self):
         self.free()
@@ -67,11 +67,15 @@ class CpcSubSource:
     def read_cpc(self):
         assert self.handle
         assert self.dll
-        while True:
-            length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
-            print('xxxjack read_cpc: length:', length)
-            if length: break
-            time.sleep(1)
+        length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
+        # Sometimes for the first read we get 0.
+        if self.firstRead:
+            self.firstRead = False
+            while length == 0:
+                time.sleep(0.1)
+                length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
+        if not length: 
+            return None
         rv = bytearray(length)
         ptr_char = (ctypes.c_char * length).from_buffer(rv)
         ptr = ctypes.cast(ptr_char, ctypes.c_void_p)

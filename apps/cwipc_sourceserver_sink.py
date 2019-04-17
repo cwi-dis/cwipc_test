@@ -95,7 +95,6 @@ class SinkClient:
             
     def decompress(self, cpc):
         decomp = cwipc.codec.cwipc_new_decoder()
-        print('xxxjack cpc', cpc)
         decomp.feed(cpc)
         gotData = decomp.available(True)
         if not gotData: return None
