@@ -163,7 +163,7 @@ def main():
     try:
         clt.run()
     except (Exception, KeyboardInterrupt):
-        traceback.print_exc(limit=-1)
+        traceback.print_exc()
     clt.statistics()
     
 if __name__ == '__main__':

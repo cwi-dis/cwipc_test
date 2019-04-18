@@ -161,7 +161,7 @@ def main():
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
-        traceback.print_exc(limit=-1)
+        traceback.print_exc()
     srv.statistics()
     
 if __name__ == '__main__':
