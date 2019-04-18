@@ -79,4 +79,12 @@ To create the loot datasets for testing:
 
 ## Helper scripts
 
+### streaming pointclouds
+
+There is a script `stream-using-pcl2dash.sh` that will start *pcl2dash* to grab pointclouds from the realsense2 camera (or watermelons) and compress them and dash encapsulate them. It will also start a dash server on port 8000.
+
+You should edit the script to reflect the pathnames on your system before running it.
+
+### Building everything from source
+
 The are scripts `buildall.sh`, `cleanall.sh` and `buildall-win.sh` which build and clean checked out copies of the cwipc_* modules, but probably only if your layout is the same as for Jack.
