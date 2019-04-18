@@ -1,6 +1,7 @@
 import ctypes
 import ctypes.util
 import time
+import os
 
 _signals_unity_bridge_dll_reference = None
 
@@ -21,6 +22,11 @@ def _signals_unity_bridge_dll(libname=None):
         if not libname:
             raise RuntimeError('Dynamic library signals-unity-bridge not found')
     assert libname
+    # Signals library needs to be able to find some data files stored next to the DLL.
+    # Tell it where they are.
+    if os.path.isabs(libname):
+        libdirname = os.path.dirname(libname)
+        os.putenv('SIGNALS_SMD_PATH', libdirname)
     _signals_unity_bridge_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
     _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p]
