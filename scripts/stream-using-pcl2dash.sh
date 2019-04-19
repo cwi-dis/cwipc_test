@@ -1,8 +1,11 @@
 #
 # Set the following variables to where things are on your system
 #
-gpac_dash_server=/c/Users/dis/jack/src/VRtogether/node-gpac-dash/gpac-dash.js
-pcl2dash=/c/Users/dis/jack/src/VRtogether/pcl2dash/v18/x64/Release/pcl2dash.exe
+set -x
+dirname=`dirname $0`
+dirname=`cd $dirname/../..; pwd`
+gpac_dash_server=$dirname/node-gpac-dash/gpac-dash.js
+pcl2dash=$dirname/pcl2dash/v18/x64/Release/pcl2dash.exe
 #
 rm -rf tmp-dash
 mkdir tmp-dash
