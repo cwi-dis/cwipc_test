@@ -73,10 +73,13 @@ class cwicpcdir_source:
         self.filenames = []
         
 class SourceServer:
-    def __init__(self, port=4303, count=None, plydir=None, cwicpcdir=None, params=None):
-        self.socket = socket.socket()
-        self.socket.bind(('', port))
-        self.socket.listen()
+    def __init__(self, nosend=False, port=4303, count=None, plydir=None, cwicpcdir=None, params=None):
+        if nosend:
+            self.socket = None
+        else:
+            self.socket = socket.socket()
+            self.socket.bind(('', port))
+            self.socket.listen()
         if cwicpcdir:
             self.cpcSource = cwicpcdir_source(cwicpcdir)
             self.grabber = None
@@ -86,6 +89,7 @@ class SourceServer:
             self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.times_grab = []
         self.times_encode = []
+        self.sizes_encode = []
         self.times_send = []
         self.count = count
         self.params = params
@@ -106,7 +110,8 @@ class SourceServer:
         
     def serve(self):
         while True:
-            s, _ = self.socket.accept()
+            if self.socket:
+                s, _ = self.socket.accept()
             t0 = time.time()
             if self.grabber:
                 pc = self.grab_pc()
@@ -116,8 +121,10 @@ class SourceServer:
             else:
                 data = self.cpcSource.get()
                 t1 = t2 = time.time()
-            s.sendall(data)
-            s.close()
+            self.sizes_encode.append(len(data))
+            if self.socket:
+                s.sendall(data)
+                s.close()
             t3 = time.time()
             self.times_grab.append(t1-t0)
             self.times_encode.append(t2-t1)
@@ -131,8 +138,9 @@ class SourceServer:
         self.print1stat('grab', self.times_grab)
         self.print1stat('encode', self.times_encode)
         self.print1stat('send', self.times_send)
+        self.print1stat('encodedsize', self.sizes_encode, isInt=True)
         
-    def print1stat(self, name, values):
+    def print1stat(self, name, values, isInt=False):
         count = len(values)
         if count == 0:
             print('{}: count=0'.format(name))
@@ -140,10 +148,15 @@ class SourceServer:
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
-        print('{}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'.format(name, count, avgValue, minValue, maxValue))
+        if isInt:
+            fmtstring = '{}: count={}, average={:.3f}, min={:d}, max={:d}'
+        else:
+            fmtstring = '{}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
+        print(fmtstring.format(name, count, avgValue, minValue, maxValue))
             
 def main():
     parser = argparse.ArgumentParser(description="Start server to send compressed pointclouds to a cwipc_sourceserver_sink")
+    parser.add_argument("--nosend", action="store_true", help="Do not send compressed data anywhere, only grab and collect statistics")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR in stead of grabbing them from the camera")
@@ -157,7 +170,7 @@ def main():
             params.octree_bits = args.octree_bits
         if args.jpeg_quality:
             params.jpeg_quality = args.jpeg_quality
-    srv = SourceServer(args.port, args.count, args.plydir, args.cwicpcdir, params)
+    srv = SourceServer(args.nosend, args.port, args.count, args.plydir, args.cwicpcdir, params)
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
