@@ -36,25 +36,25 @@ export GITLAB_ACCESS_USER_PASSWORD="VRTogether"
 #
 # Install releases from gitlab
 #
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_util
 	(zipfile=$PWD/cwipc_util_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_util_*.zip
 fi
 
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_realsense2
 	(zipfile=$PWD/cwipc_realsense2_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_realsense2_*.zip
 fi
 
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_codec
 	(zipfile=$PWD/cwipc_codec_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_codec_*.zip
 fi
 
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_test --release_name v1.1
 	(zipfile=$PWD/loot-cwicpc.zip && cd ../installed && unzip -o $zipfile)
 	(zipfile=$PWD/loot-ply.zip && cd ../installed && unzip -o $zipfile)
@@ -65,7 +65,7 @@ if true; then
 	python $gRFG --cicd --project_name SUB --release_name "Release v29 (gnu64+win64 built from Linux)"
 	rm -rf ../signals-unity-bridge
 	mkdir -p ../signals-unity-bridge
-	(tbzfile=$PWD/signals-unity-bridge*.tar.bz2 && cd . && tar xf $tbzfile)
+	(tbzfile=$PWD/signals-unity-bridge*.tar.bz2 && cd .. && tar xf $tbzfile)
 fi
 
 if true; then
