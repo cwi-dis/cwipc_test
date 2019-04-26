@@ -5,7 +5,7 @@ set -x
 dirname=`dirname $0`
 dirname=`cd $dirname/../..; pwd`
 gpac_dash_server=$dirname/node-gpac-dash/gpac-dash.js
-pcl2dash=$dirname/pcl2dash/v18/x64/Release/pcl2dash.exe
+pcl2dash=$dirname/pcl2dash/v19/x64/Release/pcl2dash.exe
 #
 rm -rf tmp-dash
 mkdir tmp-dash
