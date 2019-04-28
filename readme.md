@@ -1,6 +1,6 @@
 # cwipc_test
 
-Repo for pointcloud tests.
+Repo for pointcloud tests and other miscelaneous stuff.
 
 ## apps
 
@@ -88,3 +88,9 @@ You should edit the script to reflect the pathnames on your system before runnin
 ### Building everything from source
 
 The are scripts `buildall.sh`, `cleanall.sh` and `buildall-win.sh` which build and clean checked out copies of the cwipc_* modules, but probably only if your layout is the same as for Jack.
+
+## Doc
+
+Some documents by Jack on the architecture (because he can't get his head around Google Docs for anything but the simplest word processing and spreadsheet documents).
+
+- [Component Architecture](doc/component-architecture.md)
