@@ -44,7 +44,7 @@ if [ $? -ne 0 ]; then
 	error_occurred
 else
 	case $pyver in
-	'Python 3*')
+	'Python 3'*)
 		echo python: ok
 		;;
 	*)
