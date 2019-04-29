@@ -9,6 +9,7 @@ x*)
 	;;
 esac
 
+set -e
 set -x
 dirname=`dirname $0`
 dirname=`cd $dirname/../..; pwd`
