@@ -6,6 +6,7 @@
 "tag_name":"v2.0",
 "branch_to_tag":"master",
 "release_name":"v2.0",
+"stable_release" : false,
 "release_description":"10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files. Origin is at floor-level center of gravity. Compressed files are available complete and as two tiles (left and right).",
 "assets": [
 	{
