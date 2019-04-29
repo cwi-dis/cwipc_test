@@ -62,10 +62,10 @@ if true; then
 fi
 
 if true; then
-	python $gRFG --cicd --project_name SUB --release_name "Release v29 (gnu64+win64 built from Linux)"
+	python $gRFG --cicd --project_name SUB
 	rm -rf ../signals-unity-bridge
 	mkdir -p ../signals-unity-bridge
-	(tbzfile=$PWD/signals-unity-bridge*.tar.bz2 && cd .. && tar xf $tbzfile)
+	(zipfile=$PWD/v*_stable.zip && cd ../signals-unity-bridge && unzip -o $zipfile)
 fi
 
 if true; then
