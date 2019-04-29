@@ -79,6 +79,15 @@ To create the loot datasets for testing:
 
 ## Helper scripts
 
+## Installing developer dependencies
+
+There is a script `checkinstall-win.sh` that tries to check whether all VRtogether modules and all third-party dependencies have been
+installed and are on PATH correctly.
+
+There is a script `installall-win.sh` that will try to install all VRtogether releases.
+
+Installing the third party dependencies has to be done manually. Currently the information on what to install is scattered around the various *README* files of all the modules.
+
 ### streaming pointclouds
 
 There is a script `stream-using-pcl2dash.sh` that will start *pcl2dash* to grab pointclouds from the realsense2 camera (or watermelons) and compress them and dash encapsulate them. It will also start a dash server on port 8000.
