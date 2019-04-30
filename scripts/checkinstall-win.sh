@@ -88,6 +88,14 @@ else
 	echo realsense2: ok
 fi
 
+python -c "import ctypes ; ctypes.CDLL('OpenNI2.dll')"
+if [ $? -ne 0 ]; then
+	echo OpenNI2: not installed or not on PATH
+	error_occurred
+else
+	echo OpenNI2: ok
+fi
+
 pcl_ply2ply_release --version > /dev/null
 if [ $? -ne 0 ]; then
 	echo pcl: not installed, or not on PATH
