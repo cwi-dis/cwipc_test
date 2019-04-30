@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+set -e
 dirname=`dirname $0`
 dirname=`cd $dirname/../..; pwd`
 cd $dirname
