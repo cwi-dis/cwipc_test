@@ -47,7 +47,7 @@ class CpcSocketSource:
             return rv
         
 class SinkClient:
-    def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None, savedir=None):
+    def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None, savedir=None, verbose=False):
         if sub:
             self.source = CpcSubSource(sub)
         else:
@@ -61,6 +61,7 @@ class SinkClient:
         self.visualiser = None
         self.visualiser_o3dpc = None
         self.savedir = savedir
+        self.verbose = verbose
 
     def receiver_loop(self):
         seqno = 1
@@ -76,6 +77,7 @@ class SinkClient:
             sinkTime = time.time()
             if pc:
                 sourceTime = pc.timestamp() / 1000.0
+                if self.verbose: print("timestamp: %f" % sourceTime)
                 self.times_latency.append(sinkTime-sourceTime)
             if cpc and self.savedir:
                 savefile = 'pointcloud-%05d.cwicpc' % seqno
@@ -158,8 +160,9 @@ def main():
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop receiving after N requests")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
+    parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
     args = parser.parse_args()
-    clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc)
+    clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc, args.verbose)
     try:
         clt.run()
     except (Exception, KeyboardInterrupt):
