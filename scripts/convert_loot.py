@@ -100,7 +100,9 @@ def main():
     startTime = time.time()
     count = 0
     timestamp = 0
-    for filename in os.listdir(loot_source_dir):
+    allfiles = os.listdir(loot_source_dir)
+    allfiles.sort()
+    for filename in allfiles:
         if os.path.splitext(filename)[1] != '.ply':
             continue
         pathname = os.path.join(loot_source_dir, filename)
