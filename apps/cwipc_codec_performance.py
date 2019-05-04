@@ -40,12 +40,91 @@ class cwipc_plydir_source:
         
     def free(self):
         self.filenames = []
+
+
+class EvaluatorMeasurementCodec:
+    def __init__(self, params):         
+        self.enc = cwipc.codec.cwipc_new_encoder(**params)
+        self.dec = cwipc.codec.cwipc_new_decoder()
+
+    def __del__(self):
+        self.enc.free()
+        self.dec.free()
         
+    def measure(self, pc):
+        curstats = {}
+        t0 = time.time()
+        self.enc.feed(pc)
+        ok = self.enc.available(True)
+        assert ok
+        curstats['encode_time'] = time.time() - t0
+        data = self.enc.get_bytes()
+        curstats['encoded_size'] = len(data)
+        
+        t0 = time.time()
+        self.dec.feed(data)
+        ok = self.dec.available(True)
+        assert ok
+        curstats['decode_time'] = time.time() - t0
+        decpc = self.dec.get()
+        
+        return curstats, decpc
+
+class EvaluatorMeasurementCodecTwice:
+    def __init__(self, params):         
+        self.enc1 = cwipc.codec.cwipc_new_encoder(**params)
+        self.dec1 = cwipc.codec.cwipc_new_decoder()
+        self.enc2 = cwipc.codec.cwipc_new_encoder(**params)
+        self.dec2 = cwipc.codec.cwipc_new_decoder()
+
+    def __del__(self):
+        self.enc1.free()
+        self.dec1.free()
+        self.enc2.free()
+        self.dec2.free()
+        
+    def measure(self, pc):
+        curstats = {}
+        
+        # Encode a first time, don't measure
+        self.enc1.feed(pc)
+        ok = self.enc1.available(True)
+        assert ok
+        data = self.enc1.get_bytes()
+        self.dec1.feed(data)
+        ok = self.dec1.available(True)
+        assert ok
+        intpc = self.dec1.get()
+        
+        # Now do the measurement
+        t0 = time.time()
+        self.enc2.feed(intpc)
+        ok = self.enc2.available(True)
+        assert ok
+        curstats['encode_time'] = time.time() - t0
+        data = self.enc2.get_bytes()
+        curstats['encoded_size'] = len(data)
+        
+        t0 = time.time()
+        self.dec2.feed(data)
+        ok = self.dec2.available(True)
+        assert ok
+        curstats['decode_time'] = time.time() - t0
+        decpc = self.dec2.get()
+        
+        return curstats, decpc
+
+ALL_MEASUREMENTS = {
+    'codec' : EvaluatorMeasurementCodec,
+    'twice' : EvaluatorMeasurementCodecTwice
+}      
+    
 class Evaluator:
     octree_bits = [11,10,9,8,7]
     jpeg_quality = [85,60,40]
+    measurement = ['codec']
     
-    def __init__(self, plydir=None, count=300, octree_bits=None, jpeg_quality=None):
+    def __init__(self, plydir=None, count=300, octree_bits=None, jpeg_quality=None, measurement=None):
         if plydir:
             self.grabber = cwipc_plydir_source(plydir)
         else:
@@ -54,6 +133,8 @@ class Evaluator:
             self.octree_bits = octree_bits
         if jpeg_quality:
             self.jpeg_quality = jpeg_quality
+        if measurement:
+            self.measurement = measurement
         self.count = count
         self.stats = []
         
@@ -62,28 +143,28 @@ class Evaluator:
         return pc
 
     def run(self):
-        cur_measurement = 'codec'
-        for cur_octree_bits in self.octree_bits:
-            for cur_jpeg_quality in self.jpeg_quality:
-                measurer = EvaluatorMeasurementCodec(params={'octree_bits':cur_octree_bits, 'jpeg_quality':cur_jpeg_quality})
-                for cur_num in range(self.count):
-                    pc = self.grab_pc()
-                    cur_orig_pointcount = len(pc.get_points())
+        for cur_measurement in self.measurement:
+            for cur_octree_bits in self.octree_bits:
+                for cur_jpeg_quality in self.jpeg_quality:
+                    klass = ALL_MEASUREMENTS[cur_measurement]
+                    measurer = klass(params={'octree_bits':cur_octree_bits, 'jpeg_quality':cur_jpeg_quality})
+                    for cur_num in range(self.count):
+                        pc = self.grab_pc()
+                        cur_orig_pointcount = len(pc.get_points())
                     
-                    curstats, decpc = measurer.measure(pc)
+                        curstats, decpc = measurer.measure(pc)
 
-                    cur_decoded_pointcount = len(decpc.get_points())
+                        cur_decoded_pointcount = len(decpc.get_points())
                     
-                    # Compare qualities
+                        # Compare qualities (xxxjack to be done)
                     
-                    curstats = {}
-                    for k, v in locals().items():
-                        if k[:4] == 'cur_':
-                            curstats[k[4:]] = v
-                    self.stats.append(curstats)
+                        for k, v in locals().items():
+                            if k[:4] == 'cur_':
+                                curstats[k[4:]] = v
+                        self.stats.append(curstats)
                     
-                    pc.free()
-                    decpc.free()
+                        pc.free()
+                        decpc.free()
             
     def statistics(self, output=sys.stdout):
         # Determine the fieldnames in the CSV output
@@ -99,44 +180,16 @@ class Evaluator:
         for stat in self.stats:
             writer.writerow(stat)
 
-class EvaluatorMeasurementCodec:
-    def __init__(self, params):         
-        self.enc = cwipc.codec.cwipc_new_encoder()
-        self.dec = cwipc.codec.cwipc_new_decoder()
-
-    def __del__(self):
-        print('xxxjack del called')
-        self.enc.free()
-        self.dec.free()
-        
-    def measure(self, pc):
-        curstats = {}
-        t0 = time.time()
-        self.enc.feed(pc)
-        ok = self.enc.available(True)
-        assert ok
-        curstats['encode_time'] = time.time() - t0
-        data = self.enc.get_bytes()
-        curstats['encode_size'] = len(data)
-        
-        t0 = time.time()
-        newpc = self.dec.feed(data)
-        ok = self.dec.available(True)
-        assert ok
-        curstats['decode_time'] = time.time() - t0
-        decpc = self.dec.get()
-        
-        return curstats, decpc
-
 def main():
     parser = argparse.ArgumentParser(description="Test compression and decompression performance")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR")
     parser.add_argument("--output", action="store", metavar="FILE", help="Save results as CSV to output file (default: stdout)")
+    parser.add_argument("--measurement", action="append", metavar="NAME", help="Override type of measurements done (default: codec)")
     parser.add_argument("--octree_bits", action="append", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="append", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Number of pointclouds to compress for each combination")
     args = parser.parse_args()
-    srv = Evaluator(args.plydir, args.count, args.octree_bits, args.jpeg_quality)
+    srv = Evaluator(args.plydir, args.count, args.octree_bits, args.jpeg_quality, args.measurement)
     try:
         srv.run()
     except (Exception, KeyboardInterrupt):
