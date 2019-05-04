@@ -62,6 +62,7 @@ class Evaluator:
         return pc
 
     def run(self):
+        cur_measurement = 'codec'
         for cur_octree_bits in self.octree_bits:
             for cur_jpeg_quality in self.jpeg_quality:
                 enc = cwipc.codec.cwipc_new_encoder(params={'octree_bits':cur_octree_bits, 'jpeg_quality':cur_jpeg_quality})
@@ -97,11 +98,16 @@ class Evaluator:
                     pc.free()
                     decpc.free()
             
-    def statistics(self):
+    def statistics(self, output=sys.stdout):
+        # Determine the fieldnames in the CSV output
+        fieldnames = ['measurement', 'octree_bits', 'jpeg_quality', 'num', 'orig_pointcount', 'decoded_pointcount', 'encode_time', 'decode_time', 'encoded_size']
         allkeys = set()
         for stat in self.stats:
             allkeys |= set(stat.keys())
-        writer = csv.DictWriter(sys.stdout, fieldnames=list(allkeys))
+        for k in allkeys:
+            if not k in fieldnames:
+                fieldnames.append(k)
+        writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
         for stat in self.stats:
             writer.writerow(stat)
@@ -109,17 +115,22 @@ class Evaluator:
 def main():
     parser = argparse.ArgumentParser(description="Test compression and decompression performance")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR")
+    parser.add_argument("--output", action="store", metavar="FILE", help="Save results as CSV to output file (default: stdout)")
     parser.add_argument("--octree_bits", action="append", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="append", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
-    parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop receiving after N requests")
+    parser.add_argument("--count", type=int, action="store", metavar="N", help="Number of pointclouds to compress for each combination")
     args = parser.parse_args()
     srv = Evaluator(args.plydir, args.count, args.octree_bits, args.jpeg_quality)
     try:
         srv.run()
     except (Exception, KeyboardInterrupt):
         traceback.print_exc()
-    srv.statistics()
-    
+    if args.output:
+        with open(args.output, 'w') as fp:
+            srv.statistics(fp)
+    else:
+        srv.statistics()
+
 if __name__ == '__main__':
     main()
     
