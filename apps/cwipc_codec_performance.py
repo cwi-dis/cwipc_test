@@ -65,26 +65,13 @@ class Evaluator:
         cur_measurement = 'codec'
         for cur_octree_bits in self.octree_bits:
             for cur_jpeg_quality in self.jpeg_quality:
-                enc = cwipc.codec.cwipc_new_encoder(params={'octree_bits':cur_octree_bits, 'jpeg_quality':cur_jpeg_quality})
-                dec = cwipc.codec.cwipc_new_decoder()
+                measurer = EvaluatorMeasurementCodec(params={'octree_bits':cur_octree_bits, 'jpeg_quality':cur_jpeg_quality})
                 for cur_num in range(self.count):
                     pc = self.grab_pc()
                     cur_orig_pointcount = len(pc.get_points())
-
-                    t0 = time.time()
-                    enc.feed(pc)
-                    ok = enc.available(True)
-                    assert ok
-                    cur_encode_time = time.time() - t0
-                    data = enc.get_bytes()
-                    cur_encoded_size = len(data)
                     
-                    t0 = time.time()
-                    newpc = dec.feed(data)
-                    ok = dec.available(True)
-                    assert ok
-                    cur_decode_time = time.time() - t0
-                    decpc = dec.get()
+                    curstats, decpc = measurer.measure(pc)
+
                     cur_decoded_pointcount = len(decpc.get_points())
                     
                     # Compare qualities
@@ -111,7 +98,36 @@ class Evaluator:
         writer.writeheader()
         for stat in self.stats:
             writer.writerow(stat)
-            
+
+class EvaluatorMeasurementCodec:
+    def __init__(self, params):         
+        self.enc = cwipc.codec.cwipc_new_encoder()
+        self.dec = cwipc.codec.cwipc_new_decoder()
+
+    def __del__(self):
+        print('xxxjack del called')
+        self.enc.free()
+        self.dec.free()
+        
+    def measure(self, pc):
+        curstats = {}
+        t0 = time.time()
+        self.enc.feed(pc)
+        ok = self.enc.available(True)
+        assert ok
+        curstats['encode_time'] = time.time() - t0
+        data = self.enc.get_bytes()
+        curstats['encode_size'] = len(data)
+        
+        t0 = time.time()
+        newpc = self.dec.feed(data)
+        ok = self.dec.available(True)
+        assert ok
+        curstats['decode_time'] = time.time() - t0
+        decpc = self.dec.get()
+        
+        return curstats, decpc
+
 def main():
     parser = argparse.ArgumentParser(description="Test compression and decompression performance")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR")
