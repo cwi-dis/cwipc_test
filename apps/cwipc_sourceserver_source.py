@@ -164,7 +164,7 @@ def main():
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     args = parser.parse_args()
-    params = cwipc.codec.cwipc_encoder_params(1, False, 1, 0, 7, 8, 85, 16)
+    params = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
     if args.octree_bits or args.jpeg_quality:
         if args.octree_bits:
             params.octree_bits = args.octree_bits
