@@ -77,9 +77,11 @@ class Calibrator:
         points_0 = [
             (0.25, 1, 0, 255, 0, 0),        # Red ball at Right of the cross
             (0, 1.25, 0, 0, 0, 255),        # Blue ball at top of the cross (because the sky is blue)
+            (0, 1.1, -0.25, 255, 127, 0),   # Orange ball pointing towards the viewer (-Z) because everyone likes orange
             (-0.25, 1, 0, 255, 255, 0),     # Yellow ball at left of cross because it had to go somewhere
             (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
             (0, 1, 0, 0, 0, 0),             # Black point at cross
+            (0, 1.1, 0, 0, 0, 0),           # Black point at forward spar
         ]
         self.refpointcloud = cwipc.cwipc_from_points(points_0, 0)
         
