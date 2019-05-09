@@ -2,29 +2,21 @@
 <file>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
-        <!-- 'cloudresolution' and 'tileresolution' are specified in meters -->
-        <postprocessing depthfiltering="1" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <!-- For information on depth filtering parameters see librealsense/doc/post-processing-filters.md -->
-            <!--	decimation_value is an int between 2 and 8 -->
-            <!--	spatial_iterations is an int between 1 and 5 -->
-            <!--	spatial_alpha is is a float between 0.25 and 1.0 -->
-            <!--	spatial_delta is an int between 1 and 50 -->
-            <!--	spatial_filling is an int between 0 and 6 -->
-            <!--	temporal_alpha is is a float between 0 and 1 -->
-            <!--	temporal_delta is is an int between 1 and 100 -->
-            <!--	temporal_percistency is a float between 0 and 8 -->
+        <postprocessing depthfiltering="0" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
             <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
-        <!-- backgroundx, backgroundy and backgroudz if not 0 position the camera's background plane -->
-        <camera serial="746112061997">
+        
+        <camera serial="746112061997" backgroundx="0" backgroundy="0" backgroundz="0">
             <trafo>
-                <values v00="1" v01="0" v02="0" v03="0" v10="0" v11="1" v12="0" v13="0.4" v20="0" v21="0" v22="1" v23="0.8" v30="0" v31="0" v32="0" v33="1" />
+                <values v00="0.006230238891112458" v01="0.7040005045874017" v02="-0.7101721436835197" v03="-0.5347967676512787" v10="0.9952295022213353" v11="0.06478135703432121" v12="0.07294939128649876" v13="1.1052054003617098" v20="0.09736232347082985" v21="-0.7072387611842821" v22="-0.7002384684140719" v23="-0.4816905687079533" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
             </trafo>
         </camera>
-        <camera serial="746112060700">
+
+        <camera serial="746112060700" backgroundx="0" backgroundy="0" backgroundz="0">
             <trafo>
-                <values v00="0.976387" v01="-0.0300275" v02="-0.21393" v03="-0.199869" v10="0.206774" v11="-0.156826" v12="0.965738" v13="1.239604" v20="-0.0625485" v21="-0.98717" v22="-0.146914" v23="-0.16733" v30="0" v31="0" v32="0" v33="1" />
+                <values v00="0.12248531549395372" v01="0.6146744553164488" v02="0.7792128473464595" v03="0.7114246507382372" v10="0.9839901060538795" v11="-0.17762780560544558" v12="-0.014554513522172819" v13="1.0606014469481464" v20="0.12946358050208442" v21="0.7685204464796141" v22="-0.6265903802855287" v23="-0.48381778603215575" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
             </trafo>
         </camera>
+
     </CameraConfig>
 </file>
