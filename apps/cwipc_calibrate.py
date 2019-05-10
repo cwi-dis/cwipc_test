@@ -31,12 +31,15 @@ CONFIGCAMERA="""
         </camera>
 """
 class Calibrator:
-    def __init__(self, nosend=False, port=4303, count=None, plydir=None, cwicpcdir=None, params=None):
+    def __init__(self, serials=None):
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.pointclouds = []
         self.o3dpointclouds = []
         self.refpointcloud = None
-        self.cameraserial = []
+        if serials:
+            self.cameraserial = serials
+        else:
+            self.cameraserial = []
         self.matrixinfo = []
 
     def run(self):
@@ -44,11 +47,12 @@ class Calibrator:
         if DEBUG:
             for i in range(len(self.pointclouds)):
                 cwipc.cwipc_write('pc-%d.ply' % i, self.pointclouds[i])
-        for i in range(len(self.pointclouds)):
-            print('Enter serial number for camera', i+1, '-')
-            sys.stdout.flush()
-            line = sys.stdin.readline()
-            self.cameraserial.append(line.strip())
+        if not self.cameraserial:
+            for i in range(len(self.pointclouds)):
+                print('Enter serial number for camera', i+1, '-')
+                sys.stdout.flush()
+                line = sys.stdin.readline()
+                self.cameraserial.append(line.strip())
             
         o3drefpointcloud = self.cwipc_to_o3d(self.refpointcloud)
         refpoints = self.pick_points(o3drefpointcloud)
@@ -166,8 +170,9 @@ class Calibrator:
             
 def main():
     parser = argparse.ArgumentParser(description="Calibrate a number of realsense cameras")
+    parser.add_argument("serial", nargs="*", action="append", help="Camera serial numbers") 
     args = parser.parse_args()
-    prog = Calibrator()
+    prog = Calibrator(args.serial)
     prog.run()
     
 if __name__ == '__main__':
