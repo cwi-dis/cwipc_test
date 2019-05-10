@@ -41,6 +41,8 @@ class Calibrator:
         else:
             self.cameraserial = []
         self.matrixinfo = []
+        print('xxxjack serials', repr(self.cameraserial))
+        sys.stdout.flush()
 
     def run(self):
         self.get_pointclouds()
@@ -93,11 +95,14 @@ class Calibrator:
         tiles = []
         maxtile = self.grabber.maxtile()
         if DEBUG: print('maxtile', maxtile)
-        for i in range(1, maxtile):
-            info = self.grabber.get_tileinfo_dict(i)
-            if DEBUG: print('info', i, info)
-            if info != None:
-                tiles.append(i)
+        if maxtile == 1:
+            tiles.append(0)
+        else:
+            for i in range(1, maxtile):
+                info = self.grabber.get_tileinfo_dict(i)
+                if DEBUG: print('info', i, info)
+                if info != None:
+                    tiles.append(i)
         # Grab one combined pointcloud and split it into tiles
         pc = self.grabber.get()
         if DEBUG: cwipc.cwipc_write('pcall.ply', pc)
@@ -170,7 +175,7 @@ class Calibrator:
             
 def main():
     parser = argparse.ArgumentParser(description="Calibrate a number of realsense cameras")
-    parser.add_argument("serial", nargs="*", action="append", help="Camera serial numbers") 
+    parser.add_argument("serial", nargs="*", action="store", help="Camera serial numbers") 
     args = parser.parse_args()
     prog = Calibrator(args.serial)
     prog.run()
