@@ -5,54 +5,30 @@ import numpy as np
 import cwipc
 import cwipc.codec
 import cwipc.util
+import re
 import time
 
-VOXEL_SIZE = 3.5    # Larger numbers mean smaller output size
-SCALE_FACTOR = 500  # Conversion factor from loot xyz values to our xyz values
-TRANSLATE_X = -0.35 # Conversion (after scaling) of X values
-TRANSLATE_Y = 0     # Conversion (after scaling) of Y values
-TRANSLATE_Z = -0.35 # Conversion (after scaling) of Z values
-TIME_INCREMENT = 33 # Increment in timestamp between successive pointclouds
+VOXEL_SIZE = 0 # 3.5    # Larger numbers mean smaller output size
 
-MAXTILES=2  # Number of tiles (in addition to tile 0) to encode
+TILES=(0, 1, 2, 4, 8)
 ALSO_LOW=True   # Set to True to also do low quality cwicpc
-
-def read_loot_ply_o3d(filename):
-    """Read PLY file using open3d, scale it and downsample it. Returns open3d pointcloud"""
-    original = open3d.read_point_cloud(filename)
-    downsampled = open3d.voxel_down_sample(original, voxel_size=VOXEL_SIZE)
-    points = np.asarray(downsampled.points)
-    translate = np.array([TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z])
-    points /= SCALE_FACTOR
-    points += translate
-    return downsampled
     
-def write_ply_o3d(filename, o3dpc):
-    """Write PLY file from open3d pointcloud"""
-    open3d.write_point_cloud(filename, o3dpc, write_ascii=True)
-    
+class PlyReader:
+    def __init__(self):
+        self.epoch = None
+        
+    def grab(self, filename):
+        match = re.match(r'.*pointcloud-([0-9]+).ply', filename)
+        timestamp = int(match.group(1))
+        if self.epoch == None:
+            self.epoch = timestamp
+        pc = cwipc.cwipc_read(filename, timestamp-self.epoch)
+        return pc
+        
 def draw_o3d(o3dpc):
     """Draw open3d pointcloud"""
     open3d.draw_geometries([o3dpc])
-    
-def o3d_to_cwipc(o3dpc, timestamp):
-    """Convert open3d pointcloud to cwipc pointcloud"""
-    # Note that this method is inefficient, it can probably be done
-    # in-place with some numpy magic
-    points = list(o3dpc.points)
-    colors = list(o3dpc.colors)
-    rv = []
-    pointsandcolors = zip(points, colors)
-    for (x, y, z), (r, g, b) in pointsandcolors:
-        if MAXTILES > 0:
-            assert MAXTILES == 2
-            side = 1 if x < 0 else 2
-        r = int(r*255)
-        g = int(g*255)
-        b = int(b*255)
-        rv.append((x, y, z, r, g, b, side))
-    return cwipc.cwipc_from_points(rv, timestamp)
-    
+        
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
     # Note that this method is inefficient, it can probably be done
@@ -76,26 +52,26 @@ def write_ply_cwipc(filename, pc):
     
 def main():
     if len(sys.argv) != 4:
-        print('Usage: %s loot-source-ply-dir dest-ply-dir dest-cwicpc-dir' % sys.argv[0])
+        print('Usage: %s grab-source-ply-dir dest-ply-dir dest-cwicpc-dir' % sys.argv[0])
         sys.exit(1)
-    loot_source_dir = sys.argv[1]
+    grab_source_dir = sys.argv[1]
     ply_dest_dir = sys.argv[2]
     cwicpc_dest_dir = sys.argv[3]
     os.mkdir(ply_dest_dir)
     os.mkdir(cwicpc_dest_dir)
-    if MAXTILES > 0:
-        for i in range(1,MAXTILES+1):
-            os.mkdir(cwicpc_dest_dir+str(i))
+    for i in TILES:
+        if i == 0: continue
+        os.mkdir(cwicpc_dest_dir+str(i))
     if ALSO_LOW:
         os.mkdir(cwicpc_dest_dir+'-low')
-        if MAXTILES > 0:
-            for i in range(1,MAXTILES+1):
-                os.mkdir(cwicpc_dest_dir+str(i)+'-low')
+        for i in TILES:
+            if i == 0: continue
+            os.mkdir(cwicpc_dest_dir+str(i)+'-low')
     
     startTime = time.time()
     count = 0
     timestamp = 0
-    allfiles = os.listdir(loot_source_dir)
+    allfiles = os.listdir(grab_source_dir)
     allfiles.sort()
     
     # Setup the encoder group and the encoders
@@ -104,50 +80,48 @@ def main():
     params = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
     encoders = []
     encoders.append(enc_group.addencoder(params=params))
-    if MAXTILES > 0:
-        for i in range(1, MAXTILES+1):
-            params.tilenumber = i
-            encoders.append(
-                enc_group.addencoder(params=params) 
-            )
+    for i in TILES:
+        if i == 0: continue
+        params.tilenumber = i
+        encoders.append(
+            enc_group.addencoder(params=params) 
+        )
     if ALSO_LOW:
         params_low = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 7, 60, 16, 0, 0)
         encoders.append(enc_group.addencoder(params=params_low))
-        if MAXTILES > 0:
-            for i in range(1, MAXTILES+1):
-                params_low.tilenumber = i
-                encoders.append(
-                    enc_group.addencoder(params=params_low) 
-                )
-            
+        for i in TILES:
+            if i == 0: continue
+            params_low.tilenumber = i
+            encoders.append(
+                enc_group.addencoder(params=params_low) 
+            )
+    reader = PlyReader()
     for filename in allfiles:
         if os.path.splitext(filename)[1] != '.ply':
             continue
-        pathname = os.path.join(loot_source_dir, filename)
+        pathname = os.path.join(grab_source_dir, filename)
         print(pathname, '...')
         basename = os.path.splitext(filename)[0]
         ply_dest_pathname = os.path.join(ply_dest_dir, filename)
         
         cwicpc_dest_pathnames = []
         cwicpc_dest_pathnames.append(os.path.join(cwicpc_dest_dir, basename + '.cwicpc'))
-        if MAXTILES > 0:
-            for i in range(1,MAXTILES+1):
-                cwicpc_dest_pathnames.append(
-                    os.path.join(cwicpc_dest_dir + str(i), basename + '.cwicpc')
-                )
+        for i in TILES:
+            if i == 0: continue
+            cwicpc_dest_pathnames.append(
+                os.path.join(cwicpc_dest_dir + str(i), basename + '.cwicpc')
+            )
         if ALSO_LOW:
             cwicpc_dest_pathnames.append(os.path.join(cwicpc_dest_dir + '-low', basename + '.cwicpc'))
-            if MAXTILES > 0:
-                for i in range(1,MAXTILES+1):
-                    cwicpc_dest_pathnames.append(
-                        os.path.join(cwicpc_dest_dir + str(i) + '-low', basename + '.cwicpc')
-                    )
+            for i in TILES:
+                if i == 0: continue
+                cwicpc_dest_pathnames.append(
+                    os.path.join(cwicpc_dest_dir + str(i) + '-low', basename + '.cwicpc')
+                )
         
-        # Read original loot, downsample and scale.
-        o3dpc = read_loot_ply_o3d(pathname)
-
-        # Convert to cwipc
-        pc = o3d_to_cwipc(o3dpc, timestamp)
+        pc = reader.grab(pathname)
+        timestamp = pc.timestamp()
+        print('xxxjack grabbed timestamp', timestamp)
 
         # Save as a plyfile
         write_ply_cwipc(ply_dest_pathname, pc)
@@ -163,7 +137,6 @@ def main():
 
         pc.free()
         
-        timestamp += TIME_INCREMENT
         count += 1
         
     now = time.time()
