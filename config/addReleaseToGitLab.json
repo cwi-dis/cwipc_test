@@ -3,11 +3,11 @@
 "private_token":"HkS6wGP5swoXoQ7Gj9t5",
 "GitLab_API_base_url":"https://baltig.viaccess-orca.com:8443/api/v4/projects/",
 "project_name":"cwipc_test",
-"tag_name":"v2.1",
+"tag_name":"v3.0",
 "branch_to_tag":"master",
-"release_name":"v2.1",
+"release_name":"v3.0",
 "stable_release" : false,
-"release_description":"10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files, tiled (left/right) and untiled. Timestamps are now correct.",
+"release_description":"loot/longdress/redandblack, each 10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files, tiled (left/right) and untiled, two qualities.",
 "assets": [
 	{
 		"file_to_upload":"loot-ply.zip",
@@ -16,6 +16,22 @@
 	{
 		"file_to_upload":"loot-cwicpc.zip",
 		"asset_link_name":"loot-cwicpc"
+	},
+	{
+		"file_to_upload":"longdress-ply.zip",
+		"asset_link_name":"longdress-ply"
+	},
+	{
+		"file_to_upload":"longdress-cwicpc.zip",
+		"asset_link_name":"longdress-cwicpc"
+	},
+	{
+		"file_to_upload":"redandblack-ply.zip",
+		"asset_link_name":"redandblack-ply"
+	},
+	{
+		"file_to_upload":"redandblack-cwicpc.zip",
+		"asset_link_name":"redandblack-cwicpc"
 	}
 	]
 }
