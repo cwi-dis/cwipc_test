@@ -33,9 +33,11 @@ CONFIGCAMERA="""
 """
 class Calibrator:
     def __init__(self, serials=None):
+        if os.path.exists('cameraconfigxml'):
+            print('cameraconfig.xml already exists')
+            sys.exit(1)
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.pointclouds = []
-        self.o3dpointclouds = []
         self.refpointcloud = None
         if serials:
             self.cameraserial = serials
@@ -43,6 +45,7 @@ class Calibrator:
             self.cameraserial = []
         self.matrixinfo = []
         print('xxxjack serials', repr(self.cameraserial))
+        self.winpos = 100
         sys.stdout.flush()
 
     def run(self):
@@ -56,16 +59,65 @@ class Calibrator:
                 sys.stdout.flush()
                 line = sys.stdin.readline()
                 self.cameraserial.append(line.strip())
-            
-        o3drefpointcloud = self.cwipc_to_o3d(self.refpointcloud)
-        refpoints = self.pick_points(o3drefpointcloud)
+        #
+        # First show the pointclouds for visual inspection.
+        #
+        grab_ok = False
+        while not grab_ok:
+            print('==== Showing grabbed pointclouds for visual inspection')
+            sys.stdout.flush()
+            for i in range(len(self.pointclouds)):
+                print('==== Showing grabbed pointcloud for visual inspection, camera', i)
+                sys.stdout.flush()
+                pcd = self.cwipc_to_o3d(self.pointclouds[i])
+                self.show_points(self.cameraserial[i], pcd)
+            print('---- Did those look good? Type y to continue - ')
+            sys.stdout.flush()
+            grab_ok = 'y' in sys.stdin.readline().strip().lower()
+            if not grab_ok:
+                self.pointclouds = []
+                self.get_pointclouds()
         
+        print('==== Picking red, orange, yellow, blue points on reference image')
+        sys.stdout.flush()
+        #
+        # Pick reference points
+        #
+        o3drefpointcloud = self.cwipc_to_o3d(self.refpointcloud)
+        refpoints = self.pick_points('reference', o3drefpointcloud)
+        
+        #
+        # Pick points in images
+        #
         for i in range(len(self.pointclouds)):
-            pcd = self.cwipc_to_o3d(self.pointclouds[i])
-            self.o3dpointclouds.append(pcd)
-            pc_refpoints = self.pick_points(pcd)
-            info = self.align_pair(pcd, pc_refpoints, o3drefpointcloud, refpoints)
+            matrix_ok = False
+            while not matrix_ok:
+                print('==== Picking red, orange, yellow, blue points on camera', i)
+                sys.stdout.flush()
+                pcd = self.cwipc_to_o3d(self.pointclouds[i])
+                pc_refpoints = self.pick_points(self.cameraserial[i], pcd)
+                info = self.align_pair(pcd, pc_refpoints, o3drefpointcloud, refpoints, False)
+                print('xxxjack info', info)
+                print('==== Showing alignment for camera', i)
+                self.show_points(self.cameraserial[i], o3drefpointcloud, self.cwipc_to_o3d(self.pointclouds[i], info))
+                print('---- Did that look good? Type y to continue - ')
+                sys.stdout.flush()
+                matrix_ok = 'y' in sys.stdin.readline().strip().lower()
             self.matrixinfo.append(info)
+        #
+        # Show result
+        #
+        allclouds = [o3drefpointcloud]
+        for i in range(len(self.pointclouds)):
+            
+            allclouds.append(self.cwipc_to_o3d(self.pointclouds[i], self.matrixinfo[i]))
+        self.show_points('all', *tuple(allclouds))
+        print('---- Did those look good? Type y to continue - ')
+        sys.stdout.flush()
+        result_ok = 'y' in sys.stdin.readline().strip().lower()
+        if not result_ok:
+            sys.exit(1)
+        
         self.writeconfig()
         self.cleanup()
         
@@ -73,7 +125,6 @@ class Calibrator:
         for p in self.pointclouds:
             p.free()
         self.pointclouds = []
-        self.o3dpointclouds = []
         self.refpointcloud.free()
         self.refpointcloud = None
         self.grabber.free()
@@ -87,6 +138,10 @@ class Calibrator:
             (0, 1.1, -0.25, 255, 127, 0),   # Orange ball pointing towards the viewer (-Z) because everyone likes orange
             (-0.25, 1, 0, 255, 255, 0),     # Yellow ball at left of cross because it had to go somewhere
             (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
+            (-1, 0, -1, 0, 0, 0),             # Black point at -1,0,-1
+            (-1, 0, 1, 0, 0, 0),             # Black point at -1,0,1
+            (1, 0, -1, 0, 0, 0),             # Black point at 1,0,-1
+            (1, 0, 1, 0, 0, 0),             # Black point at 1,0,1
             (0, 1, 0, 0, 0, 0),             # Black point at cross
             (0, 1.1, 0, 0, 0, 0),           # Black point at forward spar
         ]
@@ -114,15 +169,25 @@ class Calibrator:
             pc_tile = cwipc.codec.cwipc_tilefilter(pc, tilenum)
             self.pointclouds.append(pc_tile)  
     
-    def pick_points(self, pcd):
+    def pick_points(self, title, pcd):
         vis = open3d.VisualizerWithEditing()
-        vis.create_window()
+        vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
+        self.winpos += 50
         vis.add_geometry(pcd)
         vis.run() # user picks points
         vis.destroy_window()
         return vis.get_picked_points()
 
-    def cwipc_to_o3d(self, pc):
+    def show_points(self, title, *pcds):
+        vis = open3d.Visualizer()
+        vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
+        self.winpos += 50
+        for pcd in pcds:
+            vis.add_geometry(pcd)
+        vis.run()
+        vis.destroy_window()
+
+    def cwipc_to_o3d(self, pc, matrix=None):
         """Convert cwipc pointcloud to open3d pointcloud"""
         # Note that this method is inefficient, it can probably be done
         # in-place with some numpy magic
@@ -130,16 +195,24 @@ class Calibrator:
         points = []
         colors = []
         for p in pcpoints:
-            points.append((p.x, p.y, p.z))  
+            points.append([p.x, p.y, p.z])  
             colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
-        points_v = open3d.Vector3dVector(points)
+        points_v_np = np.matrix(points)
+        if not matrix is None:
+            submatrix = matrix[:3, :3]
+            translation = matrix[:3, 3]
+            print('xxxjack submatrix', submatrix)
+            print('xxxjack translation', translation)
+            points_v_np = (submatrix * points_v_np.T).T
+            points_v_np = points_v_np + translation
+        points_v = open3d.Vector3dVector(points_v_np)
         colors_v = open3d.Vector3dVector(colors)
         rv = open3d.PointCloud()
         rv.points = points_v
         rv.colors = colors_v
         return rv
 
-    def align_pair(self, source, picked_id_source, target, picked_id_target):
+    def align_pair(self, source, picked_id_source, target, picked_id_target, extended=False):
         assert(len(picked_id_source)>=3 and len(picked_id_target)>=3)
         assert(len(picked_id_source) == len(picked_id_target))
         corr = np.zeros((len(picked_id_source),2))
@@ -149,6 +222,9 @@ class Calibrator:
         p2p = open3d.TransformationEstimationPointToPoint()
         trans_init = p2p.compute_transformation(source, target,
                  open3d.Vector2iVector(corr))
+        
+        if not extended:
+            return trans_init
 
         threshold = 0.01 # 3cm distance threshold
         reg_p2p = open3d.registration_icp(source, target, threshold, trans_init,
