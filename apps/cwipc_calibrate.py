@@ -11,6 +11,7 @@ import numpy as np
 import open3d
 
 DEBUG=False
+SKIP_FIRST_GRABS=10 # Skip this many grabs before using one. Needed for D435, it seems.
 
 CONFIGFILE="""<?xml version="1.0" ?>
 <file>
@@ -104,6 +105,9 @@ class Calibrator:
                 if info != None:
                     tiles.append(i)
         # Grab one combined pointcloud and split it into tiles
+        for i in range(SKIP_FIRST_GRABS):
+            pc = self.grabber.get()
+            pc.free()
         pc = self.grabber.get()
         if DEBUG: cwipc.cwipc_write('pcall.ply', pc)
         for tilenum in tiles:
