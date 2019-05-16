@@ -56,7 +56,7 @@ if true; then
 fi
 
 if true; then
-	python $gRFG --cicd --project_name cwipc_test --release_name v1.1
+	python $gRFG --cicd --project_name cwipc_test --release_name v2.0
 	(zipfile=$PWD/loot-cwicpc.zip && cd ../installed && unzip -o $zipfile)
 	(zipfile=$PWD/loot-ply.zip && cd ../installed && unzip -o $zipfile)
 	rm loot-*.zip
