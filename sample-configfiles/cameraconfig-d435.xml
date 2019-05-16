@@ -1,0 +1,16 @@
+<?xml version="1.0" ?>
+<file>
+    <CameraConfig>
+        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
+        <postprocessing depthfiltering="0" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+            <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        </postprocessing>
+        
+        <camera serial="838212072695" backgroundx="0" backgroundy="0" backgroundz="0">
+            <trafo>
+                <values v00="-0.3084310150252151" v01="-0.21092862521750405" v02="0.9275663987199929" v03="0.7673151051180696" v10="0.027793198886315568" v11="0.9726914922534508" v12="0.23043176645902647" v13="1.1898726745185697" v20="-0.9508406002407492" v21="0.0968523410228988" v22="-0.29414584303063457" v23="-0.3040174781567168" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
+            </trafo>
+        </camera>
+
+    </CameraConfig>
+</file>
