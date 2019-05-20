@@ -8,6 +8,12 @@ import open3d
 import numpy as np
 import cwipc
 import cwipc.codec
+
+# Convoluted code warning: adding ../python directory to path so we can import subsource
+_sourcedir = os.path.dirname(__file__)
+_pardir = os.path.dirname(_sourcedir)
+_pythondir = os.path.join(_pardir, 'python')
+sys.path.append(_pythondir)
 from subsource import CpcSubSource
     
 def cwipc_to_o3d(pc):
