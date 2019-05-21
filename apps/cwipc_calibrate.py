@@ -10,6 +10,7 @@ import cwipc.realsense2
 import numpy as np
 import open3d
 
+
 DEBUG=False
 SKIP_FIRST_GRABS=10 # Skip this many grabs before using one. Needed for D435, it seems.
 
@@ -32,33 +33,37 @@ CONFIGCAMERA="""
         </camera>
 """
 class Calibrator:
-    def __init__(self, serials=None):
-        if os.path.exists('cameraconfigxml'):
-            print('cameraconfig.xml already exists')
+    def __init__(self):
+        if os.path.exists('cameraconfig.xml'):
+            print('%s: cameraconfig.xml already exists' % sys.argv[0])
             sys.exit(1)
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.pointclouds = []
         self.refpointcloud = None
-        if serials:
-            self.cameraserial = serials
-        else:
-            self.cameraserial = []
+        self.cameraserial = self.getserials()
         self.matrixinfo = []
-        print('xxxjack serials', repr(self.cameraserial))
         self.winpos = 100
         sys.stdout.flush()
 
+    def getserials(self):
+        """Get serial numbers of cameras"""
+        rv = []
+        ntile = self.grabber.maxtile()
+        for i in range(ntile):
+            info = self.grabber.get_tileinfo_raw(i)
+            if info.camera != None:
+                cam_id = info.camera
+                cam_id = cam_id.decode('ascii')
+                print('Found camera at tile', i, ', camera serial', cam_id)
+                rv.append(cam_id)
+        return rv
+        
     def run(self):
+        workdir = os.getcwd()
         self.get_pointclouds()
         if DEBUG:
             for i in range(len(self.pointclouds)):
                 cwipc.cwipc_write('pc-%d.ply' % i, self.pointclouds[i])
-        if not self.cameraserial:
-            for i in range(len(self.pointclouds)):
-                print('Enter serial number for camera', i+1, '-')
-                sys.stdout.flush()
-                line = sys.stdin.readline()
-                self.cameraserial.append(line.strip())
         #
         # First show the pointclouds for visual inspection.
         #
@@ -97,7 +102,6 @@ class Calibrator:
                 pcd = self.cwipc_to_o3d(self.pointclouds[i])
                 pc_refpoints = self.pick_points(self.cameraserial[i], pcd)
                 info = self.align_pair(pcd, pc_refpoints, o3drefpointcloud, refpoints, False)
-                print('xxxjack info', info)
                 print('==== Showing alignment for camera', i)
                 self.show_points(self.cameraserial[i], o3drefpointcloud, self.cwipc_to_o3d(self.pointclouds[i], info))
                 print('---- Did that look good? Type y to continue - ')
@@ -112,12 +116,8 @@ class Calibrator:
             
             allclouds.append(self.cwipc_to_o3d(self.pointclouds[i], self.matrixinfo[i]))
         self.show_points('all', *tuple(allclouds))
-        print('---- Did those look good? Type y to continue - ')
-        sys.stdout.flush()
-        result_ok = 'y' in sys.stdin.readline().strip().lower()
-        if not result_ok:
-            sys.exit(1)
-        
+        # Open3D Visualiser changes directory (!!?!), so change it back
+        os.chdir(workdir)
         self.writeconfig()
         self.cleanup()
         
@@ -201,8 +201,6 @@ class Calibrator:
         if not matrix is None:
             submatrix = matrix[:3, :3]
             translation = matrix[:3, 3]
-            print('xxxjack submatrix', submatrix)
-            print('xxxjack translation', translation)
             points_v_np = (submatrix * points_v_np.T).T
             points_v_np = points_v_np + translation
         points_v = open3d.Vector3dVector(points_v_np)
@@ -254,10 +252,7 @@ class Calibrator:
 
             
 def main():
-    parser = argparse.ArgumentParser(description="Calibrate a number of realsense cameras")
-    parser.add_argument("serial", nargs="*", action="store", help="Camera serial numbers") 
-    args = parser.parse_args()
-    prog = Calibrator(args.serial)
+    prog = Calibrator()
     prog.run()
     
 if __name__ == '__main__':
