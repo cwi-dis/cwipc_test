@@ -72,14 +72,63 @@ class cwicpcdir_source:
     def free(self):
         self.filenames = []
         
-class SourceServer:
-    def __init__(self, nosend=False, port=4303, count=None, plydir=None, cwicpcdir=None, params=None):
-        if nosend:
+class SourceServerSink:
+    def __init__(self):
+        pass
+        
+    def feed(self, cpc):
+        pass
+        
+    def canfeed(self, wait=True):
+        return True
+        
+class SourceServerNetworkSink(SourceServerSink):
+    def __init__(self, port):
+        self.socket = socket.socket()
+        self.socket.bind(('', port))
+        self.socket.listen()
+        self.curSocket = None
+        
+    def __del__(self):
+        print('xxxjack __del__ SourceServerNetworkSink')
+        if self.socket:
+            self.socket.close()
             self.socket = None
+        if self.curSocket:
+            self.curSocket.close()
+            self.curSocket = None
+            
+    def feed(self, cpc):
+        self.curSocket.sendall(cpc)
+        self.curSocket.close()
+        self.curSocket = None
+        
+    def canfeed(self, wait=True):
+        assert wait
+        self.curSocket, _ = self.socket.accept()
+
+class SourceServerBin2dashSink:
+    def __init__(self, url):
+        print('xxxjack pretend bin2dash', url)
+        
+    def __del__(self):
+        print('xxxjack __del__ SourceServerBin2dashSink')
+
+    def feed(self, cpc):
+        print('xxxjack bin2dash', len(cpc), 'bytes')
+        
+    def canfeed(self, wait=True):
+        return True
+        
+
+class SourceServer:
+    def __init__(self, nosend=False, port=4303, bin2dash=None, count=None, plydir=None, cwicpcdir=None, params=None):
+        if nosend:
+            self.sink = SourceServerSink()
+        elif bin2dash != None:
+            self.sink = SourceServerBin2dashSink(bin2dash)
         else:
-            self.socket = socket.socket()
-            self.socket.bind(('', port))
-            self.socket.listen()
+            self.sink = SourceServerNetworkSink(port)
         if cwicpcdir:
             self.cpcSource = cwicpcdir_source(cwicpcdir)
             self.grabber = None
@@ -94,6 +143,10 @@ class SourceServer:
         self.count = count
         self.params = params
         
+    def __del__(self):
+        self.grabber.free()
+        self.grabber = None
+
     def grab_pc(self):
         pc = self.grabber.get()
         return pc
@@ -110,8 +163,7 @@ class SourceServer:
         
     def serve(self):
         while True:
-            if self.socket:
-                s, _ = self.socket.accept()
+            self.sink.canfeed(wait=True)
             t0 = time.time()
             if self.grabber:
                 pc = self.grab_pc()
@@ -122,9 +174,7 @@ class SourceServer:
                 data = self.cpcSource.get()
                 t1 = t2 = time.time()
             self.sizes_encode.append(len(data))
-            if self.socket:
-                s.sendall(data)
-                s.close()
+            self.sink.feed(data)
             t3 = time.time()
             self.times_grab.append(t1-t0)
             self.times_encode.append(t2-t1)
@@ -157,6 +207,7 @@ class SourceServer:
 def main():
     parser = argparse.ArgumentParser(description="Start server to send compressed pointclouds to a cwipc_sourceserver_sink")
     parser.add_argument("--nosend", action="store_true", help="Do not send compressed data anywhere, only grab and collect statistics")
+    parser.add_argument("--bin2dash", action="store", metavar="URL", help="Send compressed data to bin2dash URL, empty string for storing in local files")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR in stead of grabbing them from the camera")
@@ -170,7 +221,7 @@ def main():
             params.octree_bits = args.octree_bits
         if args.jpeg_quality:
             params.jpeg_quality = args.jpeg_quality
-    srv = SourceServer(args.nosend, args.port, args.count, args.plydir, args.cwicpcdir, params)
+    srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, params)
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
