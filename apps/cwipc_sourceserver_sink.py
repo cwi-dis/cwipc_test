@@ -4,8 +4,6 @@ import time
 import socket
 import argparse
 import traceback
-import open3d
-import numpy as np
 import cwipc
 import cwipc.codec
 
@@ -14,8 +12,15 @@ _sourcedir = os.path.dirname(__file__)
 _pardir = os.path.dirname(_sourcedir)
 _pythondir = os.path.join(_pardir, 'python')
 sys.path.append(_pythondir)
+import subsource
+subsource._signals_unity_bridge_dll()
 from subsource import CpcSubSource
-    
+
+# NOTE: open3d must be imported after all the DLLs have been loaded (sigh)
+import numpy as np
+import open3d
+
+
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
     # Note that this method is inefficient, it can probably be done
