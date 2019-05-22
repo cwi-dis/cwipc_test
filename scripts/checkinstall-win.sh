@@ -131,13 +131,12 @@ else
 	echo cwipc_codec: ok
 fi
 
-pcl2dash=$dirname/pcl2dash/v19/x64/Release/pcl2dash.exe
-$pcl2dash --version > /dev/null 2>&1
-if [ $? -ne 1 ]; then
-	echo pcl2dash: not installed, or not on PATH, or problem with dependency
+python -c "import ctypes ; ctypes.CDLL('bin2dash')"
+if [ $? -ne 0 ]; then
+	echo bin2dash: not installed, or not on PATH, or problem with dependency
 	error_occurred
 else
-	echo pcl2dash: ok
+	echo bin2dash: ok
 fi
 
 python -c "import ctypes ; ctypes.CDLL('signals-unity-bridge.dll')"
