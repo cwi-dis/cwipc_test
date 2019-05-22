@@ -4,9 +4,18 @@ import time
 import socket
 import argparse
 import traceback
+import subprocess
 import cwipc
 import cwipc.codec
 import cwipc.realsense2
+
+# Convoluted code warning: adding ../python directory to path so we can import subsource
+_sourcedir = os.path.dirname(__file__)
+_pardir = os.path.dirname(_sourcedir)
+_pythondir = os.path.join(_pardir, 'python')
+sys.path.append(_pythondir)
+
+from bin2dash import CpcBin2dashSink
     
 class cwipc_plydir_source:
     def __init__(self, dirname):
@@ -79,7 +88,7 @@ class SourceServerSink:
     def feed(self, cpc):
         pass
         
-    def canfeed(self, wait=True):
+    def canfeed(self, timestamp, wait=True):
         return True
         
 class SourceServerNetworkSink(SourceServerSink):
@@ -103,35 +112,22 @@ class SourceServerNetworkSink(SourceServerSink):
         self.curSocket.close()
         self.curSocket = None
         
-    def canfeed(self, wait=True):
+    def canfeed(self, timestamp, wait=True):
         assert wait
         self.curSocket, _ = self.socket.accept()
 
-class SourceServerBin2dashSink:
-    def __init__(self, url):
-        print('xxxjack pretend bin2dash', url)
-        
-    def __del__(self):
-        print('xxxjack __del__ SourceServerBin2dashSink')
-
-    def feed(self, cpc):
-        print('xxxjack bin2dash', len(cpc), 'bytes')
-        
-    def canfeed(self, wait=True):
-        return True
-        
 
 class SourceServer:
     def __init__(self, nosend=False, port=4303, bin2dash=None, count=None, plydir=None, cwicpcdir=None, params=None):
+        self.grabber = None
         if nosend:
             self.sink = SourceServerSink()
         elif bin2dash != None:
-            self.sink = SourceServerBin2dashSink(bin2dash)
+            self.sink = CpcBin2dashSink(bin2dash)
         else:
             self.sink = SourceServerNetworkSink(port)
         if cwicpcdir:
             self.cpcSource = cwicpcdir_source(cwicpcdir)
-            self.grabber = None
         elif plydir:
             self.grabber = cwipc_plydir_source(plydir)
         else:
@@ -144,7 +140,8 @@ class SourceServer:
         self.params = params
         
     def __del__(self):
-        self.grabber.free()
+        if self.grabber:
+            self.grabber.free()
         self.grabber = None
 
     def grab_pc(self):
@@ -163,7 +160,7 @@ class SourceServer:
         
     def serve(self):
         while True:
-            self.sink.canfeed(wait=True)
+            self.sink.canfeed(time.time(), wait=True)
             t0 = time.time()
             if self.grabber:
                 pc = self.grab_pc()
@@ -208,6 +205,7 @@ def main():
     parser = argparse.ArgumentParser(description="Start server to send compressed pointclouds to a cwipc_sourceserver_sink")
     parser.add_argument("--nosend", action="store_true", help="Do not send compressed data anywhere, only grab and collect statistics")
     parser.add_argument("--bin2dash", action="store", metavar="URL", help="Send compressed data to bin2dash URL, empty string for storing in local files")
+    parser.add_argument("--gpacdash", action="store_true", help="Start (and stop) gpac-dash.js, use in conjunction with --bin2dash to serve from local files")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR in stead of grabbing them from the camera")
@@ -222,10 +220,20 @@ def main():
         if args.jpeg_quality:
             params.jpeg_quality = args.jpeg_quality
     srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, params)
+    dashServer = None
+    if args.gpacdash:
+        _topdir = os.path.dirname(_pardir)
+        gpacPath = os.path.join(_topdir, 'node-gpac-dash', 'gpac-dash.js')
+        if not os.path.exists(gpacPath):
+            print('%s: No gpacdash at %s' % (sys.argv[0], gpacPath), file=sys.stderr)
+            sys.exit(1)
+        dashServer = subprocess.Popen(["node", gpacPath])
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
         traceback.print_exc()
+    if dashServer:
+        dashServer.terminate()
     srv.statistics()
     
 if __name__ == '__main__':

@@ -40,7 +40,7 @@ def _bin2dash_dll(libname=None):
         os.putenv('SIGNALS_SMD_PATH', libdirname)
     _bin2dash_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
-    _bin2dash_dll_reference.vrt_create.argtypes = [ctypes.c_char_p, ctypes.uint32_t, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+    _bin2dash_dll_reference.vrt_create.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
     _bin2dash_dll_reference.vrt_create.restype = vrt_handle_p
     
     _bin2dash_dll_reference.vrt_destroy.argtypes = [vrt_handle_p]
@@ -50,7 +50,7 @@ def _bin2dash_dll(libname=None):
     _bin2dash_dll_reference.vrt_push_buffer.restype = ctypes.c_bool
     
     _bin2dash_dll_reference.vrt_get_media_time.argtypes = [vrt_handle_p, ctypes.c_int]
-    _bin2dash_dll_reference.vrt_get_media_time.restype = ctypes.c_int64_t
+    _bin2dash_dll_reference.vrt_get_media_time.restype = ctypes.c_long
     
     return _bin2dash_dll_reference
  
@@ -81,6 +81,9 @@ class CpcBin2dashSink:
         assert self.handle
         assert self.dll
         length = len(buffer)
-        ok = self.dll.vrt_push_buffer(self.handle, buffer, length)
+        print('xxxjack feed', type(buffer))
+        ok = self.dll.vrt_push_buffer(self.handle, bytes(buffer), length)
         assert ok
 
+    def canfeed(self, timestamp, wait=True):
+        return True
