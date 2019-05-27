@@ -8,6 +8,7 @@ x) branchname=master ;;
 esac
 cd $dirname
 for i in cwipc_util cwipc_realsense2 cwipc_codec ; do
+if [ -d $i ]; then
 (
 	cd $i
 	git fetch
@@ -16,4 +17,5 @@ for i in cwipc_util cwipc_realsense2 cwipc_codec ; do
 	rm -rf build
 	mkdir build
 )
+fi
 done
