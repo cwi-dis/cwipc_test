@@ -9,11 +9,15 @@ import cwipc.codec
 
 # Convoluted code warning: adding ../python directory to path so we can import subsource
 _sourcedir = os.path.dirname(__file__)
+_sourcedir = os.path.realpath(_sourcedir)
 _pardir = os.path.dirname(_sourcedir)
 _pythondir = os.path.join(_pardir, 'python')
 sys.path.append(_pythondir)
 import subsource
-subsource._signals_unity_bridge_dll()
+try:
+    subsource._signals_unity_bridge_dll()
+except RuntimeError:
+    pass
 from subsource import CpcSubSource
 
 # NOTE: open3d must be imported after all the DLLs have been loaded (sigh)

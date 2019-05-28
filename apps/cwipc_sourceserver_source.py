@@ -11,6 +11,7 @@ import cwipc.realsense2
 
 # Convoluted code warning: adding ../python directory to path so we can import subsource
 _sourcedir = os.path.dirname(__file__)
+_sourcedir = os.path.realpath(_sourcedir)
 _pardir = os.path.dirname(_sourcedir)
 _pythondir = os.path.join(_pardir, 'python')
 sys.path.append(_pythondir)
@@ -93,13 +94,12 @@ class SourceServerSink:
         
 class SourceServerNetworkSink(SourceServerSink):
     def __init__(self, port):
+        self.curSocket = None
         self.socket = socket.socket()
         self.socket.bind(('', port))
         self.socket.listen()
-        self.curSocket = None
         
     def __del__(self):
-        print('xxxjack __del__ SourceServerNetworkSink')
         if self.socket:
             self.socket.close()
             self.socket = None
@@ -118,12 +118,12 @@ class SourceServerNetworkSink(SourceServerSink):
 
 
 class SourceServer:
-    def __init__(self, nosend=False, port=4303, bin2dash=None, count=None, plydir=None, cwicpcdir=None, params=None):
+    def __init__(self, nosend=False, port=4303, bin2dash=None, count=None, plydir=None, cwicpcdir=None, encparams=None, b2dparams={}):
         self.grabber = None
         if nosend:
             self.sink = SourceServerSink()
         elif bin2dash != None:
-            self.sink = CpcBin2dashSink(bin2dash)
+            self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
         else:
             self.sink = SourceServerNetworkSink(port)
         if cwicpcdir:
@@ -137,7 +137,7 @@ class SourceServer:
         self.sizes_encode = []
         self.times_send = []
         self.count = count
-        self.params = params
+        self.params = encparams
         
     def __del__(self):
         if self.grabber:
@@ -205,6 +205,8 @@ def main():
     parser = argparse.ArgumentParser(description="Start server to send compressed pointclouds to a cwipc_sourceserver_sink")
     parser.add_argument("--nosend", action="store_true", help="Do not send compressed data anywhere, only grab and collect statistics")
     parser.add_argument("--bin2dash", action="store", metavar="URL", help="Send compressed data to bin2dash URL, empty string for storing in local files")
+    parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
+    parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
     parser.add_argument("--gpacdash", action="store_true", help="Start (and stop) gpac-dash.js, use in conjunction with --bin2dash to serve from local files")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
@@ -213,13 +215,18 @@ def main():
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     args = parser.parse_args()
-    params = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
+    encparams = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
     if args.octree_bits or args.jpeg_quality:
         if args.octree_bits:
-            params.octree_bits = args.octree_bits
+            encparams.octree_bits = args.octree_bits
         if args.jpeg_quality:
-            params.jpeg_quality = args.jpeg_quality
-    srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, params)
+            encparams.jpeg_quality = args.jpeg_quality
+    b2dparams = {}
+    if args.seg_dur:
+        b2dparams['seg_dur_in_ms'] = args.seg_dur
+    if args.timeshift_buffer:
+        b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
+    srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, encparams, b2dparams)
     dashServer = None
     if args.gpacdash:
         _topdir = os.path.dirname(_pardir)
