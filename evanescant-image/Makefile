@@ -7,10 +7,10 @@ all: $(evanescent)
 	docker build -t ubuntu1804-vrtogether-evanescent .
 	
 $(evanescent):
-	python3 $(gRFG) --curdir
+	python3 $(gRFG) --noverify --curdir
 	rm -rf tmp
 	mkdir tmp
-	(cd tmp &&  unzip ../evanescent-0.zip)
+	(cd tmp &&  unzip ../evanescent-*.zip)
 	
 install: all
 	docker tag ubuntu1804-vrtogether-evanescent jackjansen/ubuntu1804-vrtogether-evanescent
