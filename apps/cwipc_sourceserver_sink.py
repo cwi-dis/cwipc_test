@@ -92,7 +92,7 @@ class SinkClient:
             sinkTime = time.time()
             if pc:
                 sourceTime = pc.timestamp() / 1000.0
-                if self.verbose: print("timestamp: %f" % sourceTime)
+                if self.verbose: print("%f: compressed size: %d, timestamp: %f, waited: %f" % (t1, len(cpc), sourceTime, t1-t0), flush=True)
                 self.times_latency.append(sinkTime-sourceTime)
             if cpc and self.savedir:
                 savefile = 'pointcloud-%05d.cwicpc' % seqno
@@ -124,7 +124,7 @@ class SinkClient:
             
     def start_o3d(self):
         self.visualiser = open3d.Visualizer()
-        self.visualiser.create_window()
+        self.visualiser.create_window(width=960, height=540)
 
     def draw_o3d(self, o3dpc):
         """Draw open3d pointcloud"""
@@ -134,7 +134,7 @@ class SinkClient:
         else:
             self.visualiser_o3dpc.points = o3dpc.points
             self.visualiser_o3dpc.colors = o3dpc.colors
-        print(len(self.visualiser_o3dpc.points), 'points')
+        if self.verbose: print('display:', len(self.visualiser_o3dpc.points), 'points', flush=True)
         self.visualiser.update_geometry()
         self.visualiser.update_renderer()
         self.visualiser.poll_events()
