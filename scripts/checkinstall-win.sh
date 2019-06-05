@@ -65,13 +65,6 @@ fi
 #
 # Check third party packages
 #
-if [ ! -f $dirname/node-gpac-dash/gpac-dash.js ]; then
-	echo node-gpac-dash: github repository not checked out, should be in $dirname
-	error_occurred
-else
-	echo node-gpac-dash: ok
-fi
-
 jpegver=`cjpeg -version > /dev/null 2>&1`
 if [ $? -ne 0 ]; then
 	echo jpeg-turbo: not installed, or not on PATH

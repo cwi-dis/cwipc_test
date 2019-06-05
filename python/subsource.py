@@ -3,6 +3,11 @@ import ctypes.util
 import time
 import os
 
+# If no data is available from the sub this is how long we sleep before trying again:
+SLEEP_TIME=0.01
+# If no data is available from the sub for this long we treat it as end-of-file:
+EOF_TIME=10
+
 _signals_unity_bridge_dll_reference = None
 
 class sub_handle_p(ctypes.c_void_p):
@@ -73,13 +78,15 @@ class CpcSubSource:
     def read_cpc(self):
         assert self.handle
         assert self.dll
-        length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
-        # Sometimes for the first read we get 0.
-        if self.firstRead:
-            self.firstRead = False
-            while length == 0:
-                time.sleep(0.1)
-                length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
+        startTime = time.time()
+        #
+        # We loop until sub_grab_frame returns a length != 0
+        #
+        while time.time() < startTime + EOF_TIME:
+            length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
+            if length != 0:
+                break
+            time.sleep(SLEEP_TIME)
         if not length: 
             return None
         rv = bytearray(length)
