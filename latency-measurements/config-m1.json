@@ -1,0 +1,49 @@
+{
+    "TVMs": {
+        "connectionURI": "amqp://tofis:tofis@127.0.0.1:5672/",
+        "exchangeName": "transcoder_out",
+        "offsetPosition": {
+            "x": 0.0,
+            "y": 0.875,
+            "z": 0.0
+        },
+        "offsetRotation": {
+            "x": 0.0,
+            "y": 36.0,
+            "z": 0.0
+        }
+    },
+    "PCs": [
+         {
+            "forceMesh": true,
+            "sourceType": "realsense2",
+			"realsense2ConfigFile": "C:/Users/vrtogether/src/VRtogether/cameraconfig.xml",
+            "pointSize": 0.008,
+            "position": {
+                "x": 0.0,
+                "y": -9.0,
+                "z": 0.0
+            },
+            "rotation": {
+                "x": 0.0,
+                "y": 180.0,
+                "z": 0.0
+            },
+            "scale": {
+                "x": 8.0,
+                "y": 8.0,
+                "z": 2.0
+            },
+            "offsetPosition": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            },
+            "offsetRotation": {
+                "x": 0.0,
+                "y": 0.0,
+                "z": 0.0
+            }
+        }
+    ]
+}
