@@ -4,7 +4,7 @@ Repo for pointcloud tests and other miscelaneous stuff.
 
 ## apps
 
-There are two applications currently. Both written in Python (Python 3 only), and they require all three of _cwipc\_util_, _cwipc\_util_ and _cwipc\_codec_ to be installed. _PYTHONPATH_ must include `.../share/cwipc_util/python` so the programs can import the `cwipc` python module.
+There are a number of applications. All written in Python (Python 3 only), and they require all three of _cwipc\_util_, _cwipc\_util_ and _cwipc\_codec_ to be installed. _PYTHONPATH_ must include `.../share/cwipc_util/python` so the programs can import the `cwipc` python module.
 
 ### Prerequisites
 
@@ -20,9 +20,21 @@ On windows you may have to use `python` in stead of `python3`.
 
 You also need to have the directory with the Python `cwipc` module on your PYTHONPATH. The path to that directory will be something like `.../share/cwipc_util/python` depending on where you installed *cwipc_util*.
 
+### cwipc_calibrate.py
+
+Calibrates a number of realsense cameras. You need the "calibration cross", a device with 4 colored balls.
+
+- Put the cross on the floor at where you want `(0, 0, 0)` to be.
+- Start `cwipc_calibrate.py` (holding the cross in place) and wait for a window with a grabbed image to show up.
+- You can now let go of the cross. Follow the on-screen instructions.
+
 ### cwipc\_sourceserver\_source.py
 
-Creates a TCP server on port 4303. Every time a connection is opened a single pointcloud is grabbed from a realsense camera, compressed and transmitted to the client.
+Grabs pointclouds, compresses them and sends them somewhere.
+
+By default it creates a TCP server on port 4303. Every time a connection is opened a single pointcloud is grabbed from a realsense camera, compressed and transmitted to the client.
+
+Using `--bin2dash` allows you to upload a dash stream of pointclouds to _evanescant_ (or another server).
 
 When the program terminates (for example because it is killed with control-C) it prints statistics on how long grabbing, compressing and transmitting took.
 
@@ -30,7 +42,9 @@ The program can limit the number of pointclouds served, and it can also serve po
 
 ### cwipc\_sourceserver\_sink.py
 
-Connects to a `cwipc\_sourceserver\_source.py`. Every time a connection is opened a single pointcloud is received it is decompressed and optionally displayed.
+Receives compressed pointclouds, decompresses them and optionally displays them. Can be used to get pointclouds from _evanescant_ or another dash server using the `--sub` option.
+
+By default, connects to a `cwipc_sourceserver_source.py`. Every time a connection is opened a single pointcloud is received it is decompressed and optionally displayed.
 
 By default the server should run on `localhost`, use the `--host` option to connect to a remote machine.
 
@@ -87,12 +101,6 @@ installed and are on PATH correctly.
 There is a script `installall-win.sh` that will try to install all VRtogether releases.
 
 Installing the third party dependencies has to be done manually. Currently the information on what to install is scattered around the various *README* files of all the modules.
-
-### streaming pointclouds
-
-There is a script `stream-using-pcl2dash.sh` that will start *pcl2dash* to grab pointclouds from the realsense2 camera (or watermelons) and compress them and dash encapsulate them. It will also start a dash server on port 8000.
-
-You should edit the script to reflect the pathnames on your system before running it.
 
 ### Building everything from source
 

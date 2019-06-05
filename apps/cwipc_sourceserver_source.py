@@ -207,7 +207,6 @@ def main():
     parser.add_argument("--bin2dash", action="store", metavar="URL", help="Send compressed data to bin2dash URL, empty string for storing in local files")
     parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
     parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
-    parser.add_argument("--gpacdash", action="store_true", help="Start (and stop) gpac-dash.js, use in conjunction with --bin2dash to serve from local files")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop serving after N requests")
     parser.add_argument("--plydir", action="store", metavar="DIR", help="Load PLY files from DIR in stead of grabbing them from the camera")
@@ -227,20 +226,10 @@ def main():
     if args.timeshift_buffer:
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
     srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, encparams, b2dparams)
-    dashServer = None
-    if args.gpacdash:
-        _topdir = os.path.dirname(_pardir)
-        gpacPath = os.path.join(_topdir, 'node-gpac-dash', 'gpac-dash.js')
-        if not os.path.exists(gpacPath):
-            print('%s: No gpacdash at %s' % (sys.argv[0], gpacPath), file=sys.stderr)
-            sys.exit(1)
-        dashServer = subprocess.Popen(["node", gpacPath])
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):
         traceback.print_exc()
-    if dashServer:
-        dashServer.terminate()
     srv.statistics()
     
 if __name__ == '__main__':
