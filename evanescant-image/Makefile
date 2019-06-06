@@ -10,7 +10,8 @@ $(evanescent):
 	python3 $(gRFG) --noverify --curdir
 	rm -rf tmp
 	mkdir tmp
-	(cd tmp &&  unzip ../evanescent-*.zip)
+	mv evanescent-*.tar.bz2 tmp
+	(cd tmp &&  tar xf evanescent-*.tar.bz2 && ln -s evanescent/[0-9]* installed)
 	
 install: all
 	docker tag ubuntu1804-vrtogether-evanescent jackjansen/ubuntu1804-vrtogether-evanescent
