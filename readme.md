@@ -4,7 +4,7 @@ Repo for pointcloud tests and other miscelaneous stuff.
 
 ## apps
 
-There are a number of applications. All written in Python (Python 3 only), and they require all three of _cwipc\_util_, _cwipc\_util_ and _cwipc\_codec_ to be installed. _PYTHONPATH_ must include `.../share/cwipc_util/python` so the programs can import the `cwipc` python module.
+There are a number of applications. All written in Python (Python 3 only), and they require all three of _cwipc\_util_, _cwipc\_realsense2_ and _cwipc\_codec_ to be installed. _PYTHONPATH_ must include `.../share/cwipc_util/python` so the programs can import the `cwipc` python module.
 
 ### Prerequisites
 
@@ -71,9 +71,11 @@ This will transmit 10 pointclouds (either grabbed from a realsense camera, or wa
 To create the loot datasets for testing:
 
 - Download the original dataset from <https://jpeg.org/plenodb/pc/8ilabs/> into `../loot`.
+	
 	- You may have to edit the `Makefile` to show it where the dataset is.
 - Install _cwipc\_util_ and _cwipc\_codec_.
 - Clone the Deployment repo <https://baltig.viaccess-orca.com:8443/VRT/deployment-group/Deployment> into `../Deployment`.
+	
 	- Again, you may have to edit the `Makefile` if pathnames are different.
 - Check that the _cwipc_ stuff is installed correctly and install dependencies (_numpy_, _open3d_):
 
