@@ -23,9 +23,11 @@ def _signals_unity_bridge_dll(libname=None):
     if _signals_unity_bridge_dll_reference: return _signals_unity_bridge_dll_reference
     
     if libname == None:
-        libname = ctypes.util.find_library('signals-unity-bridge')
+        libname = os.environ.get('VRTOGETHER_SUB_PATH')
         if not libname:
-            raise RuntimeError('Dynamic library signals-unity-bridge not found')
+            libname = ctypes.util.find_library('signals-unity-bridge')
+            if not libname:
+                raise RuntimeError('Dynamic library signals-unity-bridge not found')
     assert libname
     # Signals library needs to be able to find some data files stored next to the DLL.
     # Tell it where they are.
