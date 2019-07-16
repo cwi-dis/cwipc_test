@@ -1,6 +1,6 @@
 # cwipc_test
 
-Repo for pointcloud tests and other miscelaneous stuff.
+Repo for pointcloud tests and other miscellaneous stuff.
 
 ## apps
 
@@ -65,6 +65,21 @@ python3 apps/cwipc_sourceserver_sink.py
 ```
 
 This will transmit 10 pointclouds (either grabbed from a realsense camera, or watermelons if no realsense is attached to your system) and print out the statistics.
+
+## VRTShaker (DASH transmission test)
+
+The VRTShaker is intended for testing the latency of the DASH transmission chain. VRTShaker is made of 2 small C programs using the C API of bin2dash and the SUB. Instead of real data these programs read and write capture times.
+
+You need to have the binaries from EncodingEncapsulation (bin2dash.so), the Signals Unity Bridge (SUB), and the SFU (Evanescent) installed on your system. Please customize build.sh and run.sh with your location to these tools.
+
+The ```run.py``` script launches all the setup to transmit data. It outputs a verbose text containing the latency in this form:
+```
+Latency: 0.02 s
+Latency: 0.01 s
+Latency: 0.01 s
+...
+
+```
 
 ## loot datasets
 
