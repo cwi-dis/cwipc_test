@@ -10,14 +10,17 @@ def exit_handler():
 
 atexit.register(exit_handler)
 
-segDurInMs = 1000
-numSubSamples = 100
+frameRate = 10
+frameSize = 50000
+segDurInMs = 4000
+numSubSamples = 1000
+hostnameAndPort = "127.0.0.1:9000"
 
 processes.append(subprocess.Popen(["evanescent.exe"]))
-processes.append(subprocess.Popen(["bin/launch_bin2dash.exe", str(segDurInMs), "http://localhost:9000/"]))
+processes.append(subprocess.Popen(["bin/launch_bin2dash.exe", str(frameRate), str(frameSize), str(segDurInMs), "http://%s/" % hostnameAndPort]))
 time.sleep(3 * segDurInMs / 1000)
 
-launch_sub = subprocess.Popen(["bin/launch_sub.exe", str(numSubSamples), "http://localhost:9000/vrtogether.mpd"], stdout=subprocess.PIPE)
+launch_sub = subprocess.Popen(["bin/launch_sub.exe", str(numSubSamples), "http://%s/vrtogether.mpd" % hostnameAndPort], stdout=subprocess.PIPE)
 processes.append(launch_sub)
 
 hasLines = False
