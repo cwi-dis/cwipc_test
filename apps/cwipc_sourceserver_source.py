@@ -118,7 +118,8 @@ class SourceServerNetworkSink(SourceServerSink):
 
 
 class SourceServer:
-    def __init__(self, nosend=False, port=4303, bin2dash=None, count=None, plydir=None, cwicpcdir=None, encparams=None, b2dparams={}):
+    def __init__(self, nosend=False, port=4303, bin2dash=None, count=None, plydir=None, cwicpcdir=None, encparams=None, b2dparams={}, verbose=False):
+        self.verbose = verbose
         self.grabber = None
         if nosend:
             self.sink = SourceServerSink()
@@ -159,23 +160,28 @@ class SourceServer:
         return data
         
     def serve(self):
+        prevt3 = time.time()
+        sourceTime = 0
         while True:
             self.sink.canfeed(time.time(), wait=True)
             t0 = time.time()
             if self.grabber:
                 pc = self.grab_pc()
+                sourceTime = pc.timestamp() / 1000.0
                 t1 = time.time()
-                data = self.encode_pc(pc)
+                cpc = self.encode_pc(pc)
                 t2 = time.time()
             else:
-                data = self.cpcSource.get()
+                cpc = self.cpcSource.get()
                 t1 = t2 = time.time()
-            self.sizes_encode.append(len(data))
-            self.sink.feed(data)
+            self.sizes_encode.append(len(cpc))
+            self.sink.feed(cpc)
             t3 = time.time()
             self.times_grab.append(t1-t0)
             self.times_encode.append(t2-t1)
             self.times_send.append(t3-t2)
+            if self.verbose: print("%f: compressed size: %d, timestamp: %f, waited: %f" % (t3, len(cpc), sourceTime, t3-prevt3), flush=True)
+            prevt3 = t3
             if self.count != None:
                 self.count -= 1
                 if self.count <= 0:
@@ -213,6 +219,7 @@ def main():
     parser.add_argument("--cwicpcdir", action="store", metavar="DIR", help="Load cwicpc files from DIR in stead of grabbing them from the camera and compressing them")
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
+    parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
     args = parser.parse_args()
     encparams = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
     if args.octree_bits or args.jpeg_quality:
@@ -225,7 +232,7 @@ def main():
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
-    srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, encparams, b2dparams)
+    srv = SourceServer(args.nosend, args.port, args.bin2dash, args.count, args.plydir, args.cwicpcdir, encparams, b2dparams, args.verbose)
     try:
         srv.serve()
     except (Exception, KeyboardInterrupt):

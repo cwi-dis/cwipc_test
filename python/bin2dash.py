@@ -83,7 +83,6 @@ class CpcBin2dashSink:
         assert self.handle
         assert self.dll
         length = len(buffer)
-        print('xxxjack feed', type(buffer))
         ok = self.dll.vrt_push_buffer(self.handle, bytes(buffer), length)
         assert ok
 
