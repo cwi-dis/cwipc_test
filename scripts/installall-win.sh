@@ -37,25 +37,25 @@ export GITLAB_ACCESS_USER_PASSWORD="VRTogether"
 #
 # Install releases from gitlab
 #
-if true; then
+if false; then
 	python $gRFG --cicd --project_name cwipc_util
 	(zipfile=$PWD/cwipc_util_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_util_*.zip
 fi
 
-if true; then
+if false; then
 	python $gRFG --cicd --project_name cwipc_realsense2
 	(zipfile=$PWD/cwipc_realsense2_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_realsense2_*.zip
 fi
 
-if true; then
+if false; then
 	python $gRFG --cicd --project_name cwipc_codec
 	(zipfile=$PWD/cwipc_codec_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_codec_*.zip
 fi
 
-if true; then
+if false; then
 	python $gRFG --cicd --project_name cwipc_test --release_name v2.0
 	(zipfile=$PWD/loot-cwicpc.zip && cd ../installed && unzip -o $zipfile)
 	(zipfile=$PWD/loot-ply.zip && cd ../installed && unzip -o $zipfile)
@@ -65,14 +65,23 @@ fi
 if true; then
 	python $gRFG --cicd --project_name SUB
 	rm -rf ../signals-unity-bridge
-	mkdir -p ../signals-unity-bridge
-	(zipfile=$PWD/v*_stable.zip && cd ../signals-unity-bridge && unzip -o $zipfile)
+	(tarfile=$PWD/signals-unity-bridge-*.tar.bz2 && cd .. && tar xfv $tarfile)
+	(cd ../signals-unity-bridge ; ln -s [0-9]* installed)
+	rm signals-unity-bridge-*.tar.bz2
 fi
 
 if true; then
-	python $gRFG --cicd --project_name EncodingEncapsulation --release_name "Release v19 (Win10 64 bits)"
+	python $gRFG --cicd --project_name EncodingEncapsulation
 	rm -rf ../pcl2dash
-	mkdir -p ../pcl2dash
-	(zipfile=$PWD/EncodingEncapsulation_Win10*.zip && cd ../pcl2dash && unzip -o $zipfile)
-	rm EncodingEncapsulation*.zip
+	(tarfile=$PWD/pcl2dash-*.tar.bz2 && cd .. && tar xfv $tarfile)
+	(cd ../pcl2dash ; ln -s [0-9]* installed)
+	rm pcl2dash-*.tar.bz2
+fi
+
+if true; then
+	python $gRFG --cicd --project_name DeliveryMCU
+	rm -rf ../evanescent
+	(tarfile=$PWD/evanescent-*.tar.bz2 && cd .. && tar xfv $tarfile)
+	(cd ../evanescent ; ln -s [0-9]* installed)
+	rm evanescent-*.tar.bz2
 fi

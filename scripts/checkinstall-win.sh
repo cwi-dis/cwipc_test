@@ -124,7 +124,7 @@ else
 	echo cwipc_codec: ok
 fi
 
-python -c "import ctypes ; ctypes.CDLL('bin2dash')"
+python -c "import ctypes ; ctypes.CDLL('bin2dash.so')"
 if [ $? -ne 0 ]; then
 	echo bin2dash: not installed, or not on PATH, or problem with dependency
 	error_occurred
@@ -132,7 +132,7 @@ else
 	echo bin2dash: ok
 fi
 
-python -c "import ctypes ; ctypes.CDLL('signals-unity-bridge.dll')"
+python -c "import ctypes ; ctypes.CDLL('signals-unity-bridge')"
 if [ $? -ne 0 ]; then
 	echo signals-unity-bridge: not installed, or not on PATH, or problem with dependency
 	error_occurred
@@ -147,3 +147,10 @@ else
 	echo lootCwicpc: ok
 fi
 
+evanescent --badoption 2>&1 | grep Fatal > /dev/null
+if [ $? -ne 0 ]; then
+	echo evanescent: not installed, or not on PATH, or problem with dependency
+	error_occurred
+else
+	echo evanescent: ok
+fi
