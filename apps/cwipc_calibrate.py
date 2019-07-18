@@ -63,6 +63,7 @@ class Calibrator:
         self.get_pointclouds()
         if DEBUG:
             for i in range(len(self.pointclouds)):
+                print('Saving pointcloud {} to file'.format(i))
                 cwipc.cwipc_write('pc-%d.ply' % i, self.pointclouds[i])
         #
         # First show the pointclouds for visual inspection.
@@ -157,7 +158,7 @@ class Calibrator:
             for i in range(1, maxtile):
                 info = self.grabber.get_tileinfo_dict(i)
                 if DEBUG: print('info', i, info)
-                if info != None:
+                if info != None and info['ncamera'] == 1:
                     tiles.append(i)
         # Grab one combined pointcloud and split it into tiles
         for i in range(SKIP_FIRST_GRABS):
@@ -167,6 +168,7 @@ class Calibrator:
         if DEBUG: cwipc.cwipc_write('pcall.ply', pc)
         for tilenum in tiles:
             pc_tile = cwipc.codec.cwipc_tilefilter(pc, tilenum)
+            print('Grabbed pointcloud for tile {} to self.pointclouds[{}]'.format(tilenum, len(self.pointclouds)))
             self.pointclouds.append(pc_tile)  
     
     def pick_points(self, title, pcd):
