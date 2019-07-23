@@ -39,7 +39,7 @@ void loop() {
   // to the count of pixels minus one.
   // First three are set to red, orange, black. Note that the values here asume 3.3v power.
   pixels.setPixelColor(0, pixels.Color(150, 0, 0));
-  pixels.setPixelColor(1, pixels.Color(40, 150, 0));
+  pixels.setPixelColor(1, pixels.Color(150, 150, 0));
   pixels.setPixelColor(2, pixels.Color(0, 0, 0));
   for(int i=3; i<NUMPIXELS; i++) { // For each pixel...
 
