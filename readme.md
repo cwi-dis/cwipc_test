@@ -73,6 +73,7 @@ The VRTShaker is intended for testing the latency of the DASH transmission chain
 You need to have the binaries from EncodingEncapsulation (bin2dash.so), the Signals Unity Bridge (SUB), and the SFU (Evanescent) installed on your system. Please customize build.sh and run.sh with your location to these tools.
 
 The ```run.py``` script launches all the setup to transmit data. It outputs a verbose text containing the latency in this form:
+
 ```
 Latency: 0.02 s
 Latency: 0.01 s
@@ -128,3 +129,9 @@ The are scripts `buildall.sh`, `cleanall.sh` and `buildall-win.sh` which build a
 Some documents by Jack on the architecture (because he can't get his head around Google Docs for anything but the simplest word processing and spreadsheet documents).
 
 - [Component Architecture](doc/component-architecture.md)
+
+## Sync testing
+
+The arduino program in _neopixelsync_ should be built and flashed onto an Arduino Nano. Attach a strip of 18 neopixels (pin 6 is the data connection). Connect to USB power supply. The first two pixels will light up red and orangeish, the third pixel will be off. The rest will be a strip of green ones, with each next pixel lit up 3ms after the previous one.
+
+The script in `synch-scripts/dumpframes.sh` will capture 10 pointclouds from all attached cameras, and in addition it will dump the PNG images from the RGB data. Point all cameras at the led strip. Compare the corresponding images to see whether the cameras are in sync.
