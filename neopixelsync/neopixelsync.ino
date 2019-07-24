@@ -1,3 +1,7 @@
+// Show Gray Code on a neopixel strip at a fairly high refresh 
+// rate, to allow determining synchronisation of multiple cameras.
+//
+// Based on
 // NeoPixel Ring simple sketch (c) 2013 Shae Erisson
 // Released under the GPLv3 license to match the rest of the
 // Adafruit NeoPixel library
@@ -19,7 +23,10 @@
 // strandtest example for more information on possible values.
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
-#define DELAYVAL 3 // Time (in milliseconds) to pause between pixels
+#define DELAYVAL 1 // Time (in milliseconds) to pause between pixels
+
+uint32_t binaryValue;
+uint32_t grayValue;
 
 void setup() {
   // These lines are specifically to support the Adafruit Trinket 5V 16 MHz.
@@ -33,22 +40,28 @@ void setup() {
 }
 
 void loop() {
+  binaryValue++;
+  grayValue = binaryValue ^ (binaryValue >> 1);
+  uint32_t shifter = 1;
+  
   pixels.clear(); // Set all pixel colors to 'off'
 
   // The first NeoPixel in a strand is #0, second is 1, all the way up
   // to the count of pixels minus one.
   // First three are set to red, orange, black. Note that the values here asume 3.3v power.
   pixels.setPixelColor(0, pixels.Color(150, 0, 0));
-  pixels.setPixelColor(1, pixels.Color(150, 150, 0));
+  pixels.setPixelColor(1, pixels.Color(0, 0, 150));
   pixels.setPixelColor(2, pixels.Color(0, 0, 0));
   for(int i=3; i<NUMPIXELS; i++) { // For each pixel...
 
     // pixels.Color() takes RGB values, from 0,0,0 up to 255,255,255
     // Here we're using a moderately bright green color:
-    pixels.setPixelColor(i, pixels.Color(0, 150, 0));
+    if (grayValue & shifter) {
+      pixels.setPixelColor(i, pixels.Color(0, 150, 0));
+    }
+    shifter = shifter << 1;
 
-    pixels.show();   // Send the updated pixel colors to the hardware.
-
-    delay(DELAYVAL); // Pause before next pass through loop
   }
+  pixels.show();   // Send the updated pixel colors to the hardware.
+  delay(DELAYVAL); // Pause before next pass through loop
 }
