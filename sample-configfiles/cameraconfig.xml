@@ -2,19 +2,19 @@
 <file>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
-        <postprocessing depthfiltering="0" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        <postprocessing depthfiltering="1" backgroundremoval="0" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+            <depthfilterparameters threshold_near="0.2" threshold_far="1.5" decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
         
         <camera serial="746112061997" backgroundx="0" backgroundy="0" backgroundz="0">
             <trafo>
-                <values v00="0.02319031364980707" v01="0.6621013435621126" v02="-0.7490554186480924" v03="-0.6033121121344531" v10="0.999632320554009" v11="-0.02588765763269474" v12="0.008065536938178297" v13="1.0713892111350072" v20="-0.014051087382559002" v21="-0.7489670486980974" v22="-0.6624582454070824" v23="-0.41530074306572823" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
+                <values v00="-0.003952709146410512" v01="0.6201897241148144" v02="-0.7844418921709839" v03="-0.6849529817679307" v10="0.9945884507847642" v11="-0.07900230646852013" v12="-0.06747183959413036" v13="1.020776210272805" v20="-0.10381806035544067" v21="-0.7804635428224971" v22="-0.6165212637606182" v23="-0.3539615833358117" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
             </trafo>
         </camera>
 
         <camera serial="746112060700" backgroundx="0" backgroundy="0" backgroundz="0">
             <trafo>
-                <values v00="0.12895311380164728" v01="0.6054926133833783" v02="0.78533418974283" v03="0.7127986055643363" v10="0.991607379299427" v11="-0.08613584965963739" v12="-0.09641276223786333" v13="1.0060007848908379" v20="0.009268212329348102" v21="0.7911759036659165" v22="-0.6115184295658136" v23="-0.4199828639524126" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
+                <values v00="0.1092786556744139" v01="0.6640244144488424" v02="0.7396821969128801" v03="0.6180260056861705" v10="0.9939760931457429" v11="-0.06674825069654769" v12="-0.08692639003015809" v13="0.942017363404505" v20="-0.008348752524612923" v21="0.7447256193020505" v22="-0.6673185523319882" v23="-0.4220897730737269" v30="0.0" v31="0.0" v32="0.0" v33="1.0"  />
             </trafo>
         </camera>
 
