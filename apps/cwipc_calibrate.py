@@ -18,8 +18,8 @@ CONFIGFILE="""<?xml version="1.0" ?>
 <file>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
-        <postprocessing depthfiltering="0" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <depthfilterparameters decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        <postprocessing depthfiltering="1" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
+            <depthfilterparameters threshold_near="{near}" threshold_far="{far}" decimation_value="1" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
         {cameras}
     </CameraConfig>
@@ -33,10 +33,16 @@ CONFIGCAMERA="""
         </camera>
 """
 class Calibrator:
-    def __init__(self):
+    def __init__(self, distance):
         if os.path.exists('cameraconfig.xml'):
             print('%s: cameraconfig.xml already exists' % sys.argv[0])
             sys.exit(1)
+        # Set initial config file, for filtering parameters
+        self.cameraserial = []
+        self.near = 0.5 * distance
+        self.far = 2.0 * distance
+        self.writeconfig()
+        
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.pointclouds = []
         self.refpointcloud = None
@@ -239,7 +245,7 @@ class Calibrator:
             matrixinfo = self.to_conf(self.matrixinfo[i])
             caminfo = CONFIGCAMERA.format(serial=serial, matrixinfo=matrixinfo)
             allcaminfo += caminfo
-        fileinfo = CONFIGFILE.format(cameras=allcaminfo)
+        fileinfo = CONFIGFILE.format(cameras=allcaminfo, near=self.near, far=self.far)
         with open('cameraconfig.xml', 'w') as fp:
             fp.write(fileinfo)
  
@@ -254,7 +260,11 @@ class Calibrator:
 
             
 def main():
-    prog = Calibrator()
+    if len(sys.argv) != 2:
+        print(f"Usage: {sys.argv[0]} distance\nWhere distance is approximate distance between cameras and (0,0) point (in meters)")
+        sys.exit(1)
+    distance = float(sys.argv[1])
+    prog = Calibrator(distance)
     prog.run()
     
 if __name__ == '__main__':
