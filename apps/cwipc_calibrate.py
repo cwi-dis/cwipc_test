@@ -32,10 +32,42 @@ CONFIGCAMERA="""
             </trafo>
         </camera>
 """
+
+def prompt(msg, isedit=False):
+    stars = '*'*(len(msg)+2)
+    print(stars)
+    print('* ' + msg)
+    print()
+    print('- Inspect the pointcloud (use drag and mousehweel)')
+    print('- Use +/= or -/_ to change point size')
+    print('- press q or ESC when done')
+    if isedit:
+        print('- Select points with shift-leftclick, Deselect points with shift-rightclick')
+        print('- Shift +/= or Shift -/_ to change selection indicator size')
+        print('- ignore selection indicator colors, only the order is important')
+    sys.stdout.flush()
+        
+def ask(msg, canretry=False):
+    answered = False
+    while not answered:
+        print('* ', msg)
+        if canretry:
+            print('* Press y if it is fine, n to retry, or control-C to abort')
+        else:
+            print('* Press y if it is fine, or control-C to abort')
+        print('? ', end='')
+        sys.stdout.flush()
+        answer = sys.stdin.readline().strip().lower()
+        ok = answer == 'y'
+        answered = ok
+        if canretry and answer == 'n':
+            answered = True
+    return ok
+        
 class Calibrator:
     def __init__(self, distance):
         if os.path.exists('cameraconfig.xml'):
-            print('%s: cameraconfig.xml already exists' % sys.argv[0])
+            print('%s: cameraconfig.xml already exists, please remove if you want to recalibrate' % sys.argv[0])
             sys.exit(1)
         # Set initial config file, for filtering parameters
         self.cameraserial = []
@@ -65,7 +97,11 @@ class Calibrator:
         return rv
         
     def run(self):
+        if not self.cameraserial:
+            print('* No realsense cameras found')
+            return False
         workdir = os.getcwd()
+        print('* Grabbing pointclouds')
         self.get_pointclouds()
         if DEBUG:
             for i in range(len(self.pointclouds)):
@@ -76,22 +112,18 @@ class Calibrator:
         #
         grab_ok = False
         while not grab_ok:
-            print('==== Showing grabbed pointclouds for visual inspection')
             sys.stdout.flush()
             for i in range(len(self.pointclouds)):
-                print('==== Showing grabbed pointcloud for visual inspection, camera', i)
-                sys.stdout.flush()
+                prompt(f'Showing grabbed pointcloud from camera {i} for visual inspection')
                 pcd = self.cwipc_to_o3d(self.pointclouds[i])
                 self.show_points(self.cameraserial[i], pcd)
-            print('---- Did those look good? Type y to continue - ')
-            sys.stdout.flush()
-            grab_ok = 'y' in sys.stdin.readline().strip().lower()
+            grab_ok = ask('Can you select the balls on the cross from this pointcloud?', canretry=True)
             if not grab_ok:
+                print('* Grabbing pointclouds again')
                 self.pointclouds = []
                 self.get_pointclouds()
         
-        print('==== Picking red, orange, yellow, blue points on reference image')
-        sys.stdout.flush()
+        prompt('Pick red, orange, yellow, blue points on reference image', isedit=True)
         #
         # Pick reference points
         #
@@ -104,16 +136,13 @@ class Calibrator:
         for i in range(len(self.pointclouds)):
             matrix_ok = False
             while not matrix_ok:
-                print('==== Picking red, orange, yellow, blue points on camera', i)
-                sys.stdout.flush()
+                prompt(f'Pick red, orange, yellow, blue points on camera {i} pointcloud', isedit=True)
                 pcd = self.cwipc_to_o3d(self.pointclouds[i])
                 pc_refpoints = self.pick_points(self.cameraserial[i], pcd)
                 info = self.align_pair(pcd, pc_refpoints, o3drefpointcloud, refpoints, False)
-                print('==== Showing alignment for camera', i)
+                prompt(f'Inspect resultant orientation of camera {i} pointcloud')
                 self.show_points(self.cameraserial[i], o3drefpointcloud, self.cwipc_to_o3d(self.pointclouds[i], info))
-                print('---- Did that look good? Type y to continue - ')
-                sys.stdout.flush()
-                matrix_ok = 'y' in sys.stdin.readline().strip().lower()
+                matrix_ok = ask('Does that look good?', canretry=True)
             self.matrixinfo.append(info)
         #
         # Show result
@@ -122,6 +151,7 @@ class Calibrator:
         for i in range(len(self.pointclouds)):
             
             allclouds.append(self.cwipc_to_o3d(self.pointclouds[i], self.matrixinfo[i]))
+        prompt('Inspect the resultant merged pointclouds of all cameras')
         self.show_points('all', *tuple(allclouds))
         # Open3D Visualiser changes directory (!!?!), so change it back
         os.chdir(workdir)
