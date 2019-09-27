@@ -6,6 +6,7 @@ import argparse
 import traceback
 import cwipc
 import cwipc.codec
+import threading
 
 # Convoluted code warning: adding ../python directory to path so we can import subsource
 _sourcedir = os.path.dirname(__file__)
@@ -166,7 +167,7 @@ class SinkClient:
         maxValue = max(values)
         avgValue = sum(values) / count
         print('{}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'.format(name, count, avgValue, minValue, maxValue))
-        
+
 def main():
     parser = argparse.ArgumentParser(description="Receive compressed pointclouds from a cwipc_sourceserver_source and optionally display them")
     parser.add_argument("--hostname", action="store", metavar="HOSTNAME", help="Host or IP address to connect to", default="localhost")
@@ -176,13 +177,30 @@ def main():
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
+    parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel sessions", default=0)
+    
     args = parser.parse_args()
-    clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc, args.verbose)
-    try:
-        clt.run()
-    except (Exception, KeyboardInterrupt):
-        traceback.print_exc()
-    clt.statistics()
+    if args.parallel == 0:
+        clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc, args.verbose)
+        try:
+            clt.run()
+        except (Exception, KeyboardInterrupt):
+            traceback.print_exc()
+        clt.statistics()
+    else:
+        clts = []
+        for i in range(args.parallel):
+            clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc, args.verbose)
+            clts.append(clt)
+        threads = []
+        for clt in clts:
+            threads.append(threading.Thread(target=clt.run, args=()))
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        for clt in clts:
+            clt.statistics()
     
 if __name__ == '__main__':
     main()
