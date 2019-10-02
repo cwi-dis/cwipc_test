@@ -52,16 +52,7 @@ else
 		error_occurred
 	esac
 fi
-#
-# Check node
-#
-nodever=`node --version 2>&1`
-if [ $? -ne 0 ]; then
-	echo node: not installed, or not on PATH
-	error_occurred
-else
-	echo node: ok
-fi
+
 #
 # Check third party packages
 #
@@ -145,12 +136,4 @@ if [ ! -f $dirname/installed/lootCwicpc/loot_vox10_1299.cwicpc ]; then
 	error_occurred
 else
 	echo lootCwicpc: ok
-fi
-
-evanescent --badoption 2>&1 | grep Fatal > /dev/null
-if [ $? -ne 0 ]; then
-	echo evanescent: not installed, or not on PATH, or problem with dependency
-	error_occurred
-else
-	echo evanescent: ok
 fi
