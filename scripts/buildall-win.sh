@@ -3,6 +3,7 @@ set -x
 dirname=`dirname $0`
 dirname=`cd $dirname/../..; pwd`
 cd $dirname
+mkdir -p installed
 instdir=`cd installed; pwd`
 instdir=`cygpath -w "$instdir"`
 for i in cwipc_util cwipc_realsense2 cwipc_codec ; do

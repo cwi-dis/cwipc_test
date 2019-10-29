@@ -37,19 +37,19 @@ export GITLAB_ACCESS_USER_PASSWORD="VRTogether"
 #
 # Install releases from gitlab
 #
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_util
 	(zipfile=$PWD/cwipc_util_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_util_*.zip
 fi
 
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_realsense2
 	(zipfile=$PWD/cwipc_realsense2_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_realsense2_*.zip
 fi
 
-if false; then
+if true; then
 	python $gRFG --cicd --project_name cwipc_codec
 	(zipfile=$PWD/cwipc_codec_win1064*.zip && cd .. && unzip -o $zipfile)
 	rm cwipc_codec_*.zip
@@ -78,7 +78,7 @@ if true; then
 	rm pcl2dash-*.tar.bz2
 fi
 
-if true; then
+if false; then
 	python $gRFG --cicd --project_name DeliveryMCU
 	rm -rf ../evanescent
 	(tarfile=$PWD/evanescent-*.tar.bz2 && cd .. && tar xfv $tarfile)
