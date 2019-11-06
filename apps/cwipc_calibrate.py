@@ -156,6 +156,7 @@ class Calibrator:
         # Open3D Visualiser changes directory (!!?!), so change it back
         os.chdir(workdir)
         self.writeconfig()
+        self.save_pcds('cwipc_calibrate_calibrated.ply', *tuple(allclouds[1:]))
         self.cleanup()
         
     def cleanup(self):
@@ -183,7 +184,6 @@ class Calibrator:
             (0, 1.1, 0, 0, 0, 0),           # Black point at forward spar
         ]
         self.refpointcloud = cwipc.cwipc_from_points(points_0, 0)
-        
         # Get the number of cameras and their tile numbers
         tiles = []
         maxtile = self.grabber.maxtile()
@@ -201,12 +201,15 @@ class Calibrator:
             pc = self.grabber.get()
             pc.free()
         pc = self.grabber.get()
-        if DEBUG: cwipc.cwipc_write('pcall.ply', pc)
+        if DEBUG: cwipc.cwipc_write('cwipc_calibrate_captured.ply', pc)
         for tilenum in tiles:
             pc_tile = cwipc.codec.cwipc_tilefilter(pc, tilenum)
             print('Grabbed pointcloud for tile {} to self.pointclouds[{}]'.format(tilenum, len(self.pointclouds)))
             self.pointclouds.append(pc_tile)  
-    
+        # xxxjack
+        allo3dpcs = map(self.cwipc_to_o3d, tuple([self.refpointcloud] + self.pointclouds))
+        if DEBUG: self.save_pcds('cwipc_calibrate_uncalibrated.ply', *allo3dpcs)
+        
     def pick_points(self, title, pcd):
         vis = open3d.VisualizerWithEditing()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
@@ -225,6 +228,11 @@ class Calibrator:
         vis.run()
         vis.destroy_window()
 
+    def save_pcds(self, filename, *pcds):
+        pc = self.o3d_to_cwipc(*pcds)
+        cwipc.cwipc_write(filename, pc)
+        pc.free()
+        
     def cwipc_to_o3d(self, pc, matrix=None):
         """Convert cwipc pointcloud to open3d pointcloud"""
         # Note that this method is inefficient, it can probably be done
@@ -248,6 +256,23 @@ class Calibrator:
         rv.colors = colors_v
         return rv
 
+    def o3d_to_cwipc(self, *o3dclouds):
+        tilenum = 1
+        cwiPoints = None
+        for o3dcloud in o3dclouds:
+            points = o3dcloud.points
+            colors = o3dcloud.colors
+            tiles = np.array([[tilenum]]*len(points))
+            thisPoints = np.hstack((points, colors, tiles))
+            if cwiPoints is None:
+                cwiPoints = thisPoints
+            else:
+                cwiPoints = np.vstack((cwiPoints, thisPoints))
+            tilenum = tilenum*2
+        cwiPoints = list(map(lambda p : (p[0],p[1],p[2],int(p[3]*255),int(p[4]*255),int(p[5]*255), int(p[6])), list(cwiPoints)))
+        pc = cwipc.cwipc_from_points(cwiPoints, 0)
+        return pc
+        
     def align_pair(self, source, picked_id_source, target, picked_id_target, extended=False):
         assert(len(picked_id_source)>=3 and len(picked_id_target)>=3)
         assert(len(picked_id_source) == len(picked_id_target))
