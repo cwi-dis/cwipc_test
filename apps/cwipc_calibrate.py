@@ -64,25 +64,154 @@ def ask(msg, canretry=False):
             answered = True
     return ok
         
-class Calibrator:
-    def __init__(self, distance):
-        if os.path.exists('cameraconfig.xml'):
-            print('%s: cameraconfig.xml already exists, please remove if you want to recalibrate' % sys.argv[0])
-            sys.exit(1)
-        # Set initial config file, for filtering parameters
-        self.cameraserial = []
-        self.near = 0.5 * distance
-        self.far = 2.0 * distance
-        self.writeconfig()
+class Pointcloud:
+    """A class that handles both cwipc pointclouds and o3d pointclouds and converts between them"""
+    
+    def __init__(self):
+        self.cwipc = None
+        self.o3d = None
         
-        self.grabber = cwipc.realsense2.cwipc_realsense2()
-        self.pointclouds = []
-        self.refpointcloud = None
-        self.cameraserial = self.getserials()
-        self.matrixinfo = []
-        self.winpos = 100
-        sys.stdout.flush()
+    def __del__(self):
+        if self.cwipc:
+            self.cwipc.free()
+        self.cwipc = None
+        self.o3d = None
+        
+    def _ensure_cwipc(self):
+        """Internal - make sure the cwipc is valid"""
+        if self.cwipc: return
+        tilenum = 1
+        points = self.o3d.points
+        colors = self.o3d.colors
+        tiles = np.array([[tilenum]]*len(points))
+        cwiPoints = np.hstack((points, colors, tiles))
+        cwiPoints = list(map(lambda p : (p[0],p[1],p[2],int(p[3]*255),int(p[4]*255),int(p[5]*255), int(p[6])), list(cwiPoints)))
+        self.cwipc = cwipc.cwipc_from_points(cwiPoints, 0)
+        
+    def _ensure_o3d(self):
+        """internal - make sure the o3d pc is valid"""
+        if self.o3d: return
+        # Note that this method is inefficient, it can probably be done
+        # in-place with some numpy magic
+        assert self.cwipc
+        pcpoints = self.cwipc.get_points()
+        points = []
+        colors = []
+        for p in pcpoints:
+            points.append([p.x, p.y, p.z])  
+            colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
+        points_v_np = np.matrix(points)
+        points_v = open3d.Vector3dVector(points_v_np)
+        colors_v = open3d.Vector3dVector(colors)
+        self.o3d = open3d.PointCloud()
+        self.o3d.points = points_v
+        self.o3d.colors = colors_v
+        
+    @classmethod
+    def from_cwipc(klass, pc):
+        """Create Pointcloud from cwipc"""
+        self = klass()
+        self.cwipc = pc
+        return self
 
+    @classmethod
+    def from_o3d(klass, o3d):
+        """Create Pointcloud from o3d pc"""
+        self = klass()
+        self.o3d = o3d
+        return self
+        
+    @classmethod
+    def from_points(klass, points):
+        """Create Pointcloud from list of xyzrgbt tuples"""
+        self = klass()
+        pc = cwipc.cwipc_from_points(points, 0)
+        self.cwipc = pc
+        return self
+        
+    @classmethod
+    def from_file(klass, filename):
+        """Create Pointcloud from ply file"""
+        self = klass()
+        pc = cwipc.cwipc_read(filename)
+        self.cwipc = pc
+        return self
+        
+    @classmethod
+    def from_join(klass, *pointclouds):
+        """Create tiled Pointcloud from separate pointclouds"""
+        allPoints = []
+        tileNum = 1
+        for src_pc in pointclouds:
+            src_cwipc = src_pc.get_cwipc()
+            points = src_cwipc.get_points()
+            points = map(lambda p : (p.x, p.y, p.z, p.r, p.g, p.b, tileNum), points)
+            allPoints += points
+            tileNum *= 2
+        return klass.from_points(allPoints)
+        
+    def get_cwipc(self):
+        """Return cwipc object"""
+        self._ensure_cwipc()
+        return self.cwipc
+        
+    def get_o3d(self):
+        """Return o3d pc object"""
+        self._ensure_o3d()
+        return self.o3d
+        
+    def save(self, filename):
+        """Save to PLY file"""
+        self._ensure_cwipc()
+        cwipc.cwipc_write(filename, self.cwipc)
+        
+    def split(self):
+        """Split into per-tile Pointcloud objects"""
+        self._ensure_cwipc()
+        alltiles = set()
+        for pt in self.cwipc.get_points():
+            alltiles.add(pt.tile)
+        rv = []
+        for tilenum in alltiles:
+            tile_pc = cwipc.codec.cwipc_tilefilter(self.cwipc, tilenum)
+            rv.append(self.__class__.from_cwipc(tile_pc))
+        return tuple(rv)
+        
+    def transform(self, matrix):
+        """Return pointcloud multiplied by a matrix"""
+        # Note that this method is inefficient, it can probably be done
+        # in-place with some numpy magic
+        self._ensure_cwipc()
+        pcpoints = self.cwipc.get_points()
+        points = []
+        colort = []
+        for p in pcpoints:
+            points.append([p.x, p.y, p.z])  
+            colort.append((p.r, p.g, p.b, p.tile))
+        npPoints = np.matrix(points)
+        submatrix = matrix[:3, :3]
+        translation = matrix[:3, 3]
+        npPoints = (submatrix * npPoints.T).T
+        npPoints = npPoints + translation
+        assert len(npPoints) == len(points)
+        newPoints = []
+        for i in range(len(points)):
+            newPoint = tuple(npPoints[i].tolist()[0]) + colort[i]
+            newPoints.append(newPoint)
+        return self.__class__.from_points(newPoints)
+        
+class LiveGrabber:
+    def __init__(self):
+        self.grabber = cwipc.realsense2.cwipc_realsense2()
+        # May need to grab a few combined pointclouds and throw them away
+        for i in range(SKIP_FIRST_GRABS):
+            pc = self.grabber.get()
+            pc.free()
+   
+    def __del__(self):
+        if self.grabber: self.grabber.free()
+        self.grabber = None
+    
     def getserials(self):
         """Get serial numbers of cameras"""
         rv = []
@@ -96,6 +225,54 @@ class Calibrator:
                 rv.append(cam_id)
         return rv
         
+    def getcount(self):
+        # Get the number of cameras and their tile numbers
+        tiles = []
+        maxtile = self.grabber.maxtile()
+        if DEBUG: print('maxtile', maxtile)
+        if maxtile == 1:
+            return 1
+        else:
+            for i in range(1, maxtile):
+                info = self.grabber.get_tileinfo_dict(i)
+                if DEBUG: print('info', i, info)
+                if info != None and info['ncamera'] == 1:
+                    tiles.append(i)
+        # Check that the tile numbers or a bitmap, as we expect (in join, for example)
+        for i in range(len(tiles)):
+            assert tiles[i] == (1<<i)
+        return len(tiles)
+        
+    def getpointcloud(self):
+        pc = self.grabber.get()
+        assert pc
+        return Pointcloud.from_cwipc(pc)
+ 
+class Calibrator:
+    def __init__(self, distance):
+        if os.path.exists('cameraconfig.xml'):
+            print('%s: cameraconfig.xml already exists, please remove if you want to recalibrate' % sys.argv[0])
+            sys.exit(1)
+        # Set initial config file, for filtering parameters
+        self.cameraserial = []
+        self.near = 0.5 * distance
+        self.far = 2.0 * distance
+        self.writeconfig()
+        
+        self.grabber = LiveGrabber()
+        self.pointclouds = []
+        self.transformed_pointclouds = []
+        self.refpointcloud = None
+        self.cameraserial = self.grabber.getserials()
+        self.matrixinfo = []
+        self.winpos = 100
+        sys.stdout.flush()
+    def __del__(self):
+        self.grabber = None
+        self.pointclouds = None
+        self.transformed_pointclouds = None
+        self.refpointcloud = None
+        
     def run(self):
         if not self.cameraserial:
             print('* No realsense cameras found')
@@ -106,7 +283,7 @@ class Calibrator:
         if DEBUG:
             for i in range(len(self.pointclouds)):
                 print('Saving pointcloud {} to file'.format(i))
-                cwipc.cwipc_write('pc-%d.ply' % i, self.pointclouds[i])
+                self.pointclouds[i].save('pc-%d.ply' % i)
         #
         # First show the pointclouds for visual inspection.
         #
@@ -115,8 +292,7 @@ class Calibrator:
             sys.stdout.flush()
             for i in range(len(self.pointclouds)):
                 prompt(f'Showing grabbed pointcloud from camera {i} for visual inspection')
-                pcd = self.cwipc_to_o3d(self.pointclouds[i])
-                self.show_points(self.cameraserial[i], pcd)
+                self.show_points(self.cameraserial[i], self.pointclouds[i])
             grab_ok = ask('Can you select the balls on the cross from this pointcloud?', canretry=True)
             if not grab_ok:
                 print('* Grabbing pointclouds again')
@@ -127,8 +303,7 @@ class Calibrator:
         #
         # Pick reference points
         #
-        o3drefpointcloud = self.cwipc_to_o3d(self.refpointcloud)
-        refpoints = self.pick_points('reference', o3drefpointcloud)
+        refpoints = self.pick_points('reference', self.refpointcloud)
         
         #
         # Pick points in images
@@ -137,35 +312,32 @@ class Calibrator:
             matrix_ok = False
             while not matrix_ok:
                 prompt(f'Pick red, orange, yellow, blue points on camera {i} pointcloud', isedit=True)
-                pcd = self.cwipc_to_o3d(self.pointclouds[i])
-                pc_refpoints = self.pick_points(self.cameraserial[i], pcd)
-                info = self.align_pair(pcd, pc_refpoints, o3drefpointcloud, refpoints, False)
+                pc_refpoints = self.pick_points(self.cameraserial[i], self.pointclouds[i])
+                info = self.align_pair(self.pointclouds[i], pc_refpoints, self.refpointcloud, refpoints, False)
                 prompt(f'Inspect resultant orientation of camera {i} pointcloud')
-                self.show_points(self.cameraserial[i], o3drefpointcloud, self.cwipc_to_o3d(self.pointclouds[i], info))
+                new_pc = self.pointclouds[i].transform(info)
+                self.show_points(self.cameraserial[i], new_pc)
                 matrix_ok = ask('Does that look good?', canretry=True)
+            assert len(self.matrixinfo) == i
+            assert len(self.transformed_pointclouds) == i
             self.matrixinfo.append(info)
+            self.transformed_pointclouds.append(new_pc)
         #
         # Show result
         #
-        allclouds = [o3drefpointcloud]
-        for i in range(len(self.pointclouds)):
-            
-            allclouds.append(self.cwipc_to_o3d(self.pointclouds[i], self.matrixinfo[i]))
         prompt('Inspect the resultant merged pointclouds of all cameras')
-        self.show_points('all', *tuple(allclouds))
+        joined = Pointcloud.from_join(*tuple(self.transformed_pointclouds))
+        self.show_points('all', joined)
         # Open3D Visualiser changes directory (!!?!), so change it back
         os.chdir(workdir)
         self.writeconfig()
-        self.save_pcds('cwipc_calibrate_calibrated.ply', *tuple(allclouds[1:]))
+        joined.save('cwipc_calibrate_calibrated.ply')
         self.cleanup()
         
     def cleanup(self):
-        for p in self.pointclouds:
-            p.free()
         self.pointclouds = []
         self.refpointcloud.free()
         self.refpointcloud = None
-        self.grabber.free()
         self.grabber = None
         
     def get_pointclouds(self):
@@ -183,95 +355,42 @@ class Calibrator:
             (0, 1, 0, 0, 0, 0),             # Black point at cross
             (0, 1.1, 0, 0, 0, 0),           # Black point at forward spar
         ]
-        self.refpointcloud = cwipc.cwipc_from_points(points_0, 0)
+        self.refpointcloud = Pointcloud.from_points(points_0)
         # Get the number of cameras and their tile numbers
-        tiles = []
-        maxtile = self.grabber.maxtile()
+        maxtile = self.grabber.getcount()
         if DEBUG: print('maxtile', maxtile)
-        if maxtile == 1:
-            tiles.append(0)
-        else:
-            for i in range(1, maxtile):
-                info = self.grabber.get_tileinfo_dict(i)
-                if DEBUG: print('info', i, info)
-                if info != None and info['ncamera'] == 1:
-                    tiles.append(i)
         # Grab one combined pointcloud and split it into tiles
-        for i in range(SKIP_FIRST_GRABS):
-            pc = self.grabber.get()
-            pc.free()
-        pc = self.grabber.get()
-        if DEBUG: cwipc.cwipc_write('cwipc_calibrate_captured.ply', pc)
-        for tilenum in tiles:
-            pc_tile = cwipc.codec.cwipc_tilefilter(pc, tilenum)
-            print('Grabbed pointcloud for tile {} to self.pointclouds[{}]'.format(tilenum, len(self.pointclouds)))
-            self.pointclouds.append(pc_tile)  
+        pc = self.grabber.getpointcloud()
+        if DEBUG: pc.save('cwipc_calibrate_captured.ply')
+        self.pointclouds = pc.split()
+        assert len(self.pointclouds) == maxtile
         # xxxjack
-        allo3dpcs = map(self.cwipc_to_o3d, tuple([self.refpointcloud] + self.pointclouds))
-        if DEBUG: self.save_pcds('cwipc_calibrate_uncalibrated.ply', *allo3dpcs)
+        if DEBUG:
+            joined = Pointcloud.from_join(self.pointclouds)
+            joined.save('cwipc_calibrate_uncalibrated.ply')
         
-    def pick_points(self, title, pcd):
+    def pick_points(self, title, pc):
         vis = open3d.VisualizerWithEditing()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
         self.winpos += 50
-        vis.add_geometry(pcd)
+        vis.add_geometry(pc.get_o3d())
         vis.run() # user picks points
         vis.destroy_window()
         return vis.get_picked_points()
 
-    def show_points(self, title, *pcds):
+    def show_points(self, title, pc):
         vis = open3d.Visualizer()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
         self.winpos += 50
-        for pcd in pcds:
-            vis.add_geometry(pcd)
+        vis.add_geometry(pc.get_o3d())
+        # Draw 1 meter axes (x=red, y=green, z=blue)
+        axes = open3d.geometry.LineSet()
+        axes.points = open3d.utility.Vector3dVector([[0,0,0], [1,0,0], [0,1,0], [0,0,1]])
+        axes.lines = open3d.utility.Vector2iVector([[0,1], [0,2], [0,3]])
+        axes.colors = open3d.utility.Vector3dVector([[1,0,0], [0,1,0], [0,0,1]])
+        vis.add_geometry(axes)
         vis.run()
         vis.destroy_window()
-
-    def save_pcds(self, filename, *pcds):
-        pc = self.o3d_to_cwipc(*pcds)
-        cwipc.cwipc_write(filename, pc)
-        pc.free()
-        
-    def cwipc_to_o3d(self, pc, matrix=None):
-        """Convert cwipc pointcloud to open3d pointcloud"""
-        # Note that this method is inefficient, it can probably be done
-        # in-place with some numpy magic
-        pcpoints = pc.get_points()
-        points = []
-        colors = []
-        for p in pcpoints:
-            points.append([p.x, p.y, p.z])  
-            colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
-        points_v_np = np.matrix(points)
-        if not matrix is None:
-            submatrix = matrix[:3, :3]
-            translation = matrix[:3, 3]
-            points_v_np = (submatrix * points_v_np.T).T
-            points_v_np = points_v_np + translation
-        points_v = open3d.Vector3dVector(points_v_np)
-        colors_v = open3d.Vector3dVector(colors)
-        rv = open3d.PointCloud()
-        rv.points = points_v
-        rv.colors = colors_v
-        return rv
-
-    def o3d_to_cwipc(self, *o3dclouds):
-        tilenum = 1
-        cwiPoints = None
-        for o3dcloud in o3dclouds:
-            points = o3dcloud.points
-            colors = o3dcloud.colors
-            tiles = np.array([[tilenum]]*len(points))
-            thisPoints = np.hstack((points, colors, tiles))
-            if cwiPoints is None:
-                cwiPoints = thisPoints
-            else:
-                cwiPoints = np.vstack((cwiPoints, thisPoints))
-            tilenum = tilenum*2
-        cwiPoints = list(map(lambda p : (p[0],p[1],p[2],int(p[3]*255),int(p[4]*255),int(p[5]*255), int(p[6])), list(cwiPoints)))
-        pc = cwipc.cwipc_from_points(cwiPoints, 0)
-        return pc
         
     def align_pair(self, source, picked_id_source, target, picked_id_target, extended=False):
         assert(len(picked_id_source)>=3 and len(picked_id_target)>=3)
@@ -281,14 +400,14 @@ class Calibrator:
         corr[:,1] = picked_id_target
 
         p2p = open3d.TransformationEstimationPointToPoint()
-        trans_init = p2p.compute_transformation(source, target,
+        trans_init = p2p.compute_transformation(source.get_o3d(), target.get_o3d(),
                  open3d.Vector2iVector(corr))
         
         if not extended:
             return trans_init
 
         threshold = 0.01 # 3cm distance threshold
-        reg_p2p = open3d.registration_icp(source, target, threshold, trans_init,
+        reg_p2p = open3d.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
                 open3d.TransformationEstimationPointToPoint())
         
         return reg_p2p.transformation
@@ -320,7 +439,10 @@ def main():
         sys.exit(1)
     distance = float(sys.argv[1])
     prog = Calibrator(distance)
-    prog.run()
+    try:
+        prog.run()
+    finally:
+        del prog
     
 if __name__ == '__main__':
     main()
