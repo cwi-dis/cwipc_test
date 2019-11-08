@@ -176,7 +176,7 @@ class Pointcloud:
         for tilenum in alltiles:
             tile_pc = cwipc.codec.cwipc_tilefilter(self.cwipc, tilenum)
             rv.append(self.__class__.from_cwipc(tile_pc))
-        return tuple(rv)
+        return rv
         
     def transform(self, matrix):
         """Return pointcloud multiplied by a matrix"""
@@ -201,6 +201,22 @@ class Pointcloud:
             newPoints.append(newPoint)
         return self.__class__.from_points(newPoints)
         
+    def bbox(self, bbox):
+        """Return pointcloud limited to a bounding box"""
+        x0, x1, y0, y1, z0, z1 = bbox
+        self._ensure_cwipc()
+        pcpoints = self.cwipc.get_points()
+        newPoints = []
+        for p in pcpoints:
+            if p.x < x0 or p.x > x1:
+                continue
+            if p.y < y0 or p.y > y1:
+                continue
+            if p.z < z0 or p.z > z1:
+                continue
+            newPoints.append(p)
+        return self.__class__.from_points(newPoints)
+
 class LiveGrabber:
     def __init__(self):
         self.grabber = cwipc.realsense2.cwipc_realsense2()
@@ -312,7 +328,8 @@ class Calibrator:
         self.coarse_calibrated_pointclouds = []
         self.fine_calibrated_pointclouds = []
         self.refpointcloud = None
-        self.matrixinfo = []
+        self.coarse_matrix = []
+        self.fine_matrix = []
         self.winpos = 100
         self.workdir = os.getcwd() # o3d visualizer can change directory??!?
         sys.stdout.flush()
@@ -337,7 +354,7 @@ class Calibrator:
         self.grabber = grabber
         self.cameraserial = self.grabber.getserials()
 
-    def grab(self):
+    def grab(self, noinspect):
         if not self.cameraserial:
             print('* No realsense cameras found')
             return False
@@ -350,12 +367,13 @@ class Calibrator:
         #
         # First show the pointclouds for visual inspection.
         #
+        if noinspect: return
         grab_ok = False
         while not grab_ok:
             sys.stdout.flush()
             for i in range(len(self.pointclouds)):
                 prompt(f'Showing grabbed pointcloud from camera {i} for visual inspection')
-                self.show_points(self.cameraserial[i], self.pointclouds[i])
+                self.show_points(f'Inspect grab from {self.cameraserial[i]}', self.pointclouds[i])
             grab_ok = ask('Can you select the balls on the cross from this pointcloud?', canretry=True)
             if not grab_ok:
                 print('* Grabbing pointclouds again')
@@ -368,7 +386,7 @@ class Calibrator:
         #
         # Pick reference points
         #
-        refpoints = self.pick_points('reference', self.refpointcloud)
+        refpoints = self.pick_points('Pick points on reference', self.refpointcloud)
         
         #
         # Pick points in images
@@ -377,15 +395,15 @@ class Calibrator:
             matrix_ok = False
             while not matrix_ok:
                 prompt(f'Pick red, orange, yellow, blue points on camera {i} pointcloud', isedit=True)
-                pc_refpoints = self.pick_points(self.cameraserial[i], self.pointclouds[i])
+                pc_refpoints = self.pick_points(f'Pick points on {self.cameraserial[i]}', self.pointclouds[i])
                 info = self.align_pair(self.pointclouds[i], pc_refpoints, self.refpointcloud, refpoints, False)
                 prompt(f'Inspect resultant orientation of camera {i} pointcloud')
                 new_pc = self.pointclouds[i].transform(info)
-                self.show_points(self.cameraserial[i], new_pc)
+                self.show_points(f'Pick points on {self.cameraserial[i]}', new_pc)
                 matrix_ok = ask('Does that look good?', canretry=True)
-            assert len(self.matrixinfo) == i
+            assert len(self.coarse_matrix) == i
             assert len(self.coarse_calibrated_pointclouds) == i
-            self.matrixinfo.append(info)
+            self.coarse_matrix.append(info)
             self.coarse_calibrated_pointclouds.append(new_pc)
         #
         # Show result
@@ -394,27 +412,63 @@ class Calibrator:
         joined = Pointcloud.from_join(*tuple(self.coarse_calibrated_pointclouds))
         os.chdir(self.workdir)
         joined.save('cwipc_calibrate_coarse.ply')
-        self.show_points('manual calibration result', joined)
+        self.show_points('Inspect manual calibration result', joined)
         
     def skip_coarse(self):
-        self.coarse_calibrated_pointclouds = self.fine_calibrated_pointclouds
+        self.coarse_calibrated_pointclouds = self.pointclouds
         for i in range(len(self.cameraserial)):
-            self.matrixinfo.append([
+            self.coarse_matrix.append([
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
                 [0, 0, 1, 0],
                 [0, 0, 0, 1],
             ])
         
-    def run_fine(self, bbox):
-        self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
+    def run_fine(self, bbox, correspondence):
+        for i in range(len(self.cameraserial)):
+            self.fine_matrix.append([
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ])
+        if bbox:
+            # Apply bounding box to pointclouds
+            for i in range(len(self.coarse_calibrated_pointclouds)):
+                self.coarse_calibrated_pointclouds[i] = self.coarse_calibrated_pointclouds[i].bbox(bbox)
+        if len(self.coarse_calibrated_pointclouds) <= 1:
+            print('* Skipping fine-grained calibration: only one camera')
+            self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
+            return
+        joined = Pointcloud.from_join(*tuple(self.coarse_calibrated_pointclouds))
+        prompt('Inspect pointcloud after applying bounding box, before fine-grained calibration')
+        self.show_points('Inspect bounding box result', joined)
+        # We will align everything to the first camera
+        refPointcloud = self.coarse_calibrated_pointclouds[0]
+        assert len(self.fine_calibrated_pointclouds) == 0
+        self.fine_calibrated_pointclouds.append(refPointcloud)
+        
+        for i in range(1, len(self.coarse_calibrated_pointclouds)):
+            srcPointcloud =  self.coarse_calibrated_pointclouds[i]
+            newMatrix = self.align_fine(refPointcloud,srcPointcloud, correspondence)
+            newPointcloud = srcPointcloud.transform(newMatrix)
+            self.fine_calibrated_pointclouds.append(newPointcloud)
+            self.fine_matrix[i] = newMatrix
+            # print('xxxjack new matrix', newMatrix)
         prompt('Inspect the resultant merged pointclouds of all cameras')
         joined = Pointcloud.from_join(*tuple(self.fine_calibrated_pointclouds))
         os.chdir(self.workdir)
         joined.save('cwipc_calibrate_calibrated.ply')
-        self.show_points('fine calibration result', joined)
+        self.show_points('Inspect fine calibration result', joined)
         
     def skip_fine(self):
+        for i in range(len(self.cameraserial)):
+            self.fine_matrix.append([
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ])
         self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
         
     def save(self):
@@ -502,13 +556,20 @@ class Calibrator:
         
         return reg_p2p.transformation
     
+    def align_fine(self, source, target, threshold):
+        trans_init = np.array([[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]])
+        reg_p2p = open3d.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
+                open3d.TransformationEstimationPointToPoint())
+        
+        return reg_p2p.transformation
+
     def writeconfig(self):
         allcaminfo = ""
         for i in range(len(self.cameraserial)):
             serial = self.cameraserial[i]
             # Find matrix by applying what we found after the matrix read from the original config file (or the identity matrix)
             matrix = self.grabber.getmatrix(i)
-            npMatrix = np.matrix(self.matrixinfo[i]) @ np.matrix(matrix)
+            npMatrix = np.matrix(self.fine_matrix[i]) @ np.matrix(self.coarse_matrix[i]) @ np.matrix(matrix)
             matrix = npMatrix.tolist()
             matrixinfo = self.to_conf(matrix)
             caminfo = CONFIGCAMERA.format(serial=serial, matrixinfo=matrixinfo)
@@ -535,10 +596,12 @@ def main():
     parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
     parser.add_argument("--clean", action="store_true", help="Remove old cameraconfig.xml and calibrate from scratch")
     parser.add_argument("--reuse", action="store_true", help="Reuse existing cameraconfig.xml")
+    parser.add_argument("--noinspect", action="store_true", help="Don't inspect pointclouds after grabbing")
     parser.add_argument("--nograb", action="store", metavar="DIR", help="Don't use grabber, obtain .ply file and old config from DIR")
     parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
-    parser.add_argument("--bbox", action="store", metavar="X0,X1,Y0,Y1,Z0,Z1", help="Set bounding box (in meters) for fine calibration")
+    parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) for fine calibration")
+    parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
     parser.add_argument("--distance", type=float, action="store", required=True, metavar="D", help="Approximate distance between cameras and subject")
     args = parser.parse_args()
     if len(sys.argv) < 2:
@@ -547,7 +610,7 @@ def main():
     distance = args.distance
     bbox = None
     if args.bbox:
-        bbox = eval(bbox)
+        bbox = args.bbox
         assert len(bbox) == 6
         assert type(1.0*bbox[0]*bbox[1]*bbox[2]*bbox[3]*bbox[4]*bbox[5]) == float
     prog = Calibrator(distance)
@@ -557,7 +620,7 @@ def main():
         grabber = FileGrabber(sys.argv[2])
     try:
         prog.open(grabber, clean=args.clean, reuse=args.reuse)
-        prog.grab()
+        prog.grab(args.noinspect)
         if args.nocoarse: 
             prog.skip_coarse()
         else:
@@ -565,7 +628,7 @@ def main():
         if args.nofine: 
             prog.skip_fine()
         else:
-            prog.run_fine(bbox)
+            prog.run_fine(bbox, args.corr)
         prog.save()
     finally:
         del prog
