@@ -219,6 +219,7 @@ class Pointcloud:
 
 class LiveGrabber:
     def __init__(self):
+        self.grabber = None
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         # May need to grab a few combined pointclouds and throw them away
         for i in range(SKIP_FIRST_GRABS):
@@ -604,9 +605,6 @@ def main():
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
     parser.add_argument("--distance", type=float, action="store", required=True, metavar="D", help="Approximate distance between cameras and subject")
     args = parser.parse_args()
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} distance [dir]\nWhere distance is approximate distance between cameras and (0,0) point (in meters)")
-        sys.exit(1)
     distance = args.distance
     bbox = None
     if args.bbox:
@@ -614,10 +612,10 @@ def main():
         assert len(bbox) == 6
         assert type(1.0*bbox[0]*bbox[1]*bbox[2]*bbox[3]*bbox[4]*bbox[5]) == float
     prog = Calibrator(distance)
-    if len(sys.argv) == 2:
-        grabber = LiveGrabber()
+    if args.nograb:
+        grabber = FileGrabber(args.nograb)
     else:
-        grabber = FileGrabber(sys.argv[2])
+        grabber = LiveGrabber()
     try:
         prog.open(grabber, clean=args.clean, reuse=args.reuse)
         prog.grab(args.noinspect)
