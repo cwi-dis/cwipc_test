@@ -10,6 +10,7 @@ import cwipc.realsense2
 import numpy as np
 import open3d
 import xml.etree.ElementTree as ET
+import argparse
 
 DEBUG=False
 SKIP_FIRST_GRABS=10 # Skip this many grabs before using one. Needed for D435, it seems.
@@ -19,7 +20,7 @@ CONFIGFILE="""<?xml version="1.0" ?>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
         <postprocessing depthfiltering="1" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <depthfilterparameters threshold_near="{near}" threshold_far="{far}" decimation_value="1" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+            <depthfilterparameters {distance} decimation_value="1" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
         {cameras}
     </CameraConfig>
@@ -278,10 +279,10 @@ class FileGrabber:
             valuesElt = valuesElts[0]
             va = valuesElt.attrib
             trafo = [
-                [va['v00'], va['v01'], va['v02'], va['v03']],
-                [va['v10'], va['v11'], va['v12'], va['v13']],
-                [va['v20'], va['v21'], va['v22'], va['v23']],
-                [va['v30'], va['v31'], va['v32'], va['v33']],
+                [float(va['v00']), float(va['v01']), float(va['v02']), float(va['v03'])],
+                [float(va['v10']), float(va['v11']), float(va['v12']), float(va['v13'])],
+                [float(va['v20']), float(va['v21']), float(va['v22']), float(va['v23'])],
+                [float(va['v30']), float(va['v31']), float(va['v32']), float(va['v33'])],
             ]
             self.serials.append(serial)
             self.matrices.append(trafo)
@@ -302,38 +303,44 @@ class FileGrabber:
             
 class Calibrator:
     def __init__(self, distance):
-        if os.path.exists('cameraconfig.xml'):
-            print('%s: cameraconfig.xml already exists, please remove if you want to recalibrate' % sys.argv[0])
-            sys.exit(1)
-        # Set initial config file, for filtering parameters
         self.cameraserial = []
         self.near = 0.5 * distance
         self.far = 2.0 * distance
-        self.writeconfig()
         self.grabber = None
         self.cameraserial = []
         self.pointclouds = []
-        self.transformed_pointclouds = []
+        self.coarse_calibrated_pointclouds = []
+        self.fine_calibrated_pointclouds = []
         self.refpointcloud = None
         self.matrixinfo = []
         self.winpos = 100
+        self.workdir = os.getcwd() # o3d visualizer can change directory??!?
         sys.stdout.flush()
         
     def __del__(self):
         self.grabber = None
         self.pointclouds = None
-        self.transformed_pointclouds = None
+        self.coarse_calibrated_pointclouds = None
         self.refpointcloud = None
         
-    def open(self, grabber):
+    def open(self, grabber, clean, reuse):
+        if reuse:
+            assert 0, "--reuse not yet implemented"
+        elif clean:
+            if os.path.exists('cameraconfig.xml'):
+                os.unlink('cameraconfig.xml')
+        if os.path.exists('cameraconfig.xml'):
+            print('%s: cameraconfig.xml already exists, please supply --clean or --reuse argument' % sys.argv[0])
+            sys.exit(1)
+        # Set initial config file, for filtering parameters
+        self.writeconfig()
         self.grabber = grabber
         self.cameraserial = self.grabber.getserials()
 
-    def run(self):
+    def grab(self):
         if not self.cameraserial:
             print('* No realsense cameras found')
             return False
-        workdir = os.getcwd()
         print('* Grabbing pointclouds')
         self.get_pointclouds()
         if DEBUG:
@@ -355,6 +362,8 @@ class Calibrator:
                 self.pointclouds = []
                 self.get_pointclouds()
         
+        
+    def run_coarse(self):
         prompt('Pick red, orange, yellow, blue points on reference image', isedit=True)
         #
         # Pick reference points
@@ -375,24 +384,49 @@ class Calibrator:
                 self.show_points(self.cameraserial[i], new_pc)
                 matrix_ok = ask('Does that look good?', canretry=True)
             assert len(self.matrixinfo) == i
-            assert len(self.transformed_pointclouds) == i
+            assert len(self.coarse_calibrated_pointclouds) == i
             self.matrixinfo.append(info)
-            self.transformed_pointclouds.append(new_pc)
+            self.coarse_calibrated_pointclouds.append(new_pc)
         #
         # Show result
         #
         prompt('Inspect the resultant merged pointclouds of all cameras')
-        joined = Pointcloud.from_join(*tuple(self.transformed_pointclouds))
-        self.show_points('all', joined)
-        # Open3D Visualiser changes directory (!!?!), so change it back
-        os.chdir(workdir)
-        self.writeconfig()
+        joined = Pointcloud.from_join(*tuple(self.coarse_calibrated_pointclouds))
+        os.chdir(self.workdir)
+        joined.save('cwipc_calibrate_coarse.ply')
+        self.show_points('manual calibration result', joined)
+        
+    def skip_coarse(self):
+        self.coarse_calibrated_pointclouds = self.fine_calibrated_pointclouds
+        for i in range(len(self.cameraserial)):
+            self.matrixinfo.append([
+                [1, 0, 0, 0],
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 1],
+            ])
+        
+    def run_fine(self, bbox):
+        self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
+        prompt('Inspect the resultant merged pointclouds of all cameras')
+        joined = Pointcloud.from_join(*tuple(self.fine_calibrated_pointclouds))
+        os.chdir(self.workdir)
         joined.save('cwipc_calibrate_calibrated.ply')
+        self.show_points('fine calibration result', joined)
+        
+    def skip_fine(self):
+        self.fine_calibrated_pointclouds = self.coarse_calibrated_pointclouds
+        
+    def save(self):
+        # Open3D Visualiser changes directory (!!?!), so change it back
+        os.chdir(self.workdir)
+        self.writeconfig()
         self.cleanup()
         
     def cleanup(self):
         self.pointclouds = []
-        self.refpointcloud.free()
+        self.coarse_calibrated_pointclouds = []
+        self.fine_calibrated_pointclouds = []
         self.refpointcloud = None
         self.grabber = None
         
@@ -472,10 +506,18 @@ class Calibrator:
         allcaminfo = ""
         for i in range(len(self.cameraserial)):
             serial = self.cameraserial[i]
-            matrixinfo = self.to_conf(self.matrixinfo[i])
+            # Find matrix by applying what we found after the matrix read from the original config file (or the identity matrix)
+            matrix = self.grabber.getmatrix(i)
+            npMatrix = np.matrix(self.matrixinfo[i]) @ np.matrix(matrix)
+            matrix = npMatrix.tolist()
+            matrixinfo = self.to_conf(matrix)
             caminfo = CONFIGCAMERA.format(serial=serial, matrixinfo=matrixinfo)
             allcaminfo += caminfo
-        fileinfo = CONFIGFILE.format(cameras=allcaminfo, near=self.near, far=self.far)
+        if self.near or self.far:
+            distance = f'threshold_near="{self.near}" threshold_far="{self.far}"'
+        else:
+            distance = ''
+        fileinfo = CONFIGFILE.format(cameras=allcaminfo, distance=distance)
         with open('cameraconfig.xml', 'w') as fp:
             fp.write(fileinfo)
  
@@ -490,18 +532,41 @@ class Calibrator:
 
             
 def main():
+    parser = argparse.ArgumentParser(description="Calibrate cwipc_realsense2 capturer")
+    parser.add_argument("--clean", action="store_true", help="Remove old cameraconfig.xml and calibrate from scratch")
+    parser.add_argument("--reuse", action="store_true", help="Reuse existing cameraconfig.xml")
+    parser.add_argument("--nograb", action="store", metavar="DIR", help="Don't use grabber, obtain .ply file and old config from DIR")
+    parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
+    parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
+    parser.add_argument("--bbox", action="store", metavar="X0,X1,Y0,Y1,Z0,Z1", help="Set bounding box (in meters) for fine calibration")
+    parser.add_argument("--distance", type=float, action="store", required=True, metavar="D", help="Approximate distance between cameras and subject")
+    args = parser.parse_args()
     if len(sys.argv) < 2:
         print(f"Usage: {sys.argv[0]} distance [dir]\nWhere distance is approximate distance between cameras and (0,0) point (in meters)")
         sys.exit(1)
-    distance = float(sys.argv[1])
+    distance = args.distance
+    bbox = None
+    if args.bbox:
+        bbox = eval(bbox)
+        assert len(bbox) == 6
+        assert type(1.0*bbox[0]*bbox[1]*bbox[2]*bbox[3]*bbox[4]*bbox[5]) == float
     prog = Calibrator(distance)
     if len(sys.argv) == 2:
         grabber = LiveGrabber()
     else:
         grabber = FileGrabber(sys.argv[2])
-    prog.open(grabber)
     try:
-        prog.run()
+        prog.open(grabber, clean=args.clean, reuse=args.reuse)
+        prog.grab()
+        if args.nocoarse: 
+            prog.skip_coarse()
+        else:
+            prog.run_coarse()
+        if args.nofine: 
+            prog.skip_fine()
+        else:
+            prog.run_fine(bbox)
+        prog.save()
     finally:
         del prog
     
