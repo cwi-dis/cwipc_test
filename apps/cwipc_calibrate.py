@@ -9,7 +9,7 @@ import cwipc.codec
 import cwipc.realsense2
 import numpy as np
 import open3d
-
+import xml.etree.ElementTree as ET
 
 DEBUG=False
 SKIP_FIRST_GRABS=10 # Skip this many grabs before using one. Needed for D435, it seems.
@@ -225,6 +225,14 @@ class LiveGrabber:
                 rv.append(cam_id)
         return rv
         
+    def getmatrix(self, tilenum):
+        return [
+            [1, 0, 0, 0],
+            [0, 1, 0, 0],
+            [0, 0, 1, 0],
+            [0, 0, 0, 1],
+        ]
+        
     def getcount(self):
         # Get the number of cameras and their tile numbers
         tiles = []
@@ -247,7 +255,51 @@ class LiveGrabber:
         pc = self.grabber.get()
         assert pc
         return Pointcloud.from_cwipc(pc)
- 
+
+class FileGrabber:
+    def __init__(self, dirname):
+        self.pcFilename = os.path.join(dirname, "cwipc_calibrate_calibrated.ply")
+        confFilename = os.path.join(dirname, "cameraconfig.xml")
+        self.serials = []
+        self.matrices = []
+        self._parseConf(confFilename)
+        
+    def _parseConf(self, confFilename):
+        tree = ET.parse(confFilename)
+        root = tree.getroot()
+        for camElt in root.findall('CameraConfig/camera'):
+            serial = camElt.attrib['serial']
+            assert serial
+            trafoElts = list(camElt.iter('trafo'))
+            assert len(trafoElts) == 1
+            trafoElt = trafoElts[0]
+            valuesElts = list(trafoElt.iter('values'))
+            assert len(valuesElts) == 1
+            valuesElt = valuesElts[0]
+            va = valuesElt.attrib
+            trafo = [
+                [va['v00'], va['v01'], va['v02'], va['v03']],
+                [va['v10'], va['v11'], va['v12'], va['v13']],
+                [va['v20'], va['v21'], va['v22'], va['v23']],
+                [va['v30'], va['v31'], va['v32'], va['v33']],
+            ]
+            self.serials.append(serial)
+            self.matrices.append(trafo)
+        # import pdb ; pdb.set_trace()
+        
+    def getcount(self):
+        return len(self.serials)
+        
+    def getserials(self):
+        return self.serials
+        
+    def getmatrix(self, tilenum):
+        return self.matrices[tilenum]
+        
+    def getpointcloud(self):
+        pc = cwipc.cwipc_read(self.pcFilename, 0)
+        return Pointcloud.from_cwipc(pc)
+            
 class Calibrator:
     def __init__(self, distance):
         if os.path.exists('cameraconfig.xml'):
@@ -258,21 +310,25 @@ class Calibrator:
         self.near = 0.5 * distance
         self.far = 2.0 * distance
         self.writeconfig()
-        
-        self.grabber = LiveGrabber()
+        self.grabber = None
+        self.cameraserial = []
         self.pointclouds = []
         self.transformed_pointclouds = []
         self.refpointcloud = None
-        self.cameraserial = self.grabber.getserials()
         self.matrixinfo = []
         self.winpos = 100
         sys.stdout.flush()
+        
     def __del__(self):
         self.grabber = None
         self.pointclouds = None
         self.transformed_pointclouds = None
         self.refpointcloud = None
         
+    def open(self, grabber):
+        self.grabber = grabber
+        self.cameraserial = self.grabber.getserials()
+
     def run(self):
         if not self.cameraserial:
             print('* No realsense cameras found')
@@ -434,11 +490,16 @@ class Calibrator:
 
             
 def main():
-    if len(sys.argv) != 2:
-        print(f"Usage: {sys.argv[0]} distance\nWhere distance is approximate distance between cameras and (0,0) point (in meters)")
+    if len(sys.argv) < 2:
+        print(f"Usage: {sys.argv[0]} distance [dir]\nWhere distance is approximate distance between cameras and (0,0) point (in meters)")
         sys.exit(1)
     distance = float(sys.argv[1])
     prog = Calibrator(distance)
+    if len(sys.argv) == 2:
+        grabber = LiveGrabber()
+    else:
+        grabber = FileGrabber(sys.argv[2])
+    prog.open(grabber)
     try:
         prog.run()
     finally:
