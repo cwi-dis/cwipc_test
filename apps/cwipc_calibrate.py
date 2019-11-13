@@ -20,7 +20,7 @@ CONFIGFILE="""<?xml version="1.0" ?>
     <CameraConfig>
         <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" />
         <postprocessing depthfiltering="1" backgroundremoval="1" greenscreenremoval="1" cloudresolution="0" tiling="0" tilingresolution="0.01" tilingmethod="camera">
-            <depthfilterparameters {distance} decimation_value="2" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+            <depthfilterparameters {distance} decimation_value="1" spatial_iterations="4" spatial_alpha="0.25" spatial_delta="30" spatial_filling="0" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
         </postprocessing>
         {cameras}
     </CameraConfig>
@@ -33,6 +33,36 @@ CONFIGCAMERA="""
             </trafo>
         </camera>
 """
+#
+# Version 2 calibration cross: the one made with little balls and the forward spar
+#
+POINTS_V2 = [
+    (0.25, 1, 0, 255, 0, 0),        # Red ball at Right of the cross
+    (0, 1.25, 0, 0, 0, 255),        # Blue ball at top of the cross (because the sky is blue)
+    (0, 1.1, -0.25, 255, 127, 0),   # Orange ball pointing towards the viewer (-Z) because everyone likes orange
+    (-0.25, 1, 0, 255, 255, 0),     # Yellow ball at left of cross because it had to go somewhere
+    (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
+    (-1, 0, -1, 0, 0, 0),             # Black point at -1,0,-1
+    (-1, 0, 1, 0, 0, 0),             # Black point at -1,0,1
+    (1, 0, -1, 0, 0, 0),             # Black point at 1,0,-1
+    (1, 0, 1, 0, 0, 0),             # Black point at 1,0,1
+    (0, 1, 0, 0, 0, 0),             # Black point at cross
+    (0, 1.1, 0, 0, 0, 0),           # Black point at forward spar
+]
+#
+# Version 3 calibration cross: the one with the leds and the uneven arms
+#
+POINTS_V3 = [
+    (0.26, 1.04, 0, 255, 0, 0),        # Red LED at Right of the cross
+    (0, 1.44, 0, 0, 0, 255),        # Blue LED at top of the cross (because the sky is blue)
+    (0, 1.31, -0.26, 0, 255, 0),   # Green LED pointing towards the viewer (-Z)
+    (-0.26, 1.17, 0, 255, 255, 0),     # Yellow LED at left of cross because it had to go somewhere
+    (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
+    (-1, 0, -1, 0, 0, 0),             # Black point at -1,0,-1
+    (-1, 0, 1, 0, 0, 0),             # Black point at -1,0,1
+    (1, 0, -1, 0, 0, 0),             # Black point at 1,0,-1
+    (1, 0, 1, 0, 0, 0),             # Black point at 1,0,1
+]
 
 def prompt(msg, isedit=False):
     stars = '*'*(len(msg)+2)
@@ -319,10 +349,11 @@ class FileGrabber:
         return Pointcloud.from_cwipc(pc)
             
 class Calibrator:
-    def __init__(self, distance):
+    def __init__(self, distance, use_v3):
         self.cameraserial = []
         self.near = 0.5 * distance
         self.far = 2.0 * distance
+        self.use_v3 = use_v3
         self.grabber = None
         self.cameraserial = []
         self.pointclouds = []
@@ -487,20 +518,10 @@ class Calibrator:
         
     def get_pointclouds(self):
         # Create the canonical pointcloud, which determines the eventual coordinate system
-        points_0 = [
-            (0.25, 1, 0, 255, 0, 0),        # Red ball at Right of the cross
-            (0, 1.25, 0, 0, 0, 255),        # Blue ball at top of the cross (because the sky is blue)
-            (0, 1.1, -0.25, 255, 127, 0),   # Orange ball pointing towards the viewer (-Z) because everyone likes orange
-            (-0.25, 1, 0, 255, 255, 0),     # Yellow ball at left of cross because it had to go somewhere
-            (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
-            (-1, 0, -1, 0, 0, 0),             # Black point at -1,0,-1
-            (-1, 0, 1, 0, 0, 0),             # Black point at -1,0,1
-            (1, 0, -1, 0, 0, 0),             # Black point at 1,0,-1
-            (1, 0, 1, 0, 0, 0),             # Black point at 1,0,1
-            (0, 1, 0, 0, 0, 0),             # Black point at cross
-            (0, 1.1, 0, 0, 0, 0),           # Black point at forward spar
-        ]
-        self.refpointcloud = Pointcloud.from_points(points_0)
+        if self.use_v3:
+            self.refpointcloud = Pointcloud.from_points(POINTS_V3)
+        else:
+            self.refpointcloud = Pointcloud.from_points(POINTS_V2)
         # Get the number of cameras and their tile numbers
         maxtile = self.grabber.getcount()
         if DEBUG: print('maxtile', maxtile)
@@ -601,6 +622,7 @@ def main():
     parser.add_argument("--nograb", action="store", metavar="DIR", help="Don't use grabber, obtain .ply file and old config from DIR")
     parser.add_argument("--nocoarse", action="store_true", help="Skip coarse (manual) calibration step")
     parser.add_argument("--nofine", action="store_true", help="Skip fine (automatic) calibration step")
+    parser.add_argument("--crossv3", action="store_true", help="Use version 3 calibration cross (with the LEDs)")
     parser.add_argument("--bbox", action="store", type=float, nargs=6, metavar="N", help="Set bounding box (in meters, xmin xmax etc) for fine calibration")
     parser.add_argument("--corr", action="store", type=float, metavar="D", help="Set fine calibration max corresponding point distance", default=0.01)
     parser.add_argument("--distance", type=float, action="store", required=True, metavar="D", help="Approximate distance between cameras and subject")
@@ -611,7 +633,7 @@ def main():
         bbox = args.bbox
         assert len(bbox) == 6
         assert type(1.0*bbox[0]*bbox[1]*bbox[2]*bbox[3]*bbox[4]*bbox[5]) == float
-    prog = Calibrator(distance)
+    prog = Calibrator(distance, args.crossv3)
     if args.nograb:
         grabber = FileGrabber(args.nograb)
     else:
