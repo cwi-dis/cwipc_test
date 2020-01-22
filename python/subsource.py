@@ -80,6 +80,7 @@ class CpcSubSource:
         if not ok: return False
         nstreams = self.dll.sub_get_stream_count(self.handle)
         assert nstreams > self.streamIndex
+        self.started = True
         self.firstRead = True
         return True
         
