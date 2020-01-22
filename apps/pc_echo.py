@@ -143,9 +143,13 @@ class SinkClient:
         while True:
             t0 = time.time()
             cpc = self.source.read_cpc()
-            if not cpc: break
+            if not cpc:
+                if self.verbose: print("recv: read_cpc() returned None")
+                break
             t1 = time.time()
             pc = self.decompress(cpc)
+            if not pc:
+                print(f"recv: decompress({len(cpc)} bytes of compressed data) failed to produce a pointcloud")
             t2 = time.time()
             self.times_recv.append(t1-t0)
             self.times_decode.append(t2-t1)
