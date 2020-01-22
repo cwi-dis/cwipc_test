@@ -48,6 +48,9 @@ class CpcSocketSource:
         self.hostname = hostname
         self.port = port
 
+    def start(self):
+        return True
+        
     def read_cpc(self):
         with socket.socket() as s:
             try:
@@ -144,6 +147,9 @@ class SinkClient:
         self.visualiser.destroy_window()
 
     def run(self):
+        if not self.source.start():
+            print("Compressed pointcloud source failed to start")
+            return
         if self.display:
             self.start_o3d()
         try:

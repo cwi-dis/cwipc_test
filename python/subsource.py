@@ -58,15 +58,11 @@ class CpcSubSource:
         self.url = url
         self.dll = None
         self.handle = None
+        self.started = False
+        self.streamIndex = streamIndex
         self.dll = _signals_unity_bridge_dll()
         self.handle = self.dll.sub_create("SUBsource".encode('utf8'))
         assert self.handle
-        ok = self.dll.sub_play(self.handle, url.encode('utf8'))
-        assert ok
-        nstreams = self.dll.sub_get_stream_count(self.handle)
-        assert nstreams > streamIndex
-        self.streamIndex = streamIndex
-        self.firstRead = True
         
     def __del__(self):
         self.free()
@@ -77,9 +73,20 @@ class CpcSubSource:
             self.dll.sub_destroy(self.handle)
             self.handle = None
             
+    def start(self):
+        assert self.handle
+        assert self.dll
+        ok = self.dll.sub_play(self.handle, self.url.encode('utf8'))
+        if not ok: return False
+        nstreams = self.dll.sub_get_stream_count(self.handle)
+        assert nstreams > self.streamIndex
+        self.firstRead = True
+        return True
+        
     def read_cpc(self):
         assert self.handle
         assert self.dll
+        assert self.started
         startTime = time.time()
         #
         # We loop until sub_grab_frame returns a length != 0
