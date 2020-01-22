@@ -210,7 +210,7 @@ class SourceServer:
 def main():
     parser = argparse.ArgumentParser(description="Start server to send compressed pointclouds to a cwipc_sourceserver_sink")
     parser.add_argument("--nosend", action="store_true", help="Do not send compressed data anywhere, only grab and collect statistics")
-    parser.add_argument("--bin2dash", action="store", metavar="URL", help="Send compressed data to bin2dash URL, empty string for storing in local files")
+    parser.add_argument("--bin2dash", action="store", metavar="URL", help="Send compressed data to bin2dash URL, empty string for storing in local files. Example URL:  https://vrt-evanescent.viaccess-orca.com/pctest/")
     parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
     parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)

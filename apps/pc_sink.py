@@ -172,7 +172,7 @@ def main():
     parser = argparse.ArgumentParser(description="Receive compressed pointclouds from a cwipc_sourceserver_source and optionally display them")
     parser.add_argument("--hostname", action="store", metavar="HOSTNAME", help="Host or IP address to connect to", default="localhost")
     parser.add_argument("--port", type=int, action="store", metavar="PORT", help="Port to connect to", default=4303)
-    parser.add_argument("--sub", action="store", metavar="URL", help="Don't use direct socket connection but use Signals-Unity-Bridge connection to URL")
+    parser.add_argument("--sub", action="store", metavar="URL", help="Don't use direct socket connection but use Signals-Unity-Bridge connection to URL. Example URL:  https://vrt-evanescent.viaccess-orca.com/pctest/bin2dashSink.mpd")
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop receiving after N requests")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
