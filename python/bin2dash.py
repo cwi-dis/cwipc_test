@@ -31,7 +31,9 @@ def _bin2dash_dll(libname=None):
     if libname == None:
         libname = os.environ.get('VRTOGETHER_BIN2DASH_PATH')
         if not libname:
-            libname = ctypes.util.find_library('bin2dash.so')
+            libname = ctypes.util.find_library('bin2dash')
+            if not libname:
+                libname = ctypes.util.find_library('bin2dash.so')
             if not libname:
                 raise RuntimeError('Dynamic library bin2dash not found')
     assert libname

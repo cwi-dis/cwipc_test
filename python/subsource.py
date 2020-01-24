@@ -27,6 +27,8 @@ def _signals_unity_bridge_dll(libname=None):
         if not libname:
             libname = ctypes.util.find_library('signals-unity-bridge')
             if not libname:
+                libname = ctypes.util.find_library('signals-unity-bridge.so')
+            if not libname:
                 raise RuntimeError('Dynamic library signals-unity-bridge not found')
     assert libname
     # Signals library needs to be able to find some data files stored next to the DLL.
