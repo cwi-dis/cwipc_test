@@ -137,10 +137,14 @@ class SinkClient:
         self.visualiser_o3dpc = None
         self.savedir = savedir
         self.verbose = verbose
+        self.stopped = False
 
+    def stop(self):
+        self.stopped = True
+        
     def receiver_loop(self):
         seqno = 1
-        while True:
+        while not self.stopped:
             t0 = time.time()
             cpc = self.source.read_cpc()
             if not cpc:
@@ -295,8 +299,20 @@ def main():
             thread.join()
         sourceServer.stop()
         sourceThread.join()
-    except (Exception, KeyboardInterrupt):
+    except KeyboardInterrupt:
+        print("Interrupted.")
+    except:
         traceback.print_exc()
+    
+    #
+    # It is safe to call join (or stop) multiple times, so we ensure to cleanup
+    #
+    sourceServer.stop()
+    for clt in clts:
+        clt.stop()
+    sourceThread.join()
+    for thread in threads:
+        thread.join()
     
     sourceServer.statistics()
     for clt in clts:
