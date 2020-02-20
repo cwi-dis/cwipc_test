@@ -132,9 +132,9 @@ class Pointcloud:
             points.append([p.x, p.y, p.z])  
             colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
         points_v_np = np.matrix(points)
-        points_v = open3d.Vector3dVector(points_v_np)
-        colors_v = open3d.Vector3dVector(colors)
-        self.o3d = open3d.PointCloud()
+        points_v = open3d.utility.Vector3dVector(points_v_np)
+        colors_v = open3d.utility.Vector3dVector(colors)
+        self.o3d = open3d.geometry.PointCloud()
         self.o3d.points = points_v
         self.o3d.colors = colors_v
         
@@ -536,7 +536,7 @@ class Calibrator:
             joined.save('cwipc_calibrate_uncalibrated.ply')
         
     def pick_points(self, title, pc):
-        vis = open3d.VisualizerWithEditing()
+        vis = open3d.visualization.VisualizerWithEditing()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
         self.winpos += 50
         vis.add_geometry(pc.get_o3d())
@@ -545,7 +545,7 @@ class Calibrator:
         return vis.get_picked_points()
 
     def show_points(self, title, pc):
-        vis = open3d.Visualizer()
+        vis = open3d.visualization.Visualizer()
         vis.create_window(window_name=title, width=960, height=540, left=self.winpos, top=self.winpos)
         self.winpos += 50
         vis.add_geometry(pc.get_o3d())
@@ -565,23 +565,23 @@ class Calibrator:
         corr[:,0] = picked_id_source
         corr[:,1] = picked_id_target
 
-        p2p = open3d.TransformationEstimationPointToPoint()
+        p2p = open3d.registration.TransformationEstimationPointToPoint()
         trans_init = p2p.compute_transformation(source.get_o3d(), target.get_o3d(),
-                 open3d.Vector2iVector(corr))
+                 open3d.utility.Vector2iVector(corr))
         
         if not extended:
             return trans_init
 
         threshold = 0.01 # 3cm distance threshold
-        reg_p2p = open3d.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
-                open3d.TransformationEstimationPointToPoint())
+        reg_p2p = open3d.registration.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
+                open3d.registration.TransformationEstimationPointToPoint())
         
         return reg_p2p.transformation
     
     def align_fine(self, source, target, threshold):
         trans_init = np.array([[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]])
-        reg_p2p = open3d.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
-                open3d.TransformationEstimationPointToPoint())
+        reg_p2p = open3d.registration.registration_icp(source.get_o3d(), target.get_o3d(), threshold, trans_init,
+                open3d.registration.TransformationEstimationPointToPoint())
         
         return reg_p2p.transformation
 
