@@ -67,7 +67,7 @@ if true; then
 	python $gRFG --cicd --project_name SUB
 	rm -rf ../signals-unity-bridge
 	(tarfile=$PWD/signals-unity-bridge-*.tar.bz2 && cd .. && tar xfv $tarfile)
-	(cd ../signals-unity-bridge ; ln -s [0-9]* installed)
+	(cd ../signals-unity-bridge/[0-9]*/w64 ; cp * ../../../installed/bin)
 	#rm signals-unity-bridge-*.tar.bz2
 fi
 
@@ -75,7 +75,7 @@ if true; then
 	python $gRFG --cicd --project_name EncodingEncapsulation
 	rm -rf ../pcl2dash
 	(tarfile=$PWD/pcl2dash-*.tar.bz2 && cd .. && tar xfv $tarfile)
-	(cd ../pcl2dash ; ln -s [0-9]* installed)
+	(cd ../pcl2dash/[0-9]*/w64 ; cp * ../../../installed/bin)
 	#rm pcl2dash-*.tar.bz2
 fi
 
