@@ -39,7 +39,7 @@ def _bin2dash_dll(libname=None):
     assert libname
     # Signals library needs to be able to find some data files stored next to the DLL.
     # Tell it where they are.
-    if os.path.isabs(libname):
+    if os.path.isabs(libname) and not 'SIGNALS_SMD_PATH' in os.environ:
         libdirname = os.path.dirname(libname)
         os.putenv('SIGNALS_SMD_PATH', libdirname)
     _bin2dash_dll_reference = ctypes.cdll.LoadLibrary(libname)
