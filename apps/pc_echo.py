@@ -4,6 +4,7 @@ import time
 import socket
 import argparse
 import traceback
+import signal
 import subprocess
 import threading
 import cwipc
@@ -24,6 +25,12 @@ from subsource import CpcSubSource
 import numpy as np
 import open3d
 
+def _dump_app_stacks(*args):
+    print("pc_echo: QUIT received, dumping all stacks, %d threads:" % len(sys._current_frames()), file=sys.stderr)
+    for threadId, stack in list(sys._current_frames().items()):
+        print("\nThreadID:", threadId, file=sys.stderr)
+        traceback.print_stack(stack, file=sys.stderr)
+        print(file=sys.stderr)
 
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
@@ -242,6 +249,7 @@ class SinkClient:
         print('recv: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'.format(name, count, avgValue, minValue, maxValue))
 
 def main():
+    signal.signal(signal.SIGQUIT, _dump_app_stacks)
     default_url = "https://vrt-evanescent.viaccess-orca.com/echo-%d/" % int(time.time())
     parser = argparse.ArgumentParser(description="Echo pointcloud streams using bin2dash, evanescent and sub")
     parser.add_argument("--url", action="store", metavar="URL", help="Base of Evanescent URL", default=default_url)
