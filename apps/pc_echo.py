@@ -249,7 +249,8 @@ class SinkClient:
         print('recv: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'.format(name, count, avgValue, minValue, maxValue))
 
 def main():
-    signal.signal(signal.SIGQUIT, _dump_app_stacks)
+    if hasattr(signal, 'SIGQUIT'):
+        signal.signal(signal.SIGQUIT, _dump_app_stacks)
     default_url = "https://vrt-evanescent.viaccess-orca.com/echo-%d/" % int(time.time())
     parser = argparse.ArgumentParser(description="Echo pointcloud streams using bin2dash, evanescent and sub")
     parser.add_argument("--url", action="store", metavar="URL", help="Base of Evanescent URL", default=default_url)
