@@ -129,12 +129,15 @@ class SourceServer:
             fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
         print(fmtstring.format(name, count, avgValue, minValue, maxValue))
 
-        
+ 
 class SinkClient:
-    def __init__(self, sub, count=None, delay=0, display=False, savedir=None, verbose=False):
+    SINKNUM = 1
+    
+    def __init__(self, sub, count=None, delay=0, retry=0, display=False, savedir=None, verbose=False):
         self.source = CpcSubSource(sub)
         self.count = count
         self.delay = delay
+        self.retry = retry
         self.display = display
         self.times_recv = []
         self.times_decode = []
@@ -145,6 +148,8 @@ class SinkClient:
         self.savedir = savedir
         self.verbose = verbose
         self.stopped = False
+        self.sinkNum = SinkClient.SINKNUM
+        SinkClient.SINKNUM += 1
 
     def stop(self):
         self.stopped = True
@@ -155,26 +160,26 @@ class SinkClient:
             t0 = time.time()
             cpc = self.source.read_cpc()
             if not cpc:
-                if self.verbose: print("recv: read_cpc() returned None")
+                if self.verbose: print(f"recv {self.sinkNum}: read_cpc() returned None")
                 break
             t1 = time.time()
             pc = self.decompress(cpc)
             if not pc:
-                print(f"recv: decompress({len(cpc)} bytes of compressed data) failed to produce a pointcloud")
+                print(f"recv {self.sinkNum}: decompress({len(cpc)} bytes of compressed data) failed to produce a pointcloud")
             t2 = time.time()
             self.times_recv.append(t1-t0)
             self.times_decode.append(t2-t1)
             sinkTime = time.time()
             if pc:
                 sourceTime = pc.timestamp() / 1000.0
-                if self.verbose: print("recv: %f: compressed size: %d, timestamp: %f, waited: %f, latency: %f" % (t1, len(cpc), sourceTime, t1-t0, sinkTime-sourceTime), flush=True)
+                if self.verbose: print(f"recv {self.sinkNum}: {t1}: compressed size: {len(cpc)}, timestamp: {sourceTime}, waited: {t1-t0}, latency: {sinkTime-sourceTime}", flush=True)
                 self.times_latency.append(sinkTime-sourceTime)
             if cpc and self.savedir:
                 savefile = 'pointcloud-%05d.cwicpc' % seqno
                 seqno += 1
                 with open(os.path.join(self.savedir, savefile), 'wb') as fp:
                     fp.write(cpc)
-            if pc and self.display:
+            if pc and self.display and self.sinkNum == 1:
                 self.show(pc)
             if pc:
                 pc.free()
@@ -218,12 +223,17 @@ class SinkClient:
         self.visualiser.destroy_window()
 
     def run(self):
-        if self.delay:
-            time.sleep(self.delay)
-            if self.verbose: print("recv: starting")
-        if not self.source.start():
-            print("recv: Compressed pointcloud receiver failed to start")
-            return
+        while True:
+            if self.delay:
+                time.sleep(self.delay)
+                if self.verbose: print(f"recv {self.sinkNum}: starting")
+            if self.source.start():
+                break
+            print(f"recv {self.sinkNum}: Compressed pointcloud receiver failed to start")
+            self.retry -= 1
+            if self.retry <= 0:
+                return
+        print(f"recv {self.sinkNum}: started")
         if self.display:
             self.start_o3d()
         try:
@@ -241,12 +251,12 @@ class SinkClient:
     def print1stat(self, name, values):
         count = len(values)
         if count == 0:
-            print('recv: {}: count=0'.format(name))
+            print(f'recv {self.sinkNum}: {name}: count=0')
             return
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
-        print('recv: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'.format(name, count, avgValue, minValue, maxValue))
+        print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
 
 def main():
     if hasattr(signal, 'SIGQUIT'):
@@ -259,6 +269,7 @@ def main():
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     parser.add_argument("--delay", action="store", type=int, metavar="SECS", help="Wait SECS seconds before starting receiver")
+    parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails", default=0)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop after receiving N pointclouds")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
@@ -290,7 +301,7 @@ def main():
     #
     clts = []
     for i in range(args.parallel):
-        clt = SinkClient(subUrl, args.count, args.delay, args.display, args.savecwicpc, args.verbose)
+        clt = SinkClient(subUrl, args.count, args.delay, args.retry, args.display, args.savecwicpc, args.verbose)
         clts.append(clt)
     threads = []
     for clt in clts:
