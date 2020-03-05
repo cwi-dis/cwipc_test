@@ -61,6 +61,9 @@ class SourceServer:
         self.times_send = []
         self.params = encparams
         self.stopped = False
+        self.startTime = None
+        self.stopTime = None
+        self.totalBytes = 0
         
     def __del__(self):
         self.stopped = True
@@ -101,7 +104,10 @@ class SourceServer:
                 cpc = self.cpcSource.get()
                 t1 = t2 = time.time()
             self.sizes_encode.append(len(cpc))
+            if self.startTime == None: self.startTime = time.time()
+            self.totalBytes += len(cpc)
             self.sink.feed(cpc)
+            self.stopTime = time.time()
             t3 = time.time()
             self.times_grab.append(t1-t0)
             self.times_encode.append(t2-t1)
@@ -114,6 +120,16 @@ class SourceServer:
         self.print1stat('encode', self.times_encode)
         self.print1stat('send', self.times_send)
         self.print1stat('encodedsize', self.sizes_encode, isInt=True)
+        if self.startTime and self.stopTime and self.startTime != self.stopTime:
+            bps = self.totalBytes/(self.stopTime-self.startTime)
+            scale = ''
+            if bps > 10000:
+                bps /= 1000
+                scale = 'k'
+            if bps > 10000:
+                bps /= 1000
+                scale = 'M'
+            print(f'send: bandwidth={bps:.0f} {scale}B/s')
         
     def print1stat(self, name, values, isInt=False):
         count = len(values)
@@ -148,6 +164,9 @@ class SinkClient:
         self.savedir = savedir
         self.verbose = verbose
         self.stopped = False
+        self.startTime = None
+        self.stopTime = None
+        self.totalBytes = 0
         self.sinkNum = SinkClient.SINKNUM
         SinkClient.SINKNUM += 1
 
@@ -158,10 +177,13 @@ class SinkClient:
         seqno = 1
         while not self.stopped:
             t0 = time.time()
+            if self.startTime == None: self.startTime = time.time()
             cpc = self.source.read_cpc()
+            self.stopTime = time.time()
             if not cpc:
                 if self.verbose: print(f"recv {self.sinkNum}: read_cpc() returned None")
                 break
+            self.totalBytes += len(cpc)
             t1 = time.time()
             pc = self.decompress(cpc)
             if not pc:
@@ -247,6 +269,16 @@ class SinkClient:
         self.print1stat('decode', self.times_decode)
         self.print1stat('latency', self.times_latency)
         self.print1stat('completeloop', self.times_completeloop)
+        if self.startTime and self.stopTime and self.startTime != self.stopTime:
+            bps = self.totalBytes/(self.stopTime-self.startTime)
+            scale = ''
+            if bps > 10000:
+                bps /= 1000
+                scale = 'k'
+            if bps > 10000:
+                bps /= 1000
+                scale = 'M'
+            print(f'recv {self.sinkNum}: bandwidth={bps:.0f} {scale}B/s')
         
     def print1stat(self, name, values):
         count = len(values)
