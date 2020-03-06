@@ -7,6 +7,7 @@ import traceback
 import signal
 import subprocess
 import threading
+import queue
 import cwipc
 import cwipc.codec
 import cwipc.realsense2
@@ -48,6 +49,53 @@ def cwipc_to_o3d(pc):
     rv.points = points_v
     rv.colors = colors_v
     return rv
+
+class Visualizer:
+    def __init__(self, verbose=False):
+        self.visualiser = None
+        self.visualiser_o3dpc = None    
+        self.producer = None
+        self.queue = queue.Queue()
+        self.verbose = verbose
+        
+    def set_producer(self, producer):
+        self.producer = producer    
+        
+    def run(self):
+        self.start_o3d()
+        while self.producer and self.producer.is_alive():
+            try:
+                o3dpc = self.queue.get(timeout=1)
+                self.draw_o3d(o3dpc)
+            except queue.Empty:
+                pass
+        self.stop_o3d()
+        
+    def show(self, pc):
+        o3dpc = cwipc_to_o3d(pc)
+        self.queue.put(o3dpc)
+            
+    def start_o3d(self):
+        self.visualiser = open3d.Visualizer()
+        self.visualiser.create_window(width=960, height=540)
+        if self.verbose: print('display: started')
+
+    def draw_o3d(self, o3dpc):
+        """Draw open3d pointcloud"""
+        if self.visualiser_o3dpc == None:
+            self.visualiser_o3dpc = o3dpc
+            self.visualiser.add_geometry(o3dpc)
+        else:
+            self.visualiser_o3dpc.points = o3dpc.points
+            self.visualiser_o3dpc.colors = o3dpc.colors
+        if self.verbose: print('display:', len(self.visualiser_o3dpc.points), 'points', flush=True)
+        self.visualiser.update_geometry()
+        self.visualiser.update_renderer()
+        self.visualiser.poll_events()
+        
+    def stop_o3d(self):
+        self.visualiser.destroy_window()
+        if self.verbose:print('display: stopped')
 
 class SourceServer:
     def __init__(self, bin2dash, encparams=None, b2dparams={}, verbose=False):
@@ -159,8 +207,6 @@ class SinkClient:
         self.times_decode = []
         self.times_latency = []
         self.times_completeloop = []
-        self.visualiser = None
-        self.visualiser_o3dpc = None
         self.savedir = savedir
         self.verbose = verbose
         self.stopped = False
@@ -202,7 +248,7 @@ class SinkClient:
                 with open(os.path.join(self.savedir, savefile), 'wb') as fp:
                     fp.write(cpc)
             if pc and self.display and self.sinkNum == 1:
-                self.show(pc)
+                self.display.show(pc)
             if pc:
                 pc.free()
             if self.count != None:
@@ -220,30 +266,6 @@ class SinkClient:
         pc = decomp.get()
         return pc
         
-    def show(self, pc):
-        o3dpc = cwipc_to_o3d(pc)
-        self.draw_o3d(o3dpc)
-            
-    def start_o3d(self):
-        self.visualiser = open3d.Visualizer()
-        self.visualiser.create_window(width=960, height=540)
-
-    def draw_o3d(self, o3dpc):
-        """Draw open3d pointcloud"""
-        if self.visualiser_o3dpc == None:
-            self.visualiser_o3dpc = o3dpc
-            self.visualiser.add_geometry(o3dpc)
-        else:
-            self.visualiser_o3dpc.points = o3dpc.points
-            self.visualiser_o3dpc.colors = o3dpc.colors
-        if self.verbose: print('display:', len(self.visualiser_o3dpc.points), 'points', flush=True)
-        self.visualiser.update_geometry()
-        self.visualiser.update_renderer()
-        self.visualiser.poll_events()
-        
-    def stop_o3d(self):
-        self.visualiser.destroy_window()
-
     def run(self):
         while True:
             if self.delay:
@@ -256,13 +278,7 @@ class SinkClient:
             if self.retry <= 0:
                 return
         print(f"recv {self.sinkNum}: started")
-        if self.display:
-            self.start_o3d()
-        try:
-            self.receiver_loop()
-        finally:
-            if self.display:
-                self.stop_o3d()
+        self.receiver_loop()
 
     def statistics(self):
         self.print1stat('recv', self.times_recv)
@@ -328,16 +344,24 @@ def main():
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
     sourceServer = SourceServer(args.url, encparams, b2dparams, args.verbose)
     sourceThread = threading.Thread(target=sourceServer.run, args=())
+    if args.display:
+        visualizer = Visualizer(args.verbose)
+    else:
+        visualizer = None
+    thisVisualizer = visualizer
     #
     # Create sinks
     #
     clts = []
-    for i in range(args.parallel):
-        clt = SinkClient(subUrl, args.count, args.delay, args.retry, args.display, args.savecwicpc, args.verbose)
-        clts.append(clt)
     threads = []
-    for clt in clts:
-        threads.append(threading.Thread(target=clt.run, args=()))
+    for i in range(args.parallel):
+        clt = SinkClient(subUrl, args.count, args.delay, args.retry, thisVisualizer, args.savecwicpc, args.verbose)
+        thread = threading.Thread(target=clt.run, args=())
+        clts.append(clt)
+        threads.append(thread)
+        if thisVisualizer:
+            thisVisualizer.set_producer(thread)
+        thisVisualizer = None
     
     #
     # Run everything
@@ -346,7 +370,10 @@ def main():
         sourceThread.start()
         for thread in threads:
             thread.start()
-        
+
+        if visualizer:
+            visualizer.run()
+            
         for thread in threads:
             thread.join()
         sourceServer.stop()
