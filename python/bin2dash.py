@@ -24,6 +24,16 @@ class FrameInfo(ctypes.Structure):
         ("timestamp", ctypes.c_longlong)
     ]
     
+class streamDesc(ctypes.Structure):
+    _fields_ = [
+        ("MP4_4CC", ctypes.c_uint32),
+        ("tileNumber", ctypes.c_uint32),
+        ("quality", ctypes.c_uint32),
+    ]
+
+    def __init__(self, fourcc, tileNumber=0, quality=0):
+        super(streamDesc, self).__init__(VRT_4CC(fourcc), tileNumber, quality)
+    
 def _bin2dash_dll(libname=None):
     global _bin2dash_dll_reference
     if _bin2dash_dll_reference: return _bin2dash_dll_reference
@@ -47,6 +57,9 @@ def _bin2dash_dll(libname=None):
     _bin2dash_dll_reference.vrt_create.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
     _bin2dash_dll_reference.vrt_create.restype = vrt_handle_p
     
+    _bin2dash_dll_reference.vrt_create_ext.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(streamDesc), ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+    _bin2dash_dll_reference.vrt_create_ext.restype = vrt_handle_p
+    
     _bin2dash_dll_reference.vrt_destroy.argtypes = [vrt_handle_p]
     _bin2dash_dll_reference.vrt_destroy.restype = None
     
@@ -59,17 +72,24 @@ def _bin2dash_dll(libname=None):
     return _bin2dash_dll_reference
  
 class CpcBin2dashSink:
-    def __init__(self, url="", fourcc=None, seg_dur_in_ms=10000, timeshift_buffer_depth_in_ms=30000):
+    def __init__(self, url="", *, streamDescs=None, fourcc=None, seg_dur_in_ms=10000, timeshift_buffer_depth_in_ms=30000):
         self.url = url
         self.dll = None
         self.handle = None
         self.dll = _bin2dash_dll()
-        if fourcc == None:
-            fourcc = VRT_4CC("cwi1")
-        else:
-            fourcc = VRT_4CC(fourcc)
         url = url.encode('utf8')
-        self.handle = self.dll.vrt_create("bin2dashSink".encode('utf8'), fourcc, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
+        if streamDescs != None:
+            assert fourcc == None   # Can only use fourcc or streamDescs
+            streamDescCount = len(streamDescs)
+            # ctypes array constructors are a bit weird. Check the documentation.
+            c_streamDescs = (streamDesc*streamDescCount)(*streamDescs)
+            self.handle = self.dll.vrt_create_ext("bin2dashSink".encode('utf8'), streamDescCount, c_streamDescs, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
+        else:
+            if fourcc == None:
+                fourcc = VRT_4CC("cwi1")
+            else:
+                fourcc = VRT_4CC(fourcc)
+            self.handle = self.dll.vrt_create("bin2dashSink".encode('utf8'), fourcc, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
         assert self.handle
         
     def __del__(self):

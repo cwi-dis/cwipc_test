@@ -338,6 +338,10 @@ def main():
         if args.jpeg_quality:
             encparams.jpeg_quality = args.jpeg_quality
     b2dparams = {}
+    if False:
+        b2dparams['fourcc'] = 'cwi2'
+    else:
+        b2dparams['streamDescs'] = [('cwi1', 0, 0)]
     if args.seg_dur:
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
