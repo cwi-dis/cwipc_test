@@ -18,6 +18,14 @@ class FrameInfo(ctypes.Structure):
         ("timestamp", ctypes.c_longlong)
     ]
     
+    
+class streamDesc(ctypes.Structure):
+    _fields_ = [
+        ("MP4_4CC", ctypes.c_uint32),
+        ("tileNumber", ctypes.c_uint32),
+        ("quality", ctypes.c_uint32),
+    ]
+        
 def _signals_unity_bridge_dll(libname=None):
     global _signals_unity_bridge_dll_reference
     if _signals_unity_bridge_dll_reference: return _signals_unity_bridge_dll_reference
@@ -46,6 +54,15 @@ def _signals_unity_bridge_dll(libname=None):
     
     _signals_unity_bridge_dll_reference.sub_get_stream_count.argtypes = [sub_handle_p]
     _signals_unity_bridge_dll_reference.sub_get_stream_count.restype = ctypes.c_int
+    
+    _signals_unity_bridge_dll_reference.sub_get_stream_info.argtypes = [sub_handle_p, ctypes.c_int, ctypes.POINTER(streamDesc)]
+    _signals_unity_bridge_dll_reference.sub_get_stream_info.restype = ctypes.c_bool
+    
+    _signals_unity_bridge_dll_reference.sub_enable_stream.argtypes = [sub_handle_p, ctypes.c_int, ctypes.c_int]
+    _signals_unity_bridge_dll_reference.sub_enable_stream.restype = ctypes.c_bool
+    
+    _signals_unity_bridge_dll_reference.sub_disable_stream.argtypes = [sub_handle_p, ctypes.c_int]
+    _signals_unity_bridge_dll_reference.sub_disable_stream.restype = ctypes.c_bool
     
     _signals_unity_bridge_dll_reference.sub_play.argtypes = [sub_handle_p, ctypes.c_char_p]
     _signals_unity_bridge_dll_reference.sub_play.restype = ctypes.c_bool
@@ -86,6 +103,20 @@ class CpcSubSource:
         self.firstRead = True
         return True
         
+    def count(self):
+        assert self.handle
+        assert self.dll
+        assert self.started
+        return self.dll.sub_get_stream_count(self.handle)
+        
+    def info_for_stream(self, num):
+        assert self.handle
+        assert self.dll
+        assert self.started
+        c_desc = streamDesc()
+        ok = self.dll.sub_get_stream_info(self.handle, num, c_desc)
+        return (c_desc.MP4_4CC, c_desc.tileNumber, c_desc.quality)
+    
     def read_cpc(self):
         assert self.handle
         assert self.dll

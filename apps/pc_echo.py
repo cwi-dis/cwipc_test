@@ -278,6 +278,11 @@ class SinkClient:
             if self.retry <= 0:
                 return
         print(f"recv {self.sinkNum}: started")
+        nStream = self.source.count()
+        print(f"recv {self.sinkNum}: available streams: {nStream}")
+        for i in range(nStream):
+            fourcc, tilenum, quality = self.source.info_for_stream(i)
+            print(f"recv {self.sinkNum}: stream {i}: 4cc={fourcc}, tilenum={tilenum}, quality={quality}")
         self.receiver_loop()
 
     def statistics(self):
@@ -339,9 +344,9 @@ def main():
             encparams.jpeg_quality = args.jpeg_quality
     b2dparams = {}
     if False:
-        b2dparams['fourcc'] = 'cwi2'
+        b2dparams['fourcc'] = 'cwi1'
     else:
-        b2dparams['streamDescs'] = [('cwi1', 0, 0)]
+        b2dparams['streamDescs'] = [('cwi1', 0, 100)]
     if args.seg_dur:
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
