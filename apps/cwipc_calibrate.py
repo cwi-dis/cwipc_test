@@ -39,7 +39,7 @@ CONFIGCAMERA="""
 POINTS_V2 = [
     (0.25, 1, 0, 255, 0, 0),        # Red ball at Right of the cross
     (0, 1.25, 0, 0, 0, 255),        # Blue ball at top of the cross (because the sky is blue)
-    (0, 1.1, -0.25, 255, 127, 0),   # Orange ball pointing towards the viewer (-Z) because everyone likes orange
+    (0, 1.1, 0.25, 255, 127, 0),   # Orange ball pointing towards the viewer (+Z) because everyone likes orange
     (-0.25, 1, 0, 255, 255, 0),     # Yellow ball at left of cross because it had to go somewhere
     (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
     (-1, 0, -1, 0, 0, 0),             # Black point at -1,0,-1
@@ -55,7 +55,7 @@ POINTS_V2 = [
 POINTS_V3 = [
     (-0.26, 1.04, 0, 255, 0, 0),        # Red LED at left of the cross
     (0, 1.44, 0, 0, 0, 255),        # Blue LED at top of the cross (because the sky is blue)
-    (0, 1.31, -0.26, 0, 255, 0),   # Green LED pointing towards the viewer (-Z)
+    (0, 1.31, 0.26, 0, 255, 0),   # Green LED pointing towards the viewer (+Z)
     (0.26, 1.17, 0, 255, 255, 0),     # Yellow LED at right of cross because it had to go somewhere
     (0, 0, 0, 0, 0, 0),             # Black point at 0,0,0
     (-1, 0, -1, 0, 0, 0),             # Black point at -1,0,-1
