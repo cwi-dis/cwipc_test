@@ -101,13 +101,10 @@ class SourceServer:
     def __init__(self, bin2dash, encparams=None, b2dparams={}, verbose=False):
         self.verbose = verbose
         self.grabber = None
-        self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
+        self.encoder = Encoder(encparams, verbose=verbose)
+        self.transmitter = Transmitter(bin2dash, verbose=verbose, **b2dparams)
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.times_grab = []
-        self.times_encode = []
-        self.sizes_encode = []
-        self.times_send = []
-        self.params = encparams
         self.stopped = False
         self.startTime = None
         self.stopTime = None
@@ -118,6 +115,8 @@ class SourceServer:
         if self.grabber:
             self.grabber.free()
         self.grabber = None
+        self.encoder = None
+        self.transmitter = None
 
     def stop(self):
         self.stopped = True
@@ -125,47 +124,97 @@ class SourceServer:
     def grab_pc(self):
         pc = self.grabber.get()
         return pc
+        
+    def run(self):
+        sourceTime = 0
+        while not self.stopped:
+            t0 = time.time()
+            if self.grabber:
+                pc = self.grab_pc()
+                sourceTime = pc.timestamp()
+                t1 = time.time()
+                cpc = self.encoder.encode_pc(pc)
+            else:
+                cpc = self.cpcSource.get()
+                t1 = time.time()
+            if self.startTime == None: self.startTime = time.time()
+            self.totalBytes += len(cpc)
+            self.transmitter.send(sourceTime, cpc)
+            self.stopTime = time.time()
+            self.times_grab.append(t1-t0)
+            
+    def statistics(self):
+        self.print1stat('grab', self.times_grab)
+        
+    def print1stat(self, name, values, isInt=False):
+        count = len(values)
+        if count == 0:
+            print('send: {}: count=0'.format(name))
+            return
+        minValue = min(values)
+        maxValue = max(values)
+        avgValue = sum(values) / count
+        if isInt:
+            fmtstring = 'send: {}: count={}, average={:.3f}, min={:d}, max={:d}'
+        else:
+            fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
+        print(fmtstring.format(name, count, avgValue, minValue, maxValue))
 
+class Encoder:
+    def __init__(self, encparams, verbose=False):
+        self.verbose = verbose
+        self.params = encparams
+        self.times_encode = []
+        self.sizes_encode = []
+        
     def encode_pc(self, pc):
+        t1 = time.time()
         enc = cwipc.codec.cwipc_new_encoder(params=self.params)
         enc.feed(pc)
         gotData = enc.available(True)
         assert gotData
-        data = enc.get_bytes()
+        cpc = enc.get_bytes()
+        self.sizes_encode.append(len(cpc))
         pc.free()
         enc.free()
-        return data
-        
-    def run(self):
-        prevt3 = time.time()
-        sourceTime = 0
-        while not self.stopped:
-            self.sink.canfeed(time.time(), wait=True)
-            t0 = time.time()
-            if self.grabber:
-                pc = self.grab_pc()
-                sourceTime = pc.timestamp() / 1000.0
-                t1 = time.time()
-                cpc = self.encode_pc(pc)
-                t2 = time.time()
-            else:
-                cpc = self.cpcSource.get()
-                t1 = t2 = time.time()
-            self.sizes_encode.append(len(cpc))
-            if self.startTime == None: self.startTime = time.time()
-            self.totalBytes += len(cpc)
-            self.sink.feed(cpc)
-            self.stopTime = time.time()
-            t3 = time.time()
-            self.times_grab.append(t1-t0)
-            self.times_encode.append(t2-t1)
-            self.times_send.append(t3-t2)
-            if self.verbose: print("send: %f: compressed size: %d, timestamp: %f, waited: %f" % (t3, len(cpc), sourceTime, t3-prevt3), flush=True)
-            prevt3 = t3
-            
+        t2 = time.time()
+        self.times_encode.append(t2-t1)
+        return cpc
+
     def statistics(self):
-        self.print1stat('grab', self.times_grab)
         self.print1stat('encode', self.times_encode)
+        
+    def print1stat(self, name, values, isInt=False):
+        count = len(values)
+        if count == 0:
+            print('send: {}: count=0'.format(name))
+            return
+        minValue = min(values)
+        maxValue = max(values)
+        avgValue = sum(values) / count
+        if isInt:
+            fmtstring = 'send: {}: count={}, average={:.3f}, min={:d}, max={:d}'
+        else:
+            fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
+        print(fmtstring.format(name, count, avgValue, minValue, maxValue))
+
+class Transmitter:
+    def __init__(self, bin2dash, verbose=False, **b2dparams):
+        self.verbose = verbose
+        self.times_send = []
+        self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
+        self.prevt3 = time.time()
+        
+    def send(self, sourceTime, cpc):
+        self.sink.canfeed(time.time(), wait=True)
+        t2 = time.time()
+        self.sink.feed(cpc)
+        t3 = time.time()
+        self.times_send.append(t3-t2)
+        if self.verbose: print("send: %f: compressed size: %d, timestamp: %f, waited: %f" % (t3, len(cpc), sourceTime, t3-self.prevt3), flush=True)
+        self.prevt3 = t3
+
+    def statistics(self):
         self.print1stat('send', self.times_send)
         self.print1stat('encodedsize', self.sizes_encode, isInt=True)
         if self.startTime and self.stopTime and self.startTime != self.stopTime:
@@ -193,7 +242,6 @@ class SourceServer:
             fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
         print(fmtstring.format(name, count, avgValue, minValue, maxValue))
 
- 
 class SinkClient:
     SINKNUM = 1
     
