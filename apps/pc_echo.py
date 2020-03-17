@@ -198,6 +198,10 @@ class SinkClient:
     SINKNUM = 1
     
     def __init__(self, sub, count=None, delay=0, retry=0, display=False, savedir=None, verbose=False):
+        self.sinkNum = SinkClient.SINKNUM
+        SinkClient.SINKNUM += 1
+        self.verbose = verbose
+        if verbose: print(f"recv {self.sinkNum}: sub url={sub}")
         self.source = CpcSubSource(sub)
         self.count = count
         self.delay = delay
@@ -208,13 +212,10 @@ class SinkClient:
         self.times_latency = []
         self.times_completeloop = []
         self.savedir = savedir
-        self.verbose = verbose
         self.stopped = False
         self.startTime = None
         self.stopTime = None
         self.totalBytes = 0
-        self.sinkNum = SinkClient.SINKNUM
-        SinkClient.SINKNUM += 1
 
     def stop(self):
         self.stopped = True
