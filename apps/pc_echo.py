@@ -169,17 +169,21 @@ class Encoder:
         self.params = encparams
         self.times_encode = []
         self.sizes_encode = []
+        self.enc = cwipc.codec.cwipc_new_encoder(params=self.params)
+        
+    def __del__(self):
+        self.enc.free()
+        del self.enc
         
     def feed(self, pc):
         t1 = time.time()
-        enc = cwipc.codec.cwipc_new_encoder(params=self.params)
-        enc.feed(pc)
-        gotData = enc.available(True)
+        
+        self.enc.feed(pc)
+        gotData = self.enc.available(True)
         assert gotData
-        cpc = enc.get_bytes()
+        cpc = self.enc.get_bytes()
         self.sizes_encode.append(len(cpc))
         pc.free()
-        enc.free()
         t2 = time.time()
         self.times_encode.append(t2-t1)
         return cpc
