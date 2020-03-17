@@ -71,7 +71,7 @@ class Visualizer:
                 pass
         self.stop_o3d()
         
-    def show(self, pc):
+    def feed(self, pc):
         o3dpc = cwipc_to_o3d(pc)
         self.queue.put(o3dpc)
             
@@ -107,9 +107,6 @@ class SourceServer:
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.times_grab = []
         self.stopped = False
-        self.startTime = None
-        self.stopTime = None
-        self.totalBytes = 0
         self.lastGrabTime = None
         
     def __del__(self):
@@ -140,18 +137,17 @@ class SourceServer:
                 pc = self.grab_pc()
                 sourceTime = pc.timestamp()
                 t1 = time.time()
-                cpc = self.encoder.encode_pc(pc)
+                cpc = self.encoder.feed(pc)
             else:
                 cpc = self.cpcSource.get()
                 t1 = time.time()
-            if self.startTime == None: self.startTime = time.time()
-            self.totalBytes += len(cpc)
-            self.transmitter.send(sourceTime, cpc)
-            self.stopTime = time.time()
+            self.transmitter.feed(sourceTime, cpc)
             self.times_grab.append(t1-t0)
             
     def statistics(self):
         self.print1stat('grab', self.times_grab)
+        self.encoder.statistics()
+        self.transmitter.statistics()
         
     def print1stat(self, name, values, isInt=False):
         count = len(values)
@@ -174,7 +170,7 @@ class Encoder:
         self.times_encode = []
         self.sizes_encode = []
         
-    def encode_pc(self, pc):
+    def feed(self, pc):
         t1 = time.time()
         enc = cwipc.codec.cwipc_new_encoder(params=self.params)
         enc.feed(pc)
@@ -190,6 +186,7 @@ class Encoder:
 
     def statistics(self):
         self.print1stat('encode', self.times_encode)
+        self.print1stat('encodedsize', self.sizes_encode, isInt=True)
         
     def print1stat(self, name, values, isInt=False):
         count = len(values)
@@ -209,13 +206,19 @@ class Transmitter:
     def __init__(self, bin2dash, verbose=False, **b2dparams):
         self.verbose = verbose
         self.times_send = []
+        self.startTime = None
+        self.stopTime = None
+        self.totalBytes = 0
         self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
         self.prevt3 = time.time()
         
-    def send(self, sourceTime, cpc):
+    def feed(self, sourceTime, cpc):
+        self.totalBytes += len(cpc)
         self.sink.canfeed(time.time(), wait=True)
         t2 = time.time()
+        if self.startTime == None: self.startTime = time.time()
         self.sink.feed(cpc)
+        self.stopTime = time.time()
         t3 = time.time()
         self.times_send.append(t3-t2)
         if self.verbose: print("send: %f: compressed size: %d, timestamp: %f, waited: %f" % (t3, len(cpc), sourceTime, t3-self.prevt3), flush=True)
@@ -223,7 +226,6 @@ class Transmitter:
 
     def statistics(self):
         self.print1stat('send', self.times_send)
-        self.print1stat('encodedsize', self.sizes_encode, isInt=True)
         if self.startTime and self.stopTime and self.startTime != self.stopTime:
             bps = self.totalBytes/(self.stopTime-self.startTime)
             scale = ''
@@ -304,7 +306,7 @@ class SinkClient:
                 with open(os.path.join(self.savedir, savefile), 'wb') as fp:
                     fp.write(cpc)
             if pc and self.display and self.sinkNum == 1:
-                self.display.show(pc)
+                self.display.feed(pc)
             if pc:
                 pc.free()
             if self.count != None:
