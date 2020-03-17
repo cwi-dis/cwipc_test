@@ -78,7 +78,7 @@ class Visualizer:
     def start_o3d(self):
         self.visualiser = open3d.Visualizer()
         self.visualiser.create_window(width=960, height=540)
-        if self.verbose: print('display: started')
+        if self.verbose: print('display: started', flush=True)
 
     def draw_o3d(self, o3dpc):
         """Draw open3d pointcloud"""
@@ -95,7 +95,7 @@ class Visualizer:
         
     def stop_o3d(self):
         self.visualiser.destroy_window()
-        if self.verbose:print('display: stopped')
+        if self.verbose:print('display: stopped', flush=True)
 
 class SourceServer:
     def __init__(self, bin2dash, fps=None, encparams=None, b2dparams={}, verbose=False):
@@ -105,6 +105,9 @@ class SourceServer:
         self.encoder = Encoder(encparams, verbose=verbose)
         self.transmitter = Transmitter(bin2dash, verbose=verbose, **b2dparams)
         self.grabber = cwipc.realsense2.cwipc_realsense2()
+        self.threads = []
+        self.threads.append(threading.Thread(target=self.encoder.run, args=()))
+        self.threads.append(threading.Thread(target=self.transmitter.run, args=()))
         self.times_grab = []
         self.stopped = False
         self.lastGrabTime = None
@@ -119,6 +122,10 @@ class SourceServer:
 
     def stop(self):
         self.stopped = True
+        self.encoder.stop()
+        self.transmitter.stop()
+        for t in self.threads:
+            t.join()
         
     def grab_pc(self):
         if self.lastGrabTime and self.fps:
@@ -130,7 +137,9 @@ class SourceServer:
         return pc
         
     def run(self):
+        for t in self.threads: t.start()
         sourceTime = 0
+        if self.verbose: print('grab: started', flush=True)
         while not self.stopped:
             t0 = time.time()
             if self.grabber:
@@ -143,6 +152,7 @@ class SourceServer:
                 t1 = time.time()
             self.transmitter.feed(sourceTime, cpc)
             self.times_grab.append(t1-t0)
+        if self.verbose: print('grab: stopped', flush=True)
             
     def statistics(self):
         self.print1stat('grab', self.times_grab)
@@ -152,15 +162,15 @@ class SourceServer:
     def print1stat(self, name, values, isInt=False):
         count = len(values)
         if count == 0:
-            print('send: {}: count=0'.format(name))
+            print('grab: {}: count=0'.format(name))
             return
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
         if isInt:
-            fmtstring = 'send: {}: count={}, average={:.3f}, min={:d}, max={:d}'
+            fmtstring = 'grab: {}: count={}, average={:.3f}, min={:d}, max={:d}'
         else:
-            fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
+            fmtstring = 'grab: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
         print(fmtstring.format(name, count, avgValue, minValue, maxValue))
 
 class Encoder:
@@ -169,12 +179,22 @@ class Encoder:
         self.params = encparams
         self.times_encode = []
         self.sizes_encode = []
+        self.stopped = False
         self.enc = cwipc.codec.cwipc_new_encoder(params=self.params)
         
     def __del__(self):
         self.enc.free()
         del self.enc
         
+    def stop(self):
+        self.stopped = True
+        
+    def run(self):
+        if self.verbose: print('encode: started', flush=True)
+        while not self.stopped:
+            time.sleep(1)
+        if self.verbose: print('encode: stopped', flush=True)
+
     def feed(self, pc):
         t1 = time.time()
         
@@ -195,27 +215,40 @@ class Encoder:
     def print1stat(self, name, values, isInt=False):
         count = len(values)
         if count == 0:
-            print('send: {}: count=0'.format(name))
+            print(f'encode: {name}: count=0')
             return
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
         if isInt:
-            fmtstring = 'send: {}: count={}, average={:.3f}, min={:d}, max={:d}'
+            print(f'encode: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
         else:
-            fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
-        print(fmtstring.format(name, count, avgValue, minValue, maxValue))
+            print(f'encode: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
 
 class Transmitter:
+    XMITNUM = 1
+    
     def __init__(self, bin2dash, verbose=False, **b2dparams):
+        self.xmitNum = Transmitter.XMITNUM
+        Transmitter.XMITNUM += 1
         self.verbose = verbose
         self.times_send = []
         self.startTime = None
         self.stopTime = None
         self.totalBytes = 0
+        self.stopped = False
         self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
         self.prevt3 = time.time()
         
+    def stop(self):
+        self.stopped = True
+        
+    def run(self):
+        if self.verbose: print(f"send {self.xmitNum}: started", flush=True)
+        while not self.stopped:
+            time.sleep(1)
+        if self.verbose: print(f"send {self.xmitNum}: stopped", flush=True)
+
     def feed(self, sourceTime, cpc):
         self.totalBytes += len(cpc)
         self.sink.canfeed(time.time(), wait=True)
@@ -225,7 +258,7 @@ class Transmitter:
         self.stopTime = time.time()
         t3 = time.time()
         self.times_send.append(t3-t2)
-        if self.verbose: print("send: %f: compressed size: %d, timestamp: %f, waited: %f" % (t3, len(cpc), sourceTime, t3-self.prevt3), flush=True)
+        if self.verbose: print(f"send {self.xmitNum}: {t3}: compressed size: {len(cpc)}, timestamp: {sourceTime}, waited: {t3-self.prevt3}", flush=True)
         self.prevt3 = t3
 
     def statistics(self):
@@ -239,21 +272,20 @@ class Transmitter:
             if bps > 10000:
                 bps /= 1000
                 scale = 'M'
-            print(f'send: bandwidth={bps:.0f} {scale}B/s')
+            print(f'send {self.xmitNum}: bandwidth={bps:.0f} {scale}B/s')
         
     def print1stat(self, name, values, isInt=False):
         count = len(values)
         if count == 0:
-            print('send: {}: count=0'.format(name))
+            print(f'send {self.xmitNum}: {name}: count=0')
             return
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
         if isInt:
-            fmtstring = 'send: {}: count={}, average={:.3f}, min={:d}, max={:d}'
+            print(f'send {self.xmitNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
         else:
-            fmtstring = 'send: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
-        print(fmtstring.format(name, count, avgValue, minValue, maxValue))
+            print(f'send {self.xmitNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
 
 class SinkClient:
     SINKNUM = 1
@@ -262,7 +294,7 @@ class SinkClient:
         self.sinkNum = SinkClient.SINKNUM
         SinkClient.SINKNUM += 1
         self.verbose = verbose
-        if verbose: print(f"recv {self.sinkNum}: sub url={sub}")
+        if verbose: print(f"recv {self.sinkNum}: sub url={sub}", flush=True)
         self.source = CpcSubSource(sub)
         self.count = count
         self.delay = delay
@@ -289,7 +321,7 @@ class SinkClient:
             cpc = self.source.read_cpc()
             self.stopTime = time.time()
             if not cpc:
-                if self.verbose: print(f"recv {self.sinkNum}: read_cpc() returned None")
+                if self.verbose: print(f"recv {self.sinkNum}: read_cpc() returned None", flush=True)
                 break
             self.totalBytes += len(cpc)
             t1 = time.time()
@@ -332,19 +364,20 @@ class SinkClient:
         while True:
             if self.delay:
                 time.sleep(self.delay)
-                if self.verbose: print(f"recv {self.sinkNum}: starting")
+                if self.verbose: print(f"recv {self.sinkNum}: starting", flush=True)
             if self.source.start():
                 break
             print(f"recv {self.sinkNum}: Compressed pointcloud receiver failed to start")
             self.retry -= 1
             if self.retry <= 0:
                 return
-        print(f"recv {self.sinkNum}: started")
-        nStream = self.source.count()
-        print(f"recv {self.sinkNum}: available streams: {nStream}")
-        for i in range(nStream):
-            fourcc, tilenum, quality = self.source.info_for_stream(i)
-            print(f"recv {self.sinkNum}: stream {i}: 4cc={fourcc}, tilenum={tilenum}, quality={quality}")
+        if self.verbose:
+            print(f"recv {self.sinkNum}: started")
+            nStream = self.source.count()
+            print(f"recv {self.sinkNum}: available streams: {nStream}")
+            for i in range(nStream):
+                fourcc, tilenum, quality = self.source.info_for_stream(i)
+                print(f"recv {self.sinkNum}: stream {i}: 4cc={fourcc}, tilenum={tilenum}, quality={quality}")
         self.receiver_loop()
 
     def statistics(self):
