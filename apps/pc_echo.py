@@ -98,8 +98,9 @@ class Visualizer:
         if self.verbose:print('display: stopped')
 
 class SourceServer:
-    def __init__(self, bin2dash, encparams=None, b2dparams={}, verbose=False):
+    def __init__(self, bin2dash, fps=None, encparams=None, b2dparams={}, verbose=False):
         self.verbose = verbose
+        self.fps = fps
         self.grabber = None
         self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
         self.grabber = cwipc.realsense2.cwipc_realsense2()
@@ -112,6 +113,7 @@ class SourceServer:
         self.startTime = None
         self.stopTime = None
         self.totalBytes = 0
+        self.lastGrabTime = None
         
     def __del__(self):
         self.stopped = True
@@ -123,7 +125,12 @@ class SourceServer:
         self.stopped = True
         
     def grab_pc(self):
+        if self.lastGrabTime and self.fps:
+            nextGrabTime = self.lastGrabTime + 1/self.fps
+            if time.time() < nextGrabTime:
+                time.sleep(nextGrabTime - time.time())
         pc = self.grabber.get()
+        self.lastGrabTime = time.time()
         return pc
 
     def encode_pc(self, pc):
@@ -320,6 +327,7 @@ def main():
     parser.add_argument("--url", action="store", metavar="URL", help="Base of Evanescent URL", default=default_url)
     parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
     parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
+    parser.add_argument("--fps", action="store", type=float, metavar="FPS", help="Limit capture to at most FPS frames per second")
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     parser.add_argument("--delay", action="store", type=int, metavar="SECS", help="Wait SECS seconds before starting receiver")
@@ -352,7 +360,7 @@ def main():
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
-    sourceServer = SourceServer(args.url, encparams, b2dparams, args.verbose)
+    sourceServer = SourceServer(args.url, args.fps, encparams, b2dparams, args.verbose)
     sourceThread = threading.Thread(target=sourceServer.run, args=())
     if args.display:
         visualizer = Visualizer(args.verbose)
