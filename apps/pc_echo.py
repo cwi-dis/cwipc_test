@@ -103,7 +103,7 @@ class SourceServer:
         self.fps = fps
         self.grabber = None
         self.encoder = Encoder(encparams, verbose=verbose)
-        self.transmitter = Transmitter(bin2dash, verbose=verbose, **b2dparams)
+        self.transmitter = Transmitter(self.encoder.getcpcsource(), bin2dash, verbose=verbose, **b2dparams)
         self.grabber = cwipc.realsense2.cwipc_realsense2()
         self.threads = []
         self.threads.append(threading.Thread(target=self.encoder.run, args=()))
@@ -142,15 +142,10 @@ class SourceServer:
         if self.verbose: print('grab: started', flush=True)
         while not self.stopped:
             t0 = time.time()
-            if self.grabber:
-                pc = self.grab_pc()
-                sourceTime = pc.timestamp()
-                t1 = time.time()
-                cpc = self.encoder.feed(pc)
-            else:
-                cpc = self.cpcSource.get()
-                t1 = time.time()
-            self.transmitter.feed(sourceTime, cpc)
+            pc = self.grab_pc()
+            sourceTime = pc.timestamp()
+            t1 = time.time()
+            self.encoder.feed(pc)
             self.times_grab.append(t1-t0)
         if self.verbose: print('grab: stopped', flush=True)
             
@@ -177,14 +172,15 @@ class Encoder:
     def __init__(self, encparams, verbose=False):
         self.verbose = verbose
         self.params = encparams
-        self.times_encode = []
-        self.sizes_encode = []
         self.stopped = False
         self.enc = cwipc.codec.cwipc_new_encoder(params=self.params)
         
     def __del__(self):
         self.enc.free()
         del self.enc
+        
+    def getcpcsource(self):
+        return self.enc
         
     def stop(self):
         self.stopped = True
@@ -196,47 +192,27 @@ class Encoder:
         if self.verbose: print('encode: stopped', flush=True)
 
     def feed(self, pc):
-        t1 = time.time()
-        
         self.enc.feed(pc)
-        gotData = self.enc.available(True)
-        assert gotData
-        cpc = self.enc.get_bytes()
-        self.sizes_encode.append(len(cpc))
         pc.free()
-        t2 = time.time()
-        self.times_encode.append(t2-t1)
-        return cpc
 
     def statistics(self):
-        self.print1stat('encode', self.times_encode)
-        self.print1stat('encodedsize', self.sizes_encode, isInt=True)
-        
-    def print1stat(self, name, values, isInt=False):
-        count = len(values)
-        if count == 0:
-            print(f'encode: {name}: count=0')
-            return
-        minValue = min(values)
-        maxValue = max(values)
-        avgValue = sum(values) / count
-        if isInt:
-            print(f'encode: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
-        else:
-            print(f'encode: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
+        pass
 
 class Transmitter:
     XMITNUM = 1
     
-    def __init__(self, bin2dash, verbose=False, **b2dparams):
+    def __init__(self, cpcsource, bin2dash, verbose=False, **b2dparams):
         self.xmitNum = Transmitter.XMITNUM
         Transmitter.XMITNUM += 1
         self.verbose = verbose
+        self.times_encode = []
+        self.sizes_encode = []
         self.times_send = []
         self.startTime = None
         self.stopTime = None
         self.totalBytes = 0
         self.stopped = False
+        self.cpcsource = cpcsource
         self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
         self.prevt3 = time.time()
         
@@ -246,10 +222,24 @@ class Transmitter:
     def run(self):
         if self.verbose: print(f"send {self.xmitNum}: started", flush=True)
         while not self.stopped:
-            time.sleep(1)
+            cpc = self.waitforcpc()
+            if not cpc:
+                if self.verbose: print(f"send {self.xmitNum}: no compressed data available")
+                continue
+            self.sendcpc(cpc)
         if self.verbose: print(f"send {self.xmitNum}: stopped", flush=True)
 
-    def feed(self, sourceTime, cpc):
+    def waitforcpc(self):
+        t1 = time.time()
+        gotData = self.cpcsource.available(True)
+        if not gotData: return None
+        cpc = self.cpcsource.get_bytes()
+        self.sizes_encode.append(len(cpc))
+        t2 = time.time()
+        self.times_encode.append(t2-t1)
+        return cpc
+    
+    def sendcpc(self, cpc):
         self.totalBytes += len(cpc)
         self.sink.canfeed(time.time(), wait=True)
         t2 = time.time()
@@ -258,10 +248,12 @@ class Transmitter:
         self.stopTime = time.time()
         t3 = time.time()
         self.times_send.append(t3-t2)
-        if self.verbose: print(f"send {self.xmitNum}: {t3}: compressed size: {len(cpc)}, timestamp: {sourceTime}, waited: {t3-self.prevt3}", flush=True)
+        if self.verbose: print(f"send {self.xmitNum}: {t3}: compressed size: {len(cpc)}, waited: {t3-self.prevt3}", flush=True)
         self.prevt3 = t3
 
     def statistics(self):
+        self.print1stat('encode', self.times_encode)
+        self.print1stat('encodedsize', self.sizes_encode, isInt=True)
         self.print1stat('send', self.times_send)
         if self.startTime and self.stopTime and self.startTime != self.stopTime:
             bps = self.totalBytes/(self.stopTime-self.startTime)
