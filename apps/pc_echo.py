@@ -392,6 +392,7 @@ def main():
     b2dUrl = args.url
     subUrl = args.url + "bin2dashSink.mpd"
     if args.verbose:
+        print(f"command line: {' '.join(sys.argv)}")
         print(f"url: {subUrl}")
     encparams = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
     if args.octree_bits or args.jpeg_quality:
