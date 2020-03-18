@@ -106,14 +106,20 @@ class SourceServer:
         self.lastGrabTime = None
 
         self.grabber = cwipc.realsense2.cwipc_realsense2()
-
-        self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
+        if tile:
+            self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
+        else:
+            self.encodergroup = None
         self.encoders = []
         
         self.threads = []
         self.transmitters = []
-        enc = self.encodergroup.addencoder(params=encparams)
-        self.encoders.append(enc)
+        if tile:
+            enc = self.encodergroup.addencoder(params=encparams)
+            self.encoders.append(enc)
+        else:
+            enc = cwipc.codec.cwipc_new_encoder(params=encparams)
+            self.encodergroup = enc
         transmitter = Transmitter(enc, bin2dash, verbose=verbose, **b2dparams)
         self.transmitters.append(transmitter)
         thr = threading.Thread(target=transmitter.run, args=())
@@ -126,9 +132,11 @@ class SourceServer:
             self.grabber.free()
         if self.encodergroup:
             self.encodergroup.free()
-        self.grabber = None
-        self.encodergroup = None
-        self.transmitters = None
+        del self.grabber
+        del self.encodergroup
+        del self.transmitters
+        del self.threads
+        del self.encoders
 
     def stop(self):
         self.stopped = True
@@ -156,6 +164,7 @@ class SourceServer:
             sourceTime = pc.timestamp()
             t1 = time.time()
             self.encodergroup.feed(pc)
+            pc.free()
             self.times_grab.append(t1-t0)
         if self.verbose: print('grab: stopped', flush=True)
             
