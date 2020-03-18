@@ -26,6 +26,8 @@ from subsource import CpcSubSource
 import numpy as np
 import open3d
 
+B2D_BUG_WAIT=0
+
 def _dump_app_stacks(*args):
     print("pc_echo: QUIT received, dumping all stacks, %d threads:" % len(sys._current_frames()), file=sys.stderr)
     for threadId, stack in list(sys._current_frames().items()):
@@ -122,6 +124,7 @@ class SourceServer:
             self.encodergroup = enc
         transmitter = Transmitter(enc, bin2dash, verbose=verbose, **b2dparams)
         self.transmitters.append(transmitter)
+        if B2D_BUG_WAIT: time.sleep(B2D_BUG_WAIT)
         thr = threading.Thread(target=transmitter.run, args=())
         self.threads.append(thr)
         
@@ -388,6 +391,7 @@ class SinkClient:
         print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
 
 def main():
+    global B2D_BUG_WAIT
     if hasattr(signal, 'SIGQUIT'):
         signal.signal(signal.SIGQUIT, _dump_app_stacks)
     default_url = "https://vrt-evanescent.viaccess-orca.com/echo-%d/" % int(time.time())
@@ -407,7 +411,9 @@ def main():
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel receivers", default=1)
     parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
+    parser.add_argument("--b2d_bug_wait", action="store", type=int, metavar="WAIT", help="Wait WAIT seconds before starting to transmit")
     args = parser.parse_args()
+    if args.b2d_bug_wait: B2D_BUG_WAIT = args.b2d_bug_wait
     #
     # Create source
     #
