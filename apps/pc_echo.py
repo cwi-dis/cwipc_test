@@ -98,32 +98,42 @@ class Visualizer:
         if self.verbose:print('display: stopped', flush=True)
 
 class SourceServer:
-    def __init__(self, bin2dash, fps=None, encparams=None, b2dparams={}, verbose=False):
+    def __init__(self, bin2dash, fps=None, tile=False, encparams=None, b2dparams={}, verbose=False):
         self.verbose = verbose
         self.fps = fps
-        self.grabber = None
-        self.encoder = Encoder(encparams, verbose=verbose)
-        self.transmitter = Transmitter(self.encoder.getcpcsource(), bin2dash, verbose=verbose, **b2dparams)
-        self.grabber = cwipc.realsense2.cwipc_realsense2()
-        self.threads = []
-        self.threads.append(threading.Thread(target=self.encoder.run, args=()))
-        self.threads.append(threading.Thread(target=self.transmitter.run, args=()))
         self.times_grab = []
         self.stopped = False
         self.lastGrabTime = None
+
+        self.grabber = cwipc.realsense2.cwipc_realsense2()
+
+        self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
+        self.encoders = []
+        
+        self.threads = []
+        self.transmitters = []
+        enc = self.encodergroup.addencoder(params=encparams)
+        self.encoders.append(enc)
+        transmitter = Transmitter(enc, bin2dash, verbose=verbose, **b2dparams)
+        self.transmitters.append(transmitter)
+        thr = threading.Thread(target=transmitter.run, args=())
+        self.threads.append(thr)
+        
         
     def __del__(self):
         self.stopped = True
         if self.grabber:
             self.grabber.free()
+        if self.encodergroup:
+            self.encodergroup.free()
         self.grabber = None
-        self.encoder = None
-        self.transmitter = None
+        self.encodergroup = None
+        self.transmitters = None
 
     def stop(self):
         self.stopped = True
-        self.encoder.stop()
-        self.transmitter.stop()
+        for t in self.transmitters:
+            t.stop()
         for t in self.threads:
             t.join()
         
@@ -145,14 +155,14 @@ class SourceServer:
             pc = self.grab_pc()
             sourceTime = pc.timestamp()
             t1 = time.time()
-            self.encoder.feed(pc)
+            self.encodergroup.feed(pc)
             self.times_grab.append(t1-t0)
         if self.verbose: print('grab: stopped', flush=True)
             
     def statistics(self):
         self.print1stat('grab', self.times_grab)
-        self.encoder.statistics()
-        self.transmitter.statistics()
+        for t in self.transmitters:
+            t.statistics()
         
     def print1stat(self, name, values, isInt=False):
         count = len(values)
@@ -167,36 +177,6 @@ class SourceServer:
         else:
             fmtstring = 'grab: {}: count={}, average={:.3f}, min={:.3f}, max={:.3f}'
         print(fmtstring.format(name, count, avgValue, minValue, maxValue))
-
-class Encoder:
-    def __init__(self, encparams, verbose=False):
-        self.verbose = verbose
-        self.params = encparams
-        self.stopped = False
-        self.enc = cwipc.codec.cwipc_new_encoder(params=self.params)
-        
-    def __del__(self):
-        self.enc.free()
-        del self.enc
-        
-    def getcpcsource(self):
-        return self.enc
-        
-    def stop(self):
-        self.stopped = True
-        
-    def run(self):
-        if self.verbose: print('encode: started', flush=True)
-        while not self.stopped:
-            time.sleep(1)
-        if self.verbose: print('encode: stopped', flush=True)
-
-    def feed(self, pc):
-        self.enc.feed(pc)
-        pc.free()
-
-    def statistics(self):
-        pass
 
 class Transmitter:
     XMITNUM = 1
@@ -407,6 +387,8 @@ def main():
     parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
     parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
     parser.add_argument("--fps", action="store", type=float, metavar="FPS", help="Limit capture to at most FPS frames per second")
+    parser.add_argument("--tile", action="store_true", help="Encode and transmit individual tiles in stead of single pointcloud stream")
+    parser.add_argument("--voxelsize", action="store", type=float, metavar="M", help="Before tiling voxelate pointcloud with size MxMxM (meters)")
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     parser.add_argument("--delay", action="store", type=int, metavar="SECS", help="Wait SECS seconds before starting receiver")
@@ -431,6 +413,8 @@ def main():
             encparams.octree_bits = args.octree_bits
         if args.jpeg_quality:
             encparams.jpeg_quality = args.jpeg_quality
+        if args.voxelsize:
+            encparams.voxelsize = args.voxelsize
     b2dparams = {}
     if False:
         b2dparams['fourcc'] = 'cwi1'
@@ -440,7 +424,7 @@ def main():
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
-    sourceServer = SourceServer(args.url, args.fps, encparams, b2dparams, args.verbose)
+    sourceServer = SourceServer(args.url, args.fps, args.tile, encparams, b2dparams, args.verbose)
     sourceThread = threading.Thread(target=sourceServer.run, args=())
     if args.display:
         visualizer = Visualizer(args.verbose)
