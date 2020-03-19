@@ -100,34 +100,61 @@ class Visualizer:
         if self.verbose:print('display: stopped', flush=True)
 
 class SourceServer:
-    def __init__(self, bin2dash, *, fps=None, synthetic=False, tile=False, encparams=None, b2dparams={}, verbose=False):
+    def __init__(self, bin2dash, *, fps=None, synthetic=False, tile=False, encparamlist=[], b2dparams={}, verbose=False):
         self.verbose = verbose
         self.fps = fps
         self.times_grab = []
         self.stopped = False
         self.lastGrabTime = None
+        self.threads = []
+        
         if synthetic:
             self.grabber = cwipc.cwipc_synthetic()
         else:
             self.grabber = cwipc.realsense2.cwipc_realsense2()
+        
         if tile:
+            self.tiles = []
             maxTile = self.grabber.maxtile()
             if self.verbose: print(f"grab: {maxTile} tiles")
             for i in range(maxTile):
                 tileInfo = self.grabber.get_tileinfo_dict(i)
                 if self.verbose: print(f"grab: tile {i}: {tileInfo}")
+            self.tiles = range(0, maxTile)
+            #self.tiles = range(1, maxTile)
+        else:
+            self.tiles = [0]
+            
         self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
         self.encoders = []
         
-        self.threads = []
+        streamDescriptors = []
+        for tilenum in self.tiles:
+            for encparams in encparamlist:
+                fourcc = 'cwi1'
+                quality = 100*encparams.octree_bits + encparams.jpeg_quality
+                streamDescriptors.append((fourcc, tilenum, quality))
+        b2dparams['streamDescs'] = streamDescriptors
+        
+        self.transmittergroup = CpcBin2dashSink(bin2dash, **b2dparams)
         self.transmitters = []
-        enc = self.encodergroup.addencoder(params=encparams)
-        self.encoders.append(enc)
-        transmitter = Transmitter(enc, bin2dash, verbose=verbose, **b2dparams)
-        self.transmitters.append(transmitter)
+        
         if B2D_BUG_WAIT: time.sleep(B2D_BUG_WAIT)
-        thr = threading.Thread(target=transmitter.run, args=())
-        self.threads.append(thr)
+
+        for tilenum in self.tiles:
+            for encparams in encparamlist:
+                encparams.tilenumber = tilenum
+                if self.verbose:
+                    idx = len(self.transmitters)
+                    sd = streamDescriptors[idx]
+                    print(f"grab: streamnum {idx}: tilenum={tilenum}={sd[1]}, quality={sd[2]}, octree_bits={encparams.octree_bits}, jpeg_quality={encparams.jpeg_quality}")
+                enc = self.encodergroup.addencoder(params=encparams)
+                self.encoders.append(enc)
+                streamNum = len(self.transmitters)
+                transmitter = Transmitter(enc, self.transmittergroup, streamNum, verbose=verbose)
+                self.transmitters.append(transmitter)
+                thr = threading.Thread(target=transmitter.run, args=())
+                self.threads.append(thr)
         
         
     def __del__(self):
@@ -194,7 +221,7 @@ class SourceServer:
 class Transmitter:
     XMITNUM = 1
     
-    def __init__(self, cpcsource, bin2dash, verbose=False, **b2dparams):
+    def __init__(self, cpcsource, sink, stream_index, verbose=False):
         self.xmitNum = Transmitter.XMITNUM
         Transmitter.XMITNUM += 1
         self.verbose = verbose
@@ -206,7 +233,8 @@ class Transmitter:
         self.totalBytes = 0
         self.stopped = False
         self.cpcsource = cpcsource
-        self.sink = CpcBin2dashSink(bin2dash, **b2dparams)
+        self.sink = sink
+        self.stream_index = stream_index
         self.prevt3 = time.time()
         
     def stop(self):
@@ -237,7 +265,7 @@ class Transmitter:
         self.sink.canfeed(time.time(), wait=True)
         t2 = time.time()
         if self.startTime == None: self.startTime = time.time()
-        self.sink.feed(cpc)
+        self.sink.feed(cpc, stream_index=self.stream_index)
         self.stopTime = time.time()
         t3 = time.time()
         self.times_send.append(t3-t2)
@@ -289,6 +317,7 @@ class SinkClient:
         self.times_decode = []
         self.times_latency = []
         self.times_completeloop = []
+        self.sizes_received = []
         self.savedir = savedir
         self.stopped = False
         self.startTime = None
@@ -308,6 +337,7 @@ class SinkClient:
             if not cpc:
                 if self.verbose: print(f"recv {self.sinkNum}: read_cpc() returned None", flush=True)
                 break
+            self.sizes_received.append(len(cpc))
             self.totalBytes += len(cpc)
             t1 = time.time()
             pc = self.decompress(cpc)
@@ -370,6 +400,7 @@ class SinkClient:
         self.print1stat('decode', self.times_decode)
         self.print1stat('latency', self.times_latency)
         self.print1stat('completeloop', self.times_completeloop)
+        self.print1stat('receivedsize', self.sizes_received, isInt=True)
         if self.startTime and self.stopTime and self.startTime != self.stopTime:
             bps = self.totalBytes/(self.stopTime-self.startTime)
             scale = ''
@@ -381,7 +412,7 @@ class SinkClient:
                 scale = 'M'
             print(f'recv {self.sinkNum}: bandwidth={bps:.0f} {scale}B/s')
         
-    def print1stat(self, name, values):
+    def print1stat(self, name, values, isInt=False):
         count = len(values)
         if count == 0:
             print(f'recv {self.sinkNum}: {name}: count=0')
@@ -389,7 +420,10 @@ class SinkClient:
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
-        print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
+        if isInt:
+            print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
+        else:
+            print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
 
 def main():
     global B2D_BUG_WAIT
@@ -403,8 +437,8 @@ def main():
     parser.add_argument("--fps", action="store", type=float, metavar="FPS", help="Limit capture to at most FPS frames per second")
     parser.add_argument("--synthetic", action="store_true", help="Use synthetic pointclouds (watermelons) in stead of realsense")
     parser.add_argument("--tile", action="store_true", help="Encode and transmit individual tiles in stead of single pointcloud stream")
-    parser.add_argument("--voxelsize", action="store", type=float, metavar="M", help="Before tiling voxelate pointcloud with size MxMxM (meters)")
-    parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
+    parser.add_argument("--voxelsize", action="store", type=float, default=0, metavar="M", help="Before tiling voxelate pointcloud with size MxMxM (meters)")
+    parser.add_argument("--octree_bits", action="append", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
     parser.add_argument("--delay", action="store", type=int, metavar="SECS", help="Wait SECS seconds before starting receiver")
     parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails", default=0)
@@ -424,24 +458,25 @@ def main():
     if args.verbose:
         print(f"command line: {' '.join(sys.argv)}")
         print(f"url: {subUrl}")
-    encparams = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, 9, 85, 16, 0, 0)
-    if args.octree_bits or args.jpeg_quality:
-        if args.octree_bits:
-            encparams.octree_bits = args.octree_bits
-        if args.jpeg_quality:
-            encparams.jpeg_quality = args.jpeg_quality
-        if args.voxelsize:
-            encparams.voxelsize = args.voxelsize
+    #
+    # Find all combinations of octree_bits and jpeg_quality and create encoder_params
+    #
+    encparamlist = []
+    octree_bits_list = args.octree_bits
+    jpeg_quality_list = args.jpeg_quality
+    voxelsize = args.voxelsize
+    if not octree_bits_list: octree_bits_list = [9]
+    if not jpeg_quality_list: jpeg_quality_list = [85]
+    for octree_bits in octree_bits_list:
+        for jpeg_quality in jpeg_quality_list:
+            encparams = cwipc.codec.cwipc_encoder_params(False, 1, 1.0, octree_bits, jpeg_quality, 16, 0, voxelsize)
+            encparamlist.append(encparams)        
     b2dparams = {}
-    if False:
-        b2dparams['fourcc'] = 'cwi1'
-    else:
-        b2dparams['streamDescs'] = [('cwi1', 0, 100)]
     if args.seg_dur:
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
-    sourceServer = SourceServer(args.url, fps=args.fps, synthetic=args.synthetic, tile=args.tile, encparams=encparams, b2dparams=b2dparams, verbose=args.verbose)
+    sourceServer = SourceServer(args.url, fps=args.fps, synthetic=args.synthetic, tile=args.tile, encparamlist=encparamlist, b2dparams=b2dparams, verbose=args.verbose)
     sourceThread = threading.Thread(target=sourceServer.run, args=())
     if args.display:
         visualizer = Visualizer(args.verbose)
