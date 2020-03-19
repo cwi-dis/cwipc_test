@@ -66,6 +66,9 @@ def _bin2dash_dll(libname=None):
     _bin2dash_dll_reference.vrt_push_buffer.argtypes = [vrt_handle_p, ctypes.c_char_p, ctypes.c_size_t]
     _bin2dash_dll_reference.vrt_push_buffer.restype = ctypes.c_bool
     
+    _bin2dash_dll_reference.vrt_push_buffer_ext.argtypes = [vrt_handle_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_size_t]
+    _bin2dash_dll_reference.vrt_push_buffer_ext.restype = ctypes.c_bool
+    
     _bin2dash_dll_reference.vrt_get_media_time.argtypes = [vrt_handle_p, ctypes.c_int]
     _bin2dash_dll_reference.vrt_get_media_time.restype = ctypes.c_long
     
@@ -101,11 +104,14 @@ class CpcBin2dashSink:
             self.dll.vrt_destroy(self.handle)
             self.handle = None
             
-    def feed(self, buffer):
+    def feed(self, buffer, stream_index=None):
         assert self.handle
         assert self.dll
         length = len(buffer)
-        ok = self.dll.vrt_push_buffer(self.handle, bytes(buffer), length)
+        if stream_index == None:
+            ok = self.dll.vrt_push_buffer(self.handle, bytes(buffer), length)
+        else:
+            ok = self.dll.vrt_push_buffer_ext(self.handle, stream_index, bytes(buffer), length)
         assert ok
 
     def canfeed(self, timestamp, wait=True):
