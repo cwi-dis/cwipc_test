@@ -108,20 +108,13 @@ class SourceServer:
         self.lastGrabTime = None
 
         self.grabber = cwipc.realsense2.cwipc_realsense2()
-        if tile:
-            self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
-        else:
-            self.encodergroup = None
+        self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
         self.encoders = []
         
         self.threads = []
         self.transmitters = []
-        if tile:
-            enc = self.encodergroup.addencoder(params=encparams)
-            self.encoders.append(enc)
-        else:
-            enc = cwipc.codec.cwipc_new_encoder(params=encparams)
-            self.encodergroup = enc
+        enc = self.encodergroup.addencoder(params=encparams)
+        self.encoders.append(enc)
         transmitter = Transmitter(enc, bin2dash, verbose=verbose, **b2dparams)
         self.transmitters.append(transmitter)
         if B2D_BUG_WAIT: time.sleep(B2D_BUG_WAIT)
