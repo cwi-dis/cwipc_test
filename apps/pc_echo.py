@@ -100,14 +100,22 @@ class Visualizer:
         if self.verbose:print('display: stopped', flush=True)
 
 class SourceServer:
-    def __init__(self, bin2dash, fps=None, tile=False, encparams=None, b2dparams={}, verbose=False):
+    def __init__(self, bin2dash, *, fps=None, synthetic=False, tile=False, encparams=None, b2dparams={}, verbose=False):
         self.verbose = verbose
         self.fps = fps
         self.times_grab = []
         self.stopped = False
         self.lastGrabTime = None
-
-        self.grabber = cwipc.realsense2.cwipc_realsense2()
+        if synthetic:
+            self.grabber = cwipc.cwipc_synthetic()
+        else:
+            self.grabber = cwipc.realsense2.cwipc_realsense2()
+        if tile:
+            maxTile = self.grabber.maxtile()
+            if self.verbose: print(f"grab: {maxTile} tiles")
+            for i in range(maxTile):
+                tileInfo = self.grabber.get_tileinfo_dict(i)
+                if self.verbose: print(f"grab: tile {i}: {tileInfo}")
         self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
         self.encoders = []
         
@@ -393,6 +401,7 @@ def main():
     parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
     parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
     parser.add_argument("--fps", action="store", type=float, metavar="FPS", help="Limit capture to at most FPS frames per second")
+    parser.add_argument("--synthetic", action="store_true", help="Use synthetic pointclouds (watermelons) in stead of realsense")
     parser.add_argument("--tile", action="store_true", help="Encode and transmit individual tiles in stead of single pointcloud stream")
     parser.add_argument("--voxelsize", action="store", type=float, metavar="M", help="Before tiling voxelate pointcloud with size MxMxM (meters)")
     parser.add_argument("--octree_bits", action="store", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
@@ -432,7 +441,7 @@ def main():
         b2dparams['seg_dur_in_ms'] = args.seg_dur
     if args.timeshift_buffer:
         b2dparams['timeshift_buffer_depth_in_ms'] = args.timeshift_buffer
-    sourceServer = SourceServer(args.url, args.fps, args.tile, encparams, b2dparams, args.verbose)
+    sourceServer = SourceServer(args.url, fps=args.fps, synthetic=args.synthetic, tile=args.tile, encparams=encparams, b2dparams=b2dparams, verbose=args.verbose)
     sourceThread = threading.Thread(target=sourceServer.run, args=())
     if args.display:
         visualizer = Visualizer(args.verbose)
