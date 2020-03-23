@@ -86,6 +86,9 @@ class CpcBin2dashSink:
             streamDescCount = len(streamDescs)
             # ctypes array constructors are a bit weird. Check the documentation.
             c_streamDescs = (streamDesc*streamDescCount)(*streamDescs)
+            if False: # Debug print
+                for i in range(streamDescCount):
+                    print(f"xxxjack streamDesc[{i}]: MP4_4CC={c_streamDescs[i].MP4_4CC},  tileNumber={c_streamDescs[i].tileNumber},  quality={c_streamDescs[i].quality}")
             self.handle = self.dll.vrt_create_ext("bin2dashSink".encode('utf8'), streamDescCount, c_streamDescs, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
         else:
             if fourcc == None:
