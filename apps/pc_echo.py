@@ -427,15 +427,15 @@ def main():
     default_url = "https://vrt-evanescent.viaccess-orca.com/echo-%d/" % int(time.time())
     parser = argparse.ArgumentParser(description="Echo pointcloud streams using bin2dash, evanescent and sub")
     parser.add_argument("--url", action="store", metavar="URL", help="Base of Evanescent URL", default=default_url)
-    parser.add_argument("--seg_dur", action="store", type=int, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
-    parser.add_argument("--timeshift_buffer", action="store", type=int, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
+    parser.add_argument("--seg_dur", action="store", type=int, default=10000, metavar="MS", help="Bin2dash segment duration (milliseconds, default 10000)")
+    parser.add_argument("--timeshift_buffer", action="store", type=int, default=30000, metavar="MS", help="Bin2dash timeshift buffer depth (milliseconds, default 30000)")
     parser.add_argument("--fps", action="store", type=float, metavar="FPS", help="Limit capture to at most FPS frames per second")
     parser.add_argument("--synthetic", action="store_true", help="Use synthetic pointclouds (watermelons) in stead of realsense")
     parser.add_argument("--tile", action="store_true", help="Encode and transmit individual tiles in stead of single pointcloud stream")
     parser.add_argument("--voxelsize", action="store", type=float, default=0, metavar="M", help="Before tiling voxelate pointcloud with size MxMxM (meters)")
     parser.add_argument("--octree_bits", action="append", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
     parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
-    parser.add_argument("--delay", action="store", type=int, metavar="SECS", help="Wait SECS seconds before starting receiver")
+    parser.add_argument("--delay", action="store", type=int, default=1, metavar="SECS", help="Wait SECS seconds before starting receiver")
     parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails", default=0)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop after receiving N pointclouds")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
@@ -444,13 +444,25 @@ def main():
     parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
     args = parser.parse_args()
     #
+    # Some sanity checks on the arguments
+    #
+    if not args.delay and not args.retry:
+        print("* Warning: specifying neither --delay nor --retry will probably cause receiver to fail to start", file=sys.stderr)
+    if not args.retry and args.delay * 1000 <= args.seg_dur:
+        print("* Warning: --delay smaller than --seg_dur will probably cause receiver to fail to start", file=sys.stderr)
+    if args.delay * 1000 >= args.timeshift_buffer:
+        print("* Warning: --delay greater than --timeshift_buffer may cause segments to already be deleted before receiver picks them up", file=sys.stderr)
+    if args.timeshift_buffer <= 2*args.seg_dur:
+        print("* Warning: --timeshift_buffer should be more than two times --seg_dur or deletion of segments may overrun the receiver", file=sys.stderr)
+    if args.timeshift_buffer < 8000:
+        print("* Warning: Small values of --timeshift_buffer may cause deletion of segments to overrun the receiver", file=sys.stderr)
+    #
     # Create source
     #
     b2dUrl = args.url
     subUrl = args.url + "bin2dashSink.mpd"
-    if args.verbose:
-        print(f"command line: {' '.join(sys.argv)}")
-        print(f"url: {subUrl}")
+    print(f"command line: {' '.join(sys.argv)}")
+    print(f"url: {subUrl}")
     #
     # Find all combinations of octree_bits and jpeg_quality and create encoder_params
     #
