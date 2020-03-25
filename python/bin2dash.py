@@ -5,6 +5,8 @@ import os
 
 _bin2dash_dll_reference = None
 
+DEBUG_PRINT_STREAMDESC=True
+
 def VRT_4CC(code):
     """Convert anything reasonable (bytes, string, int) to 4cc integer"""
     if isinstance(code, int):
@@ -27,12 +29,16 @@ class FrameInfo(ctypes.Structure):
 class streamDesc(ctypes.Structure):
     _fields_ = [
         ("MP4_4CC", ctypes.c_uint32),
-        ("tileNumber", ctypes.c_uint32),
-        ("quality", ctypes.c_uint32),
+        ("objectX", ctypes.c_uint32),
+        ("objectY", ctypes.c_uint32),
+        ("objectWidth", ctypes.c_uint32),
+        ("objectHeight", ctypes.c_uint32),
+        ("totalWidth", ctypes.c_uint32),
+        ("totalHeight", ctypes.c_uint32),
     ]
 
-    def __init__(self, fourcc, tileNumber=0, quality=0):
-        super(streamDesc, self).__init__(VRT_4CC(fourcc), tileNumber, quality)
+    def __init__(self, fourcc, *args):
+        super(streamDesc, self).__init__(VRT_4CC(fourcc), *args)
     
 def _bin2dash_dll(libname=None):
     global _bin2dash_dll_reference
@@ -86,9 +92,9 @@ class CpcBin2dashSink:
             streamDescCount = len(streamDescs)
             # ctypes array constructors are a bit weird. Check the documentation.
             c_streamDescs = (streamDesc*streamDescCount)(*streamDescs)
-            if False: # Debug print
+            if DEBUG_PRINT_STREAMDESC:
                 for i in range(streamDescCount):
-                    print(f"xxxjack streamDesc[{i}]: MP4_4CC={c_streamDescs[i].MP4_4CC},  tileNumber={c_streamDescs[i].tileNumber},  quality={c_streamDescs[i].quality}")
+                    print(f"xxxjack streamDesc[{i}]: MP4_4CC={c_streamDescs[i].MP4_4CC}, objectX={c_streamDescs[i].objectX}, objectY={c_streamDescs[i].objectY}, objectWidth={c_streamDescs[i].objectWidth}, objectHeight={c_streamDescs[i].objectHeight}, totalWidth={c_streamDescs[i].totalWidth}, totalHeight={c_streamDescs[i].totalHeight}")
             self.handle = self.dll.vrt_create_ext("bin2dashSink".encode('utf8'), streamDescCount, c_streamDescs, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
         else:
             if fourcc == None:
