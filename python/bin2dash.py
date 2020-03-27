@@ -5,6 +5,8 @@ import os
 
 _bin2dash_dll_reference = None
 
+BIN2DASH_API_VERSION = "UNKNOWN-master-revUNKNOWN".encode('utf8')
+
 DEBUG_PRINT_STREAMDESC=True
 
 def VRT_4CC(code):
@@ -17,6 +19,10 @@ def VRT_4CC(code):
     assert len(code) == 4
     rv = (code[0]<<24) | (code[1]<<16) | (code[2]<<8) | (code[3])
     return rv
+    
+def repr_4CC(code):
+    bstr = b''
+    
     
 class vrt_handle_p(ctypes.c_void_p):
     pass
@@ -63,7 +69,7 @@ def _bin2dash_dll(libname=None):
     _bin2dash_dll_reference.vrt_create.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
     _bin2dash_dll_reference.vrt_create.restype = vrt_handle_p
     
-    _bin2dash_dll_reference.vrt_create_ext.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(streamDesc), ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
+    _bin2dash_dll_reference.vrt_create_ext.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(streamDesc), ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
     _bin2dash_dll_reference.vrt_create_ext.restype = vrt_handle_p
     
     _bin2dash_dll_reference.vrt_destroy.argtypes = [vrt_handle_p]
@@ -94,8 +100,8 @@ class CpcBin2dashSink:
             c_streamDescs = (streamDesc*streamDescCount)(*streamDescs)
             if DEBUG_PRINT_STREAMDESC:
                 for i in range(streamDescCount):
-                    print(f"xxxjack streamDesc[{i}]: MP4_4CC={c_streamDescs[i].MP4_4CC}, objectX={c_streamDescs[i].objectX}, objectY={c_streamDescs[i].objectY}, objectWidth={c_streamDescs[i].objectWidth}, objectHeight={c_streamDescs[i].objectHeight}, totalWidth={c_streamDescs[i].totalWidth}, totalHeight={c_streamDescs[i].totalHeight}")
-            self.handle = self.dll.vrt_create_ext("bin2dashSink".encode('utf8'), streamDescCount, c_streamDescs, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
+                    print(f"xxxjack streamDesc[{i}]: MP4_4CC={c_streamDescs[i].MP4_4CC.to_bytes(4, 'big')}={c_streamDescs[i].MP4_4CC}, objectX={c_streamDescs[i].objectX}, objectY={c_streamDescs[i].objectY}, objectWidth={c_streamDescs[i].objectWidth}, objectHeight={c_streamDescs[i].objectHeight}, totalWidth={c_streamDescs[i].totalWidth}, totalHeight={c_streamDescs[i].totalHeight}")
+            self.handle = self.dll.vrt_create_ext("bin2dashSink".encode('utf8'), streamDescCount, c_streamDescs, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms, BIN2DASH_API_VERSION)
         else:
             if fourcc == None:
                 fourcc = VRT_4CC("cwi1")

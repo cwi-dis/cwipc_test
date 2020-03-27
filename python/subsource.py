@@ -8,6 +8,8 @@ SLEEP_TIME=0.01
 # If no data is available from the sub for this long we treat it as end-of-file:
 EOF_TIME=10
 
+SUB_API_VERSION = "UNKNOWN-master-revUNKNOWN".encode('utf8')
+
 _signals_unity_bridge_dll_reference = None
 
 class sub_handle_p(ctypes.c_void_p):
@@ -46,7 +48,7 @@ def _signals_unity_bridge_dll(libname=None):
         os.putenv('SIGNALS_SMD_PATH', libdirname)
     _signals_unity_bridge_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
-    _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p]
+    _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
     _signals_unity_bridge_dll_reference.sub_create.restype = sub_handle_p
     
     _signals_unity_bridge_dll_reference.sub_destroy.argtypes = [sub_handle_p]
@@ -80,7 +82,7 @@ class CpcSubSource:
         self.started = False
         self.streamIndex = streamIndex
         self.dll = _signals_unity_bridge_dll()
-        self.handle = self.dll.sub_create("SUBsource".encode('utf8'))
+        self.handle = self.dll.sub_create("SUBsource".encode('utf8'), SUB_API_VERSION)
         assert self.handle
         
     def __del__(self):
