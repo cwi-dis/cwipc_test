@@ -388,7 +388,7 @@ class SinkClient:
             print(f"recv {self.sinkNum}: available streams: {nStream}")
             for i in range(nStream):
                 fourcc, tilenum, quality = self.source.info_for_stream(i)
-                print(f"recv {self.sinkNum}: stream {i}: 4cc={fourcc}, tilenum={tilenum}, quality={quality}")
+                print(f"recv {self.sinkNum}: stream {i}: 4CC={fourcc.to_bytes(4, 'big')}={fourcc}, tilenum={tilenum}, quality={quality}")
         self.receiver_loop()
 
     def statistics(self):
