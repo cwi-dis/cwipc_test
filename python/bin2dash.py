@@ -131,7 +131,8 @@ class CpcBin2dashSink:
             self.handle = None
             
     def feed(self, buffer, stream_index=None):
-        assert self.handle
+        if not self.handle:
+            return False
         assert self.dll
         length = len(buffer)
         if stream_index == None:
@@ -140,6 +141,7 @@ class CpcBin2dashSink:
             ok = self.dll.vrt_push_buffer_ext(self.handle, stream_index, bytes(buffer), length)
         if not ok:
             raise Bin2dashError(f"vrt_push_buffer(..., {length}) failed")
+        return ok
 
     def canfeed(self, timestamp, wait=True):
-        return True
+        return not not self.handle
