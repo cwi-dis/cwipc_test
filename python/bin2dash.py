@@ -9,6 +9,9 @@ BIN2DASH_API_VERSION = "UNKNOWN-master-revUNKNOWN".encode('utf8')
 
 DEBUG_PRINT_STREAMDESC=True
 
+class Bin2dashError(RuntimeError):
+    pass
+
 def VRT_4CC(code):
     """Convert anything reasonable (bytes, string, int) to 4cc integer"""
     if isinstance(code, int):
@@ -57,7 +60,7 @@ def _bin2dash_dll(libname=None):
             if not libname:
                 libname = ctypes.util.find_library('bin2dash.so')
             if not libname:
-                raise RuntimeError('Dynamic library bin2dash not found')
+                raise Bin2dashError('Dynamic library bin2dash not found')
     assert libname
     # Signals library needs to be able to find some data files stored next to the DLL.
     # Tell it where they are.
@@ -92,6 +95,7 @@ class CpcBin2dashSink:
         self.dll = None
         self.handle = None
         self.dll = _bin2dash_dll()
+        assert self.dll
         url = url.encode('utf8')
         if streamDescs != None:
             assert fourcc == None   # Can only use fourcc or streamDescs
@@ -102,12 +106,16 @@ class CpcBin2dashSink:
                 for i in range(streamDescCount):
                     print(f"xxxjack streamDesc[{i}]: MP4_4CC={c_streamDescs[i].MP4_4CC.to_bytes(4, 'big')}={c_streamDescs[i].MP4_4CC}, objectX={c_streamDescs[i].objectX}, objectY={c_streamDescs[i].objectY}, objectWidth={c_streamDescs[i].objectWidth}, objectHeight={c_streamDescs[i].objectHeight}, totalWidth={c_streamDescs[i].totalWidth}, totalHeight={c_streamDescs[i].totalHeight}")
             self.handle = self.dll.vrt_create_ext("bin2dashSink".encode('utf8'), streamDescCount, c_streamDescs, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms, BIN2DASH_API_VERSION)
+            if not self.handle:
+                raise Bin2dashError(f"vrt_create_ext({url}) failed")
         else:
             if fourcc == None:
                 fourcc = VRT_4CC("cwi1")
             else:
                 fourcc = VRT_4CC(fourcc)
             self.handle = self.dll.vrt_create("bin2dashSink".encode('utf8'), fourcc, url, seg_dur_in_ms, timeshift_buffer_depth_in_ms)
+            if not self.handle:
+                raise Bin2dashError(f"vrt_create({url}) failed")
         assert self.handle
         
     def __del__(self):
@@ -127,7 +135,8 @@ class CpcBin2dashSink:
             ok = self.dll.vrt_push_buffer(self.handle, bytes(buffer), length)
         else:
             ok = self.dll.vrt_push_buffer_ext(self.handle, stream_index, bytes(buffer), length)
-        assert ok
+        if not ok:
+            raise Bin2dashError(f"vrt_push_buffer(..., {length}) failed")
 
     def canfeed(self, timestamp, wait=True):
         return True

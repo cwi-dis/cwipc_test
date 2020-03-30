@@ -105,7 +105,11 @@ class SourceServer:
         self.stopped = False
         self.lastGrabTime = None
         self.threads = []
-        
+        self.encoders = []
+        self.transmitters = []
+        self.encodergroup = None
+        self.transmittergroup = None
+                
         if synthetic:
             self.grabber = cwipc.cwipc_synthetic()
         else:
@@ -124,7 +128,6 @@ class SourceServer:
             self.tiles = [0]
             
         self.encodergroup = cwipc.codec.cwipc_new_encodergroup()
-        self.encoders = []
         
         streamDescriptors = []
         for tilenum in self.tiles:
@@ -135,7 +138,6 @@ class SourceServer:
         b2dparams['streamDescs'] = streamDescriptors
         
         self.transmittergroup = CpcBin2dashSink(bin2dash, **b2dparams)
-        self.transmitters = []
         
         for tilenum in self.tiles:
             for encparams in encparamlist:

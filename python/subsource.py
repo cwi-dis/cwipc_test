@@ -12,6 +12,9 @@ SUB_API_VERSION = "UNKNOWN-master-revUNKNOWN".encode('utf8')
 
 _signals_unity_bridge_dll_reference = None
 
+class SubError(RuntimeError):
+    pass
+    
 class sub_handle_p(ctypes.c_void_p):
     pass
     
@@ -39,7 +42,7 @@ def _signals_unity_bridge_dll(libname=None):
             if not libname:
                 libname = ctypes.util.find_library('signals-unity-bridge.so')
             if not libname:
-                raise RuntimeError('Dynamic library signals-unity-bridge not found')
+                raise SubError('Dynamic library signals-unity-bridge not found')
     assert libname
     # Signals library needs to be able to find some data files stored next to the DLL.
     # Tell it where they are.
@@ -82,8 +85,10 @@ class CpcSubSource:
         self.started = False
         self.streamIndex = streamIndex
         self.dll = _signals_unity_bridge_dll()
+        assert self.dll
         self.handle = self.dll.sub_create("SUBsource".encode('utf8'), SUB_API_VERSION)
-        assert self.handle
+        if not self.handle:
+            raise SubError("sub_create failed")
         
     def __del__(self):
         self.free()
