@@ -168,6 +168,8 @@ class SourceServer:
         del self.encoders
 
     def stop(self):
+        if self.stopped: return
+        if self.verbose: print("grab: stopping", flush=True)
         self.stopped = True
         for t in self.transmitters:
             t.stop()
@@ -236,6 +238,8 @@ class Transmitter:
         self.prevt3 = time.time()
         
     def stop(self):
+        if self.stopped: return
+        if self.verbose: print(f"send {self.xmitNum}: stopping", flush=True)
         self.stopped = True
         
     def run(self):
@@ -323,6 +327,8 @@ class SinkClient:
         self.totalBytes = 0
 
     def stop(self):
+        if self.stopped: return
+        if self.verbose: print(f"recv {self.sinkNum}: stopping", flush=True)
         self.stopped = True
         
     def receiver_loop(self):
@@ -361,9 +367,11 @@ class SinkClient:
             if self.count != None:
                 self.count -= 1
                 if self.count <= 0:
+                    if self.verbose: print(f"recv {self.sinkNum}: requested --count reached", flush=True)
                     break
             t3 = time.time()
             self.times_completeloop.append(t3-t0)
+        if self.verbose: print(f"recv {self.sinkNum}: stopped", flush=True)
             
     def decompress(self, cpc):
         decomp = cwipc.codec.cwipc_new_decoder()
@@ -389,7 +397,7 @@ class SinkClient:
             nStream = self.source.count()
             print(f"recv {self.sinkNum}: available streams: {nStream}")
             for i in range(nStream):
-                fourcc, tilenum, quality = self.source.info_for_stream(i)
+                fourcc, tilenum, quality = self.source.cpc_info_for_stream(i)
                 print(f"recv {self.sinkNum}: stream {i}: 4CC={fourcc.to_bytes(4, 'big')}={fourcc}, tilenum={tilenum}, quality={quality}")
         self.receiver_loop()
 

@@ -5,7 +5,7 @@ import os
 
 _bin2dash_dll_reference = None
 
-BIN2DASH_API_VERSION = "UNKNOWN-master-revUNKNOWN".encode('utf8')
+BIN2DASH_API_VERSION = 0x20200327A
 
 DEBUG_PRINT_STREAMDESC=True
 
@@ -69,23 +69,26 @@ def _bin2dash_dll(libname=None):
         os.putenv('SIGNALS_SMD_PATH', libdirname)
     _bin2dash_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
+    _bin2dash_dll_reference.vrt_create_ext.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(streamDesc), ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_uint64]
+    _bin2dash_dll_reference.vrt_create_ext.restype = vrt_handle_p
+    
     _bin2dash_dll_reference.vrt_create.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_char_p, ctypes.c_int, ctypes.c_int]
     _bin2dash_dll_reference.vrt_create.restype = vrt_handle_p
-    
-    _bin2dash_dll_reference.vrt_create_ext.argtypes = [ctypes.c_char_p, ctypes.c_int, ctypes.POINTER(streamDesc), ctypes.c_char_p, ctypes.c_int, ctypes.c_int, ctypes.c_char_p]
-    _bin2dash_dll_reference.vrt_create_ext.restype = vrt_handle_p
     
     _bin2dash_dll_reference.vrt_destroy.argtypes = [vrt_handle_p]
     _bin2dash_dll_reference.vrt_destroy.restype = None
     
-    _bin2dash_dll_reference.vrt_push_buffer.argtypes = [vrt_handle_p, ctypes.c_char_p, ctypes.c_size_t]
-    _bin2dash_dll_reference.vrt_push_buffer.restype = ctypes.c_bool
-    
     _bin2dash_dll_reference.vrt_push_buffer_ext.argtypes = [vrt_handle_p, ctypes.c_int, ctypes.c_char_p, ctypes.c_size_t]
     _bin2dash_dll_reference.vrt_push_buffer_ext.restype = ctypes.c_bool
     
+    _bin2dash_dll_reference.vrt_push_buffer.argtypes = [vrt_handle_p, ctypes.c_char_p, ctypes.c_size_t]
+    _bin2dash_dll_reference.vrt_push_buffer.restype = ctypes.c_bool
+    
+    _bin2dash_dll_reference.vrt_get_media_time_ext.argtypes = [vrt_handle_p, ctypes.c_int, ctypes.c_int]
+    _bin2dash_dll_reference.vrt_get_media_time_ext.restype = ctypes.c_int64
+    
     _bin2dash_dll_reference.vrt_get_media_time.argtypes = [vrt_handle_p, ctypes.c_int]
-    _bin2dash_dll_reference.vrt_get_media_time.restype = ctypes.c_long
+    _bin2dash_dll_reference.vrt_get_media_time.restype = ctypes.c_int64
     
     return _bin2dash_dll_reference
  

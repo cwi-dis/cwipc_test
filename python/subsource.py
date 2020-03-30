@@ -8,7 +8,7 @@ SLEEP_TIME=0.01
 # If no data is available from the sub for this long we treat it as end-of-file:
 EOF_TIME=10
 
-SUB_API_VERSION = "UNKNOWN-master-revUNKNOWN".encode('utf8')
+SUB_API_VERSION = 0x20200327A
 
 _signals_unity_bridge_dll_reference = None
 
@@ -27,8 +27,12 @@ class FrameInfo(ctypes.Structure):
 class streamDesc(ctypes.Structure):
     _fields_ = [
         ("MP4_4CC", ctypes.c_uint32),
-        ("tileNumber", ctypes.c_uint32),
-        ("quality", ctypes.c_uint32),
+        ("objectX", ctypes.c_uint32),
+        ("objectY", ctypes.c_uint32),
+        ("objectWidth", ctypes.c_uint32),
+        ("objectHeight", ctypes.c_uint32),
+        ("totalWidth", ctypes.c_uint32),
+        ("totalHeight", ctypes.c_uint32),
     ]
         
 def _signals_unity_bridge_dll(libname=None):
@@ -51,11 +55,14 @@ def _signals_unity_bridge_dll(libname=None):
         os.putenv('SIGNALS_SMD_PATH', libdirname)
     _signals_unity_bridge_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
-    _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p, ctypes.c_char_p]
+    _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p, ctypes.c_uint64]
     _signals_unity_bridge_dll_reference.sub_create.restype = sub_handle_p
     
     _signals_unity_bridge_dll_reference.sub_destroy.argtypes = [sub_handle_p]
     _signals_unity_bridge_dll_reference.sub_destroy.restype = None
+    
+    _signals_unity_bridge_dll_reference.sub_play.argtypes = [sub_handle_p, ctypes.c_char_p]
+    _signals_unity_bridge_dll_reference.sub_play.restype = ctypes.c_bool
     
     _signals_unity_bridge_dll_reference.sub_get_stream_count.argtypes = [sub_handle_p]
     _signals_unity_bridge_dll_reference.sub_get_stream_count.restype = ctypes.c_int
@@ -68,9 +75,6 @@ def _signals_unity_bridge_dll(libname=None):
     
     _signals_unity_bridge_dll_reference.sub_disable_stream.argtypes = [sub_handle_p, ctypes.c_int]
     _signals_unity_bridge_dll_reference.sub_disable_stream.restype = ctypes.c_bool
-    
-    _signals_unity_bridge_dll_reference.sub_play.argtypes = [sub_handle_p, ctypes.c_char_p]
-    _signals_unity_bridge_dll_reference.sub_play.restype = ctypes.c_bool
     
     _signals_unity_bridge_dll_reference.sub_grab_frame.argtypes = [sub_handle_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
     _signals_unity_bridge_dll_reference.sub_grab_frame.restype = ctypes.c_size_t
@@ -116,13 +120,16 @@ class CpcSubSource:
         assert self.started
         return self.dll.sub_get_stream_count(self.handle)
         
-    def info_for_stream(self, num):
+    def cpc_info_for_stream(self, num):
         assert self.handle
         assert self.dll
         assert self.started
         c_desc = streamDesc()
         ok = self.dll.sub_get_stream_info(self.handle, num, c_desc)
-        return (c_desc.MP4_4CC, c_desc.tileNumber, c_desc.quality)
+        if c_desc.objectWidth or c_desc.objectHeight or c_desc.totalWidth or c_desc.totalHeight:
+            print(f"sub_get_stream_info({num}): MP4_4CC={c_desc.MP4_4CC},  objectX={c_desc.objectX},  objectY={c_desc.objectY},  objectWidth={c_desc.objectWidth},  objectHeight={c_desc.objectHeight},  totalWidth={c_desc.totalWidth},  totalHeight={c_desc.totalHeight}", file=sys.stdout)
+            raise SubError(f"sub_get_stream_info({num}) returned unexpected information")
+        return (c_desc.MP4_4CC, c_desc.objectX, c_desc.objectY)
     
     def read_cpc(self):
         assert self.handle
