@@ -131,16 +131,18 @@ class CpcSubSource:
             raise SubError(f"sub_get_stream_info({num}) returned unexpected information")
         return (c_desc.MP4_4CC, c_desc.objectX, c_desc.objectY)
     
-    def read_cpc(self):
+    def read_cpc(self, streamIndex=None):
         assert self.handle
         assert self.dll
         assert self.started
         startTime = time.time()
+        if streamIndex == None:
+            streamIndex = self.streamIndex
         #
         # We loop until sub_grab_frame returns a length != 0
         #
         while time.time() < startTime + EOF_TIME:
-            length = self.dll.sub_grab_frame(self.handle, self.streamIndex, None, 0, None)
+            length = self.dll.sub_grab_frame(self.handle, streamIndex, None, 0, None)
             if length != 0:
                 break
             time.sleep(SLEEP_TIME)

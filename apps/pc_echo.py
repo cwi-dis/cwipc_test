@@ -136,6 +136,7 @@ class SourceServer:
             for encparams in encparamlist:
                 fourcc = 'cwi1'
                 quality = 100*encparams.octree_bits + encparams.jpeg_quality
+                print(f"grab: use --stream {len(streamDescriptors)} to receive tile {tilenum} in quality {quality}")
                 streamDescriptors.append((fourcc, tilenum, quality))
         b2dparams['streamDescs'] = streamDescriptors
         
@@ -307,19 +308,14 @@ class Transmitter:
         else:
             print(f'send {self.xmitNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
 
-class SinkClient:
-    SINKNUM = 1
-    
-    def __init__(self, sub, count=None, delay=0, retry=0, display=False, savedir=None, verbose=False):
-        self.sinkNum = SinkClient.SINKNUM
-        SinkClient.SINKNUM += 1
-        self.verbose = verbose
-        if verbose: print(f"recv {self.sinkNum}: sub url={sub}", flush=True)
-        self.source = CpcSubSource(sub)
+class Receiver:
+    def __init__(self, sub, sinkNum, streamNum, count=None, pcsink=None, savedir=None, verbose=False):
+        self.sub = sub
+        self.sinkNum = sinkNum
+        self.streamNum = streamNum
         self.count = count
-        self.delay = delay
-        self.retry = retry
-        self.display = display
+        self.pcsink = pcsink
+        self.verbose = verbose
         self.times_recv = []
         self.times_decode = []
         self.times_latency = []
@@ -333,51 +329,52 @@ class SinkClient:
 
     def stop(self):
         if self.stopped: return
-        if self.verbose: print(f"recv {self.sinkNum}: stopping", flush=True)
+        if self.verbose: print(f"recv {self.sinkNum}.{self.streamNum}: stopping", flush=True)
         self.stopped = True
-        
-    def receiver_loop(self):
+
+    def run(self):
         seqno = 1
         while not self.stopped:
             t0 = time.time()
             if self.startTime == None: self.startTime = time.time()
-            cpc = self.source.read_cpc()
+            cpc = self.sub.read_cpc(self.streamNum)
             self.stopTime = time.time()
             if not cpc:
-                if self.verbose: print(f"recv {self.sinkNum}: read_cpc() returned None", flush=True)
+                if self.verbose: print(f"recv {self.sinkNum}.{self.streamNum}: read_cpc() returned None", flush=True)
                 break
             self.sizes_received.append(len(cpc))
             self.totalBytes += len(cpc)
             t1 = time.time()
             pc = self.decompress(cpc)
             if not pc:
-                print(f"recv {self.sinkNum}: decompress({len(cpc)} bytes of compressed data) failed to produce a pointcloud")
+                print(f"recv {self.sinkNum}.{self.streamNum}: decompress({len(cpc)} bytes of compressed data) failed to produce a pointcloud")
             t2 = time.time()
             self.times_recv.append(t1-t0)
             self.times_decode.append(t2-t1)
             sinkTime = time.time()
             if pc:
                 sourceTime = pc.timestamp() / 1000.0
-                if self.verbose: print(f"recv {self.sinkNum}: {t1}: compressed size: {len(cpc)}, timestamp: {sourceTime}, waited: {t1-t0}, latency: {sinkTime-sourceTime}", flush=True)
+                if self.verbose: print(f"recv {self.sinkNum}.{self.streamNum}: {t1}: compressed size: {len(cpc)}, timestamp: {sourceTime}, waited: {t1-t0}, latency: {sinkTime-sourceTime}", flush=True)
                 self.times_latency.append(sinkTime-sourceTime)
             if cpc and self.savedir:
-                savefile = 'pointcloud-%05d.cwicpc' % seqno
+                savefile = 'pointcloud-%d-%05d.cwicpc' % (self.streamNum, seqno)
                 seqno += 1
                 with open(os.path.join(self.savedir, savefile), 'wb') as fp:
                     fp.write(cpc)
-            if pc and self.display and self.sinkNum == 1:
-                self.display.feed(pc)
+            if pc and self.pcsink:
+                self.pcsink.feed(pc)
             if pc:
                 pc.free()
             if self.count != None:
                 self.count -= 1
                 if self.count <= 0:
-                    if self.verbose: print(f"recv {self.sinkNum}: requested --count reached", flush=True)
+                    if self.verbose: print(f"recv {self.sinkNum}.{self.streamNum}: requested --count reached", flush=True)
                     break
             t3 = time.time()
             self.times_completeloop.append(t3-t0)
-        if self.verbose: print(f"recv {self.sinkNum}: stopped", flush=True)
-            
+        if self.verbose: print(f"recv {self.sinkNum}.{self.streamNum}: stopped", flush=True)
+        
+                     
     def decompress(self, cpc):
         decomp = cwipc.codec.cwipc_new_decoder()
         decomp.feed(cpc)
@@ -385,27 +382,7 @@ class SinkClient:
         if not gotData: return None
         pc = decomp.get()
         return pc
-        
-    def run(self):
-        while True:
-            if self.delay:
-                time.sleep(self.delay)
-                if self.verbose: print(f"recv {self.sinkNum}: starting", flush=True)
-            if self.source.start():
-                break
-            print(f"recv {self.sinkNum}: Compressed pointcloud receiver failed to start")
-            self.retry -= 1
-            if self.retry <= 0:
-                return
-        if self.verbose:
-            print(f"recv {self.sinkNum}: started")
-            nStream = self.source.count()
-            print(f"recv {self.sinkNum}: available streams: {nStream}")
-            for i in range(nStream):
-                fourcc, tilenum, quality = self.source.cpc_info_for_stream(i)
-                print(f"recv {self.sinkNum}: stream {i}: 4CC={fourcc.to_bytes(4, 'big')}={fourcc}, tilenum={tilenum}, quality={quality}")
-        self.receiver_loop()
-
+   
     def statistics(self):
         self.print1stat('recv', self.times_recv)
         self.print1stat('decode', self.times_decode)
@@ -421,21 +398,97 @@ class SinkClient:
             if bps > 10000:
                 bps /= 1000
                 scale = 'M'
-            print(f'recv {self.sinkNum}: bandwidth={bps:.0f} {scale}B/s')
+            print(f'recv {self.sinkNum}.{self.streamNum}: bandwidth={bps:.0f} {scale}B/s')
         
     def print1stat(self, name, values, isInt=False):
         count = len(values)
         if count == 0:
-            print(f'recv {self.sinkNum}: {name}: count=0')
+            print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count=0')
             return
         minValue = min(values)
         maxValue = max(values)
         avgValue = sum(values) / count
         if isInt:
-            print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
+            print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
         else:
-            print(f'recv {self.sinkNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
+            print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
+      
+class SinkClient:
+    SINKNUM = 1
+    
+    def __init__(self, subUrl, count=None, delay=0, retry=0, pcsink=None, savedir=None, verbose=False):
+        self.sinkNum = SinkClient.SINKNUM
+        SinkClient.SINKNUM += 1
+        self.verbose = verbose
+        self.count = count
+        self.delay = delay
+        self.retry = retry
+        self.pcsink = pcsink
+        self.savedir = savedir
+        self.stopped = False
+        self.tile2stream = {}
+        self.receivers = []
+        self.threads = []
+        if verbose: print(f"sink {self.sinkNum}: sub url={subUrl}", flush=True)
+        self.sub = CpcSubSource(subUrl)
 
+    def stop(self):
+        if self.stopped: return
+        if self.verbose: print(f"sink {self.sinkNum}: stopping", flush=True)
+        self.stopped = True
+        for r in self.receivers:
+            r.stop()
+        for t in self.threads:
+            t.join()
+        
+    def run(self):
+        while True:
+            if self.delay:
+                time.sleep(self.delay)
+                if self.verbose: print(f"recv {self.sinkNum}: starting", flush=True)
+            if self.sub.start():
+                break
+            print(f"recv {self.sinkNum}: Compressed pointcloud receiver failed to start", flush=True)
+            self.retry -= 1
+            if self.retry <= 0:
+                return
+        if self.verbose:
+            print(f"recv {self.sinkNum}: started", flush=True)
+        nStream = self.sub.count()
+        if self.verbose:
+            print(f"recv {self.sinkNum}: available streams: {nStream}", flush=True)
+        #
+        # Iterate over the streams and collect all available tilenumbers
+        #
+        for i in range(nStream):
+            fourcc, tilenum, quality = self.sub.cpc_info_for_stream(i)
+            if self.verbose:
+                print(f"recv {self.sinkNum}: stream {i}: 4CC={fourcc.to_bytes(4, 'big')}={fourcc}, tilenum={tilenum}, quality={quality}", flush=True)
+            if not tilenum in self.tile2stream:
+                self.tile2stream[tilenum] = i
+        #
+        # Start one receiver per tilenumber
+        #
+        for streamNum in self.tile2stream.values():
+            receiver = Receiver(self.sub, self.sinkNum, streamNum, self.count, self.pcsink, self.savedir, self.verbose)
+            thr = threading.Thread(target=receiver.run, args=())
+            self.receivers.append(receiver)
+            self.threads.append(thr)
+        if self.verbose:
+            print(f"recv {self.sinkNum}: starting receivers", flush=True)
+        for t in self.threads:
+            t.start()
+        if self.verbose:
+            print(f"recv {self.sinkNum}: waiting for receivers", flush=True)
+        for t in self.threads:
+            t.join()
+        if self.verbose:
+            print(f"recv {self.sinkNum}: receivers done", flush=True)
+
+    def statistics(self):
+        for r in self.receivers:
+            r.statistics()
+        
 def main():
     global ISSUE_20
     if hasattr(signal, 'SIGQUIT'):
