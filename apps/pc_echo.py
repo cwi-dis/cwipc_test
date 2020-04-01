@@ -484,10 +484,10 @@ def main():
     parser.add_argument("--synthetic", action="store_true", help="Use synthetic pointclouds (watermelons) in stead of realsense")
     parser.add_argument("--tile", action="store_true", help="Encode and transmit individual tiles in stead of single pointcloud stream")
     parser.add_argument("--voxelsize", action="store", type=float, default=0, metavar="M", help="Before tiling voxelate pointcloud with size MxMxM (meters)")
-    parser.add_argument("--octree_bits", action="append", type=int, metavar="N", help="Override encoder parameter (depth of octree)")
-    parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality)")
+    parser.add_argument("--octree_bits", action="append", type=int, metavar="N", help="Override encoder parameter (depth of octree). Can be specified multiple times.")
+    parser.add_argument("--jpeg_quality", action="store", type=int, metavar="N", help="Override encoder parameter (jpeg quality). Can be specified multiple times.")
     parser.add_argument("--delay", action="store", type=int, default=1, metavar="SECS", help="Wait SECS seconds before starting receiver")
-    parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails", default=0)
+    parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails. Sets --delay to 1 if not set.", default=0)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop after receiving N pointclouds")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
@@ -496,6 +496,8 @@ def main():
     parser.add_argument("--issue_20", action="store_true", help="Delay bin2dash shutdown to work around issue 20")
     args = parser.parse_args()
     ISSUE_20 = args.issue_20
+    if args.retry and not args.delay:
+        args.delay = 1
     #
     # Some sanity checks on the arguments
     #
