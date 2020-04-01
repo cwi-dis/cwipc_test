@@ -81,6 +81,7 @@ class SourceServer:
         self.verbose = verbose
         self.fps = fps
         self.times_grab = []
+        self.pointcounts_grab = []
         self.stopped = False
         self.lastGrabTime = None
         self.threads = []
@@ -113,7 +114,6 @@ class SourceServer:
             for encparams in encparamlist:
                 fourcc = 'cwi1'
                 quality = 100*encparams.octree_bits + encparams.jpeg_quality
-                print(f"grab: use --stream {len(streamDescriptors)} to receive tile {tilenum} in quality {quality}")
                 streamDescriptors.append((fourcc, tilenum, quality))
         b2dparams['streamDescs'] = streamDescriptors
         
@@ -175,6 +175,7 @@ class SourceServer:
         while not self.stopped:
             t0 = time.time()
             pc = self.grab_pc()
+            self.pointcounts_grab.append(pc.count())
             sourceTime = pc.timestamp()
             t1 = time.time()
             self.encodergroup.feed(pc)
@@ -183,7 +184,8 @@ class SourceServer:
         if self.verbose: print('grab: stopped', flush=True)
             
     def statistics(self):
-        self.print1stat('grab', self.times_grab)
+        self.print1stat('capture_duration', self.times_grab)
+        self.print1stat('capture_pointcount', self.pointcounts_grab, isInt=True)
         for t in self.transmitters:
             t.statistics()
         
@@ -258,9 +260,9 @@ class Transmitter:
         self.prevt3 = t3
 
     def statistics(self):
-        self.print1stat('encode', self.times_encode)
-        self.print1stat('encodedsize', self.sizes_encode, isInt=True)
-        self.print1stat('send', self.times_send)
+        self.print1stat('encode_duration', self.times_encode)
+        self.print1stat('send_bytecount', self.sizes_encode, isInt=True)
+        self.print1stat('send_duration', self.times_send)
         if self.startTime and self.stopTime and self.startTime != self.stopTime:
             bps = self.totalBytes/(self.stopTime-self.startTime)
             scale = ''
@@ -295,6 +297,7 @@ class Receiver:
         self.verbose = verbose
         self.times_recv = []
         self.times_decode = []
+        self.pointcounts_decode = []
         self.times_latency = []
         self.times_completeloop = []
         self.sizes_received = []
@@ -328,6 +331,7 @@ class Receiver:
             t2 = time.time()
             self.times_recv.append(t1-t0)
             self.times_decode.append(t2-t1)
+            self.pointcounts_decode.append(pc.count())
             sinkTime = time.time()
             if pc:
                 sourceTime = pc.timestamp() / 1000.0
@@ -361,11 +365,12 @@ class Receiver:
         return pc
    
     def statistics(self):
-        self.print1stat('recv', self.times_recv)
-        self.print1stat('decode', self.times_decode)
-        self.print1stat('latency', self.times_latency)
-        self.print1stat('completeloop', self.times_completeloop)
-        self.print1stat('receivedsize', self.sizes_received, isInt=True)
+        self.print1stat('recv_duration', self.times_recv)
+        self.print1stat('recv_bytecount', self.sizes_received, isInt=True)
+        self.print1stat('recv_loop_duration', self.times_completeloop)
+        self.print1stat('decode_duration', self.times_decode)
+        self.print1stat('decode_pointcount', self.pointcounts_decode, isInt=True)
+        self.print1stat('end_to_end_latency', self.times_latency)
         if self.startTime and self.stopTime and self.startTime != self.stopTime:
             bps = self.totalBytes/(self.stopTime-self.startTime)
             scale = ''
