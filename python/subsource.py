@@ -151,7 +151,8 @@ class CpcSubSource:
         rv = bytearray(length)
         ptr_char = (ctypes.c_char * length).from_buffer(rv)
         ptr = ctypes.cast(ptr_char, ctypes.c_void_p)
-        length2 = self.dll.sub_grab_frame(self.handle, self.streamIndex, ptr, length, None)
-        assert length2 == length
+        length2 = self.dll.sub_grab_frame(self.handle, streamIndex, ptr, length, None)
+        if length2 != length:
+            raise SubError("read_cpc(stream={streamIndex}: was promised {length} bytes but got only {length2})")
         return rv
         
