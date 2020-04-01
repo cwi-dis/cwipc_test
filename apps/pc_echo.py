@@ -24,7 +24,6 @@ from subsource import CpcSubSource
 
 # NOTE: open3d must be imported after all the DLLs have been loaded (sigh)
 import numpy as np
-import open3d
 
 ISSUE_20=False
 
@@ -35,69 +34,47 @@ def _dump_app_stacks(*args):
         traceback.print_stack(stack, file=sys.stderr)
         print(file=sys.stderr)
 
-def cwipc_to_o3d(pc):
-    """Convert cwipc pointcloud to open3d pointcloud"""
-    # Note that this method is inefficient, it can probably be done
-    # in-place with some numpy magic
-    pcpoints = pc.get_points()
-    points = []
-    colors = []
-    for p in pcpoints:
-        points.append((p.x, p.y, p.z))  
-        colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
-    points_v = open3d.Vector3dVector(points)
-    colors_v = open3d.Vector3dVector(colors)
-    rv = open3d.PointCloud()
-    rv.points = points_v
-    rv.colors = colors_v
-    return rv
-
 class Visualizer:
     def __init__(self, verbose=False):
         self.visualiser = None
-        self.visualiser_o3dpc = None    
         self.producer = None
-        self.queue = queue.Queue()
+        self.queue = queue.Queue(maxsize=2)
         self.verbose = verbose
+        self.start_window()
         
     def set_producer(self, producer):
         self.producer = producer    
         
     def run(self):
-        self.start_o3d()
         while self.producer and self.producer.is_alive():
             try:
-                o3dpc = self.queue.get(timeout=1)
-                self.draw_o3d(o3dpc)
+                pc = self.queue.get(timeout=1)
+                ok = self.draw_pc(pc)
+                if not ok: break
             except queue.Empty:
                 pass
-        self.stop_o3d()
         
     def feed(self, pc):
-        o3dpc = cwipc_to_o3d(pc)
-        self.queue.put(o3dpc)
+        try:
+            self.queue.put(pc)
+        except queue.Full:
+            pc.free()
             
-    def start_o3d(self):
-        self.visualiser = open3d.Visualizer()
-        self.visualiser.create_window(width=960, height=540)
+    def start_window(self):
+        self.visualiser = cwipc.cwipc_window("pc_echo")
         if self.verbose: print('display: started', flush=True)
+        self.visualiser.feed(None, True)
 
-    def draw_o3d(self, o3dpc):
+    def draw_pc(self, pc):
         """Draw open3d pointcloud"""
-        if self.visualiser_o3dpc == None:
-            self.visualiser_o3dpc = o3dpc
-            self.visualiser.add_geometry(o3dpc)
-        else:
-            self.visualiser_o3dpc.points = o3dpc.points
-            self.visualiser_o3dpc.colors = o3dpc.colors
-        if self.verbose: print('display:', len(self.visualiser_o3dpc.points), 'points', flush=True)
-        self.visualiser.update_geometry()
-        self.visualiser.update_renderer()
-        self.visualiser.poll_events()
-        
-    def stop_o3d(self):
-        self.visualiser.destroy_window()
-        if self.verbose:print('display: stopped', flush=True)
+        ok = self.visualiser.feed(pc, True)
+        pc.free()
+        if not ok: 
+            print('display: window.feed() returned False')
+            return False
+        if self.visualiser.interact(None, "q", 30) == "q":
+            return False
+        return True
 
 class SourceServer:
     def __init__(self, bin2dash, *, fps=None, synthetic=False, tile=False, encparamlist=[], b2dparams={}, verbose=False):
@@ -363,7 +340,7 @@ class Receiver:
                     fp.write(cpc)
             if pc and self.pcsink:
                 self.pcsink.feed(pc)
-            if pc:
+            else:
                 pc.free()
             if self.count != None:
                 self.count -= 1
@@ -583,6 +560,9 @@ def main():
 
         if visualizer:
             visualizer.run()
+            for clt in clts:
+                clt.stop()
+            sourceServer.stop()
             
         for thread in threads:
             thread.join()
