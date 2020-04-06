@@ -7,11 +7,24 @@ import pika
 import threading
 import queue
 
-_certh_dll_reference = None
+_native_pcloud_receiver_dll_reference = None
 
 DEBUG=True
 DEBUG_MESSAGES=False
 
+class CerthPointCloud(ctypes.Structure):
+    _fields_ = [
+        ("numDevices", ctypes.c_int),
+        ("vertexPtr", ctypes.c_void_p),
+        ("normalPtr", ctypes.c_void_p),
+        ("colorPtr", ctypes.c_void_p),
+        ("deviceNames", ctypes.c_void_p),
+        ("verticesPerCamera", ctypes.c_void_p),
+        ("vertexChannels", ctypes.c_void_p),
+        ("normalChannels", ctypes.c_void_p),
+        ("colorChannels", ctypes.c_void_p),
+        ("pclData", ctypes.c_void_p),
+    ]
 # class streamDesc(ctypes.Structure):
 #     _fields_ = [
 #         ("MP4_4CC", ctypes.c_uint32),
@@ -23,18 +36,28 @@ DEBUG_MESSAGES=False
 #         ("totalHeight", ctypes.c_uint32),
 #     ]
         
-def _certh_dll(libname=None):
-    global _certh_dll_reference
-    if _certh_dll_reference: return _certh_dll_reference
-    
+def _native_pcloud_receiver_dll(libname=None):
+    global _native_pcloud_receiver_dll_reference
+    if _native_pcloud_receiver_dll_reference: return _native_pcloud_receiver_dll_reference
+    if libname == None and 'NATIVE_PCLOUD_RECEIVER_DLL' in os.environ:
+        libname = os.environ['NATIVE_PCLOUD_RECEIVER_DLL']
     if libname == None:
-        libname = ctypes.util.find_library('certh')
+        libname = ctypes.util.find_library('native_pcloud_receiver')
         if not libname:
-            raise SubError('Dynamic library certh not found')
+            raise RuntimeError('Dynamic library native_pcloud_receiver not found')
     assert libname
     # Signals library needs to be able to find some data files stored next to the DLL.
     # Tell it where they are.
-    _certh_dll_reference = ctypes.cdll.LoadLibrary(libname)
+    _native_pcloud_receiver_dll_reference = ctypes.cdll.LoadLibrary(libname)
+    
+    _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.argstypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+    _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.restype = CerthPointCloud
+    
+    _native_pcloud_receiver_dll_reference.set_number_wrappers.argstypes = [ctypes.c_int]
+    _native_pcloud_receiver_dll_reference.set_number_wrappers.restype = None
+    
+    _native_pcloud_receiver_dll_reference.received_metadata.argstypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
+    _native_pcloud_receiver_dll_reference.received_metadata.restype = ctypes.c_bool
     
 #     _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p, ctypes.c_uint64]
 #     _signals_unity_bridge_dll_reference.sub_create.restype = sub_handle_p
@@ -60,7 +83,7 @@ def _certh_dll(libname=None):
 #     _signals_unity_bridge_dll_reference.sub_grab_frame.argtypes = [sub_handle_p, ctypes.c_int, ctypes.c_void_p, ctypes.c_size_t, ctypes.c_void_p]
 #     _signals_unity_bridge_dll_reference.sub_grab_frame.restype = ctypes.c_size_t
     
-    return _certh_dll_reference
+    return _native_pcloud_receiver_dll_reference
 
 class _RabbitmqReceiver:
     """Helper class to receive messages from a rabbitMQ channel and call a callback"""
@@ -142,10 +165,19 @@ class _RabbitmqReceiver:
              
 class cwipc_certh:
     def __init__(self, rabbitmq, dataExchange, metaDataExchange):
+        # Initialize captureer object
         self.handle = None
+        self.dataReceiver = None
+        self.metaDataReceiver = None
+        self.pcl_id = 0
+        self.receivedMetaData = False
+        self.queue = queue.Queue()
+        # Load DLL early, so we get exceptions early
+        _ = _native_pcloud_receiver_dll()
+        _native_pcloud_receiver_dll().set_number_wrappers(1)
+        # Create rabbitmq receivers
         self.dataReceiver = _RabbitmqReceiver(rabbitmq, dataExchange, self._dataCallback)
         self.metaDataReceiver = _RabbitmqReceiver(rabbitmq, metaDataExchange, self._metaDataCallback)
-        self.queue = queue.Queue()
                 
     def __del__(self):
         self.free()
@@ -153,12 +185,16 @@ class cwipc_certh:
     def _dataCallback(self, data):
         if data == None:
             return
-        if DEBUG: print(f"cwipc_certh: got data, {len(data)} bytes")
+        if DEBUG: print(f"cwipc_certh: got data, {len(data)} bytes", flush=True, file=sys.stderr)
+        if not self.receivedMetaData: return
+        if DEBUG: print(f"cwipc_certh: pushing raw data")
+        self.queue.put(data)
         
     def _metaDataCallback(self, data):
         if data == None:
             return
-        if DEBUG: print(f"cwipc_certh: got metadata, {len(data)} bytes")
+        if DEBUG: print(f"cwipc_certh: got metadata, {len(data)} bytes", flush=True, file=sys.stderr)
+        self.receivedMetaData = _native_pcloud_receiver_dll().received_metadata(data, len(data), self.pcl_id)
         
     def free(self):
         if self.handle:
@@ -182,58 +218,12 @@ class cwipc_certh:
         return not self.queue.empty()
         
     def get(self):
-        return self.queue.get()
-            
-#     def start(self):
-#         assert self.handle
-#         assert self.dll
-#         ok = self.dll.sub_play(self.handle, self.url.encode('utf8'))
-#         if not ok: return False
-#         nstreams = self.dll.sub_get_stream_count(self.handle)
-#         assert nstreams > self.streamIndex
-#         self.started = True
-#         self.firstRead = True
-#         return True
-#         
-#     def count(self):
-#         assert self.handle
-#         assert self.dll
-#         assert self.started
-#         return self.dll.sub_get_stream_count(self.handle)
-#         
-#     def cpc_info_for_stream(self, num):
-#         assert self.handle
-#         assert self.dll
-#         assert self.started
-#         c_desc = streamDesc()
-#         ok = self.dll.sub_get_stream_info(self.handle, num, c_desc)
-#         if c_desc.objectWidth or c_desc.objectHeight or c_desc.totalWidth or c_desc.totalHeight:
-#             print(f"sub_get_stream_info({num}): MP4_4CC={c_desc.MP4_4CC},  objectX={c_desc.objectX},  objectY={c_desc.objectY},  objectWidth={c_desc.objectWidth},  objectHeight={c_desc.objectHeight},  totalWidth={c_desc.totalWidth},  totalHeight={c_desc.totalHeight}", file=sys.stdout)
-#             raise SubError(f"sub_get_stream_info({num}) returned unexpected information")
-#         return (c_desc.MP4_4CC, c_desc.objectX, c_desc.objectY)
-#     
-#     def read_cpc(self, streamIndex=None):
-#         assert self.handle
-#         assert self.dll
-#         assert self.started
-#         startTime = time.time()
-#         if streamIndex == None:
-#             streamIndex = self.streamIndex
-#         #
-#         # We loop until sub_grab_frame returns a length != 0
-#         #
-#         while time.time() < startTime + EOF_TIME:
-#             length = self.dll.sub_grab_frame(self.handle, streamIndex, None, 0, None)
-#             if length != 0:
-#                 break
-#             time.sleep(SLEEP_TIME)
-#         if not length: 
-#             return None
-#         rv = bytearray(length)
-#         ptr_char = (ctypes.c_char * length).from_buffer(rv)
-#         ptr = ctypes.cast(ptr_char, ctypes.c_void_p)
-#         length2 = self.dll.sub_grab_frame(self.handle, streamIndex, ptr, length, None)
-#         if length2 != length:
-#             raise SubError("read_cpc(stream={streamIndex}: was promised {length} bytes but got only {length2})")
-#         return rv
-#         
+        data = self.queue.get()
+        if not data: return None
+        if DEBUG: print(f"cwipc_certh: received raw pointcloud")
+        assert self.receivedMetaData
+        if DEBUG: print(f"cwipc_certh: got data, {len(data)} bytes, address=0x{ctypes.addressof(ctypes.c_char_p(data)):x}", flush=True, file=sys.stderr)
+        certhPC = _native_pcloud_receiver_dll().callColorizedPCloudFrameDLL(data, len(data), self.pcl_id)
+        if DEBUG: print(f"cwipc_certh: got certPC")
+        return None
+
