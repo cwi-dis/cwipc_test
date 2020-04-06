@@ -64,9 +64,12 @@ def _certh_dll(libname=None):
 class cwipc_certh:
     def __init__(self, rabbitmq, dataExchange, metaDataExchange):
         self.handle = None
-        self.connection = None
-        self.channel = None
-        self.thread = None
+        self.dataconnection = None
+        self.datachannel = None
+        self.datathread = None
+        self.metadataconnection = None
+        self.metadatachannel = None
+        self.metadatathread = None
         self.queue = queue.Queue()
         self._init_rabbitmq(rabbitmq, dataExchange, metaDataExchange)
         self._start_rabbitmq()
@@ -84,55 +87,96 @@ class cwipc_certh:
 
     def _init_rabbitmq(self, rabbitmq, dataExchange, metaDataExchange):
         parameters = pika.URLParameters(rabbitmq)
-        self.connection = pika.BlockingConnection(parameters)
-        if DEBUG: print(f"cwipc_certh: DEBUG: connection={self.connection}", flush=True, file=sys.stderr)
-        self.channel = self.connection.channel()
-        self.channel.queue_declare(dataExchange)
-        self.channel.basic_consume(dataExchange, self._on_data)
-        self.channel.queue_declare(metaDataExchange)
-        self.channel.basic_consume(metaDataExchange, self._on_metadata)
-        if DEBUG: print(f"cwipc_certh: DEBUG: channel={self.channel}", flush=True, file=sys.stderr)
+
+        self.dataconnection = pika.BlockingConnection(parameters)
+        if DEBUG: print(f"cwipc_certh: DEBUG: dataconnection={self.dataconnection}", flush=True, file=sys.stderr)
+        self.datachannel = self.dataconnection.channel()
+        self.datachannel.queue_declare(dataExchange)
+        self.datachannel.basic_consume(dataExchange, self._on_data)
+        if DEBUG: print(f"cwipc_certh: DEBUG: datachannel={self.datachannel}", flush=True, file=sys.stderr)
+
+        self.metadataconnection = pika.BlockingConnection(parameters)
+        if DEBUG: print(f"cwipc_certh: DEBUG: metadataconnection={self.metadataconnection}", flush=True, file=sys.stderr)
+        self.metadatachannel = self.metadataconnection.channel()
+        self.metadatachannel.queue_declare(metaDataExchange)
+        self.metadatachannel.basic_consume(metaDataExchange, self._on_metadata)
+        if DEBUG: print(f"cwipc_certh: DEBUG: metadatachannel={self.metadatachannel}", flush=True, file=sys.stderr)
         
     def _start_rabbitmq(self):
-        self.thread = threading.Thread(target=self._run_rabbitmq, args=())
-        self.thread.start()
-        if DEBUG: print(f"cwipc_certh: DEBUG: thread={self.thread}", flush=True, file=sys.stderr)
+        self.datathread = threading.Thread(target=self._run_rabbitmq_datachannel, args=())
+        self.datathread.start()
+        if DEBUG: print(f"cwipc_certh: DEBUG: datathread={self.datathread}", flush=True, file=sys.stderr)
+        self.metadatathread = threading.Thread(target=self._run_rabbitmq_metadatachannel, args=())
+        self.metadatathread.start()
+        if DEBUG: print(f"cwipc_certh: DEBUG: metadatathread={self.metadatathread}", flush=True, file=sys.stderr)
         
     def _stop_rabbitmq(self):
         if DEBUG: print(f"cwipc_certh: DEBUG: stopping rabbitmq connection", flush=True, file=sys.stderr)
-        if self.thread:
-            if DEBUG: print(f"cwipc_certh: DEBUG: stop consuming", flush=True, file=sys.stderr)
+        if self.datathread:
+            if DEBUG: print(f"cwipc_certh: DEBUG: stop consuming data", flush=True, file=sys.stderr)
             try:
-                self.channel.stop_consuming()
+                self.datachannel.stop_consuming()
             except pika.exceptions.StreamLostError:
                 pass
-            if DEBUG: print(f"cwipc_certh: DEBUG: join consumer thread", flush=True, file=sys.stderr)
-            self.thread.join()
-            self.thread = None
-        if self.channel:
-            if DEBUG: print(f"cwipc_certh: DEBUG: stop channel", flush=True, file=sys.stderr)
+            if DEBUG: print(f"cwipc_certh: DEBUG: join data consumer thread", flush=True, file=sys.stderr)
+            self.datathread.join()
+            self.datathread = None
+        if self.metadatathread:
+            if DEBUG: print(f"cwipc_certh: DEBUG: stop consuming metadata", flush=True, file=sys.stderr)
             try:
-                self.channel.close()
+                self.metadatachannel.stop_consuming()
+            except pika.exceptions.StreamLostError:
+                pass
+            if DEBUG: print(f"cwipc_certh: DEBUG: join metadata consumer thread", flush=True, file=sys.stderr)
+            self.metadatathread.join()
+            self.metadatathread = None
+        if self.datachannel:
+            if DEBUG: print(f"cwipc_certh: DEBUG: stop data channel", flush=True, file=sys.stderr)
+            try:
+                self.datachannel.close()
             except pika.exceptions.ChannelWrongStateError:
                 pass
-            self.channel = None
-        if self.connection:
-            if DEBUG: print(f"cwipc_certh: DEBUG: close connection", flush=True, file=sys.stderr)
+            self.datachannel = None
+        if self.metadatachannel:
+            if DEBUG: print(f"cwipc_certh: DEBUG: stop metadata channel", flush=True, file=sys.stderr)
             try:
-                self.connection.close()
+                self.metadatachannel.close()
+            except pika.exceptions.ChannelWrongStateError:
+                pass
+            self.metadatachannel = None
+        if self.dataconnection:
+            if DEBUG: print(f"cwipc_certh: DEBUG: close data connection", flush=True, file=sys.stderr)
+            try:
+                self.dataconnection.close()
             except pika.exceptions.ConnectionWrongStateError:
                 pass                
-            self.connection = None
+            self.dataconnection = None
+        if self.metadataconnection:
+            if DEBUG: print(f"cwipc_certh: DEBUG: close metadata connection", flush=True, file=sys.stderr)
+            try:
+                self.metadataconnection.close()
+            except pika.exceptions.ConnectionWrongStateError:
+                pass                
+            self.metadataconnection = None
         if DEBUG: print(f"cwipc_certh: DEBUG: stopped rabbitmq connection", flush=True, file=sys.stderr)
             
-    def _run_rabbitmq(self):
-        if DEBUG: print(f"cwipc_certh: DEBUG: start consuming", flush=True, file=sys.stderr)
+    def _run_rabbitmq_datachannel(self):
+        if DEBUG: print(f"cwipc_certh: DEBUG: start consuming data", flush=True, file=sys.stderr)
         try:
-            self.channel.start_consuming()
+            self.datachannel.start_consuming()
         except pika.exceptions.StreamLostError:
-            print("cwipc_certh: lost rabbitmq stream")
+            print("cwipc_certh: lost rabbitmq data stream")
             self.queue.put(None)
-        if DEBUG: print(f"cwipc_certh: DEBUG: stopped consuming", flush=True, file=sys.stderr)
+        if DEBUG: print(f"cwipc_certh: DEBUG: stopped consuming data", flush=True, file=sys.stderr)
+            
+    def _run_rabbitmq_metadatachannel(self):
+        if DEBUG: print(f"cwipc_certh: DEBUG: start consuming metadata", flush=True, file=sys.stderr)
+        try:
+            self.metadatachannel.start_consuming()
+        except pika.exceptions.StreamLostError:
+            print("cwipc_certh: lost rabbitmq metadata stream")
+            self.queue.put(None)
+        if DEBUG: print(f"cwipc_certh: DEBUG: stopped consuming metadata", flush=True, file=sys.stderr)
             
     def _on_data(self, channel, method_frame, header_frame, body):
         if DEBUG:
@@ -155,7 +199,7 @@ class cwipc_certh:
 
             
     def eof(self):
-        return self.connection == None
+        return self.dataconnection == None
         
     def available(self, wait):
         if wait:
