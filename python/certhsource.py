@@ -92,6 +92,7 @@ class cwipc_certh:
         if DEBUG: print(f"cwipc_certh: DEBUG: dataconnection={self.dataconnection}", flush=True, file=sys.stderr)
         self.datachannel = self.dataconnection.channel()
         self.datachannel.queue_declare(dataExchange)
+        self.datachannel.queue_bind(dataExchange, dataExchange)
         self.datachannel.basic_consume(dataExchange, self._on_data)
         if DEBUG: print(f"cwipc_certh: DEBUG: datachannel={self.datachannel}", flush=True, file=sys.stderr)
 
@@ -99,6 +100,8 @@ class cwipc_certh:
         if DEBUG: print(f"cwipc_certh: DEBUG: metadataconnection={self.metadataconnection}", flush=True, file=sys.stderr)
         self.metadatachannel = self.metadataconnection.channel()
         self.metadatachannel.queue_declare(metaDataExchange)
+        self.metadatachannel.queue_declare(dataExchange)
+        self.metadatachannel.queue_bind(metaDataExchange, metaDataExchange)
         self.metadatachannel.basic_consume(metaDataExchange, self._on_metadata)
         if DEBUG: print(f"cwipc_certh: DEBUG: metadatachannel={self.metadatachannel}", flush=True, file=sys.stderr)
         
@@ -179,7 +182,7 @@ class cwipc_certh:
         if DEBUG: print(f"cwipc_certh: DEBUG: stopped consuming metadata", flush=True, file=sys.stderr)
             
     def _on_data(self, channel, method_frame, header_frame, body):
-        if DEBUG:
+        if 0 and DEBUG:
             print(f"cwipc_certh: DEBUG: _on_data({channel}, ...):", flush=True, file=sys.stderr)
             print(method_frame.delivery_tag, flush=True, file=sys.stderr)
             print(body, flush=True, file=sys.stderr)
