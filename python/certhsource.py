@@ -2,10 +2,14 @@ import ctypes
 import ctypes.util
 import time
 import os
+import sys
 import pika
 import threading
+import queue
 
 _certh_dll_reference = None
+
+DEBUG=True
 
 # class streamDesc(ctypes.Structure):
 #     _fields_ = [
@@ -63,6 +67,7 @@ class cwipc_certh:
         self.connection = None
         self.channel = None
         self.thread = None
+        self.queue = queue.Queue()
         self._init_rabbitmq(rabbitmq, dataExchange, metaDataExchange)
         self._start_rabbitmq()
                 
@@ -74,44 +79,75 @@ class cwipc_certh:
             assert self.dll
 #            self.dll.sub_destroy(self.handle)
             self.handle = None
-        self._stop_rabbitmq()        
+        self._stop_rabbitmq()
+        self.queue.put(None)
 
     def _init_rabbitmq(self, rabbitmq, dataExchange, metaDataExchange):
         parameters = pika.URLParameters(rabbitmq)
         self.connection = pika.BlockingConnection(parameters)
+        if DEBUG: print(f"cwipc_certh: DEBUG: connection={self.connection}", flush=True, file=sys.stderr)
         self.channel = self.connection.channel()
         self.channel.queue_declare(dataExchange)
         self.channel.basic_consume(dataExchange, self._on_data)
         self.channel.queue_declare(metaDataExchange)
         self.channel.basic_consume(metaDataExchange, self._on_metadata)
+        if DEBUG: print(f"cwipc_certh: DEBUG: channel={self.channel}", flush=True, file=sys.stderr)
         
     def _start_rabbitmq(self):
-        self.thread = threading.Thread(self._run_rabbitmq, ())
+        self.thread = threading.Thread(target=self._run_rabbitmq, args=())
+        self.thread.start()
+        if DEBUG: print(f"cwipc_certh: DEBUG: thread={self.thread}", flush=True, file=sys.stderr)
         
     def _stop_rabbitmq(self):
+        if DEBUG: print(f"cwipc_certh: DEBUG: stopping rabbitmq connection", flush=True, file=sys.stderr)
         if self.thread:
-            self.channel.stop_consuming()
+            if DEBUG: print(f"cwipc_certh: DEBUG: stop consuming", flush=True, file=sys.stderr)
+            try:
+                self.channel.stop_consuming()
+            except pika.exceptions.StreamLostError:
+                pass
+            if DEBUG: print(f"cwipc_certh: DEBUG: join consumer thread", flush=True, file=sys.stderr)
             self.thread.join()
             self.thread = None
         if self.channel:
-            self.channel.close()
+            if DEBUG: print(f"cwipc_certh: DEBUG: stop channel", flush=True, file=sys.stderr)
+            try:
+                self.channel.close()
+            except pika.exceptions.ChannelWrongStateError:
+                pass
             self.channel = None
-        if self.conection:
-            self.connection.close()
+        if self.connection:
+            if DEBUG: print(f"cwipc_certh: DEBUG: close connection", flush=True, file=sys.stderr)
+            try:
+                self.connection.close()
+            except pika.exceptions.ConnectionWrongStateError:
+                pass                
             self.connection = None
+        if DEBUG: print(f"cwipc_certh: DEBUG: stopped rabbitmq connection", flush=True, file=sys.stderr)
             
     def _run_rabbitmq(self):
-        self.channel.start_consuming()
+        if DEBUG: print(f"cwipc_certh: DEBUG: start consuming", flush=True, file=sys.stderr)
+        try:
+            self.channel.start_consuming()
+        except pika.exceptions.StreamLostError:
+            print("cwipc_certh: lost rabbitmq stream")
+            self.queue.put(None)
+        if DEBUG: print(f"cwipc_certh: DEBUG: stopped consuming", flush=True, file=sys.stderr)
             
     def _on_data(self, channel, method_frame, header_frame, body):
-        print(f"_on_data({channel}, ...)")
-        print(method_frame.delivery_tag)
-        print(body)
-        print()
+        if DEBUG:
+            print(f"cwipc_certh: DEBUG: _on_data({channel}, ...):", flush=True, file=sys.stderr)
+            print(method_frame.delivery_tag, flush=True, file=sys.stderr)
+            print(body, flush=True, file=sys.stderr)
+            print("", flush=True, file=sys.stderr)
         channel.basic_ack(delivery_tag=method_frame.delivery_tag)
 
     def _on_metadata(self, channel, method_frame, header_frame, body):
-        print(f"_on_metadata({channel}, ...)")
+        if DEBUG:
+            print(f"cwipc_certh: DEBUG: _on_metadata({channel}, ...):", flush=True, file=sys.stderr)
+            print(method_frame.delivery_tag, flush=True, file=sys.stderr)
+            print(body, flush=True, file=sys.stderr)
+            print("", flush=True, file=sys.stderr)
         print(method_frame.delivery_tag)
         print(body)
         print()
@@ -119,13 +155,17 @@ class cwipc_certh:
 
             
     def eof(self):
-        return False
+        return self.connection == None
         
     def available(self, wait):
-        return True
+        if wait:
+            item = self.queue.get()
+            self.queue.put(item)
+            return True
+        return not self.queue.empty()
         
     def get(self):
-        return None
+        return self.queue.get()
             
 #     def start(self):
 #         assert self.handle

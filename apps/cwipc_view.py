@@ -17,6 +17,8 @@ _pardir = os.path.dirname(_sourcedir)
 _pythondir = os.path.join(_pardir, 'python')
 sys.path.append(_pythondir)
 
+import certhsource
+
 def _dump_app_stacks(*args):
     print("pc_echo: QUIT received, dumping all stacks, %d threads:" % len(sys._current_frames()), file=sys.stderr)
     for threadId, stack in list(sys._current_frames().items()):
@@ -88,6 +90,9 @@ class SourceServer:
         if self.stopped: return
         if self.verbose: print("grab: stopping", flush=True)
         self.stopped = True
+        if self.grabber:
+            self.grabber.free()
+            self.grabber = None
         
     def grab_pc(self):
         if self.lastGrabTime and self.fps:
@@ -104,6 +109,9 @@ class SourceServer:
         while not self.stopped:
             t0 = time.time()
             pc = self.grab_pc()
+            if not pc:
+                print('grab: pointcloud==None')
+                break
             self.pointcounts_grab.append(pc.count())
             if self.verbose: print(f'grab: captured {pc.count()} points')
             sourceTime = pc.timestamp()
@@ -181,6 +189,7 @@ def main():
         sourceThread.join()
     except KeyboardInterrupt:
         print("Interrupted.")
+        sourceServer.stop()
     except:
         traceback.print_exc()
     
