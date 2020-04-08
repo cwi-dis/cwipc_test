@@ -11,6 +11,7 @@ _native_pcloud_receiver_dll_reference = None
 
 DEBUG=True
 DEBUG_MESSAGES=False
+DEBUG_SAVE_FIRST_DATA='DEBUG_SAVE_FIRST_DATA' in os.environ and os.environ['DEBUG_SAVE_FIRST_DATA']
 
 class CerthPointCloud(ctypes.Structure):
     _fields_ = [
@@ -94,6 +95,8 @@ class _RabbitmqReceiver:
         self.connection = None
         self.channel = None
         self.thread = None
+        if DEBUG_SAVE_FIRST_DATA:
+            self.did_save = False
         self._init_rabbitmq()
         self._start_rabbitmq()
 
@@ -161,6 +164,10 @@ class _RabbitmqReceiver:
             print(body, flush=True, file=sys.stderr)
             print("", flush=True, file=sys.stderr)
         channel.basic_ack(delivery_tag=method_frame.delivery_tag)
+        if DEBUG_SAVE_FIRST_DATA and not self.did_save:
+            open(self.exchangeName + '.data', 'wb').write(body)
+            print(f"cwipc_certh: saved message body to {self.exchangeName}.data", flush=True, file=sys.stderr)
+            self.did_save = True
         self.callback(body)
              
 class cwipc_certh:
@@ -220,10 +227,14 @@ class cwipc_certh:
     def get(self):
         data = self.queue.get()
         if not data: return None
-        if DEBUG: print(f"cwipc_certh: received raw pointcloud")
+        if DEBUG: print(f"cwipc_certh: received raw pointcloud", flush=True, file=sys.stderr)
         assert self.receivedMetaData
         if DEBUG: print(f"cwipc_certh: got data, {len(data)} bytes, address=0x{ctypes.addressof(ctypes.c_char_p(data)):x}", flush=True, file=sys.stderr)
-        certhPC = _native_pcloud_receiver_dll().callColorizedPCloudFrameDLL(data, len(data), self.pcl_id)
+        try:
+            certhPC = _native_pcloud_receiver_dll().callColorizedPCloudFrameDLL(data, len(data), self.pcl_id)
+        except Exception as e:
+            print(f"cwipc_certh: Exception in callColorizedPCloudFrameDLL: {e}", flush=True, file=sys.stderr)
+            return None
         if DEBUG: print(f"cwipc_certh: got certPC")
         return None
 
