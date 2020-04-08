@@ -12,6 +12,7 @@ _native_pcloud_receiver_dll_reference = None
 DEBUG=True
 DEBUG_MESSAGES=False
 DEBUG_SAVE_FIRST_DATA='DEBUG_SAVE_FIRST_DATA' in os.environ and os.environ['DEBUG_SAVE_FIRST_DATA']
+XXXJACK_KEEPIT=[]
 
 class CerthPointCloud(ctypes.Structure):
     _fields_ = [
@@ -52,7 +53,7 @@ def _native_pcloud_receiver_dll(libname=None):
     _native_pcloud_receiver_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
     _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.argstypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
-    _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.restype = CerthPointCloud
+    _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.restype = ctypes.POINTER(CerthPointCloud)
     
     _native_pcloud_receiver_dll_reference.set_number_wrappers.argstypes = [ctypes.c_int]
     _native_pcloud_receiver_dll_reference.set_number_wrappers.restype = None
@@ -178,6 +179,7 @@ class cwipc_certh:
         self.metaDataReceiver = None
         self.pcl_id = 0
         self.receivedMetaData = False
+        self.receivedMetaDataBuffer = None
         self.queue = queue.Queue()
         # Load DLL early, so we get exceptions early
         _ = _native_pcloud_receiver_dll()
@@ -191,17 +193,19 @@ class cwipc_certh:
 
     def _dataCallback(self, data):
         if data == None:
+            if DEBUG: print("cwipc_certh: dataCallback got None argument", flush=True, file=sys.stderr)
             return
         if DEBUG: print(f"cwipc_certh: got data, {len(data)} bytes", flush=True, file=sys.stderr)
-        if not self.receivedMetaData: return
         if DEBUG: print(f"cwipc_certh: pushing raw data")
         self.queue.put(data)
         
     def _metaDataCallback(self, data):
         if data == None:
+            if DEBUG: print("cwipc_certh: metaDataCallback got None argument", flush=True, file=sys.stderr)
             return
-        if DEBUG: print(f"cwipc_certh: got metadata, {len(data)} bytes", flush=True, file=sys.stderr)
-        self.receivedMetaData = _native_pcloud_receiver_dll().received_metadata(data, len(data), self.pcl_id)
+        self.receivedMetaDataBuffer = (ctypes.c_char * len(data)).from_buffer_copy(data)
+        if DEBUG: print(f"cwipc_certh: got metadata, {len(self.receivedMetaDataBuffer)} bytes, address=0x{ctypes.addressof(self.receivedMetaDataBuffer):x}", flush=True, file=sys.stderr)
+        self.receivedMetaData = _native_pcloud_receiver_dll().received_metadata(ctypes.cast(self.receivedMetaDataBuffer, ctypes.c_void_p), len(self.receivedMetaDataBuffer), self.pcl_id)
         
     def free(self):
         if self.handle:
@@ -213,6 +217,7 @@ class cwipc_certh:
         if self.metaDataReceiver: self.metaDataReceiver.stop()
         self.metaDataReceiver = None
         self.queue.put(None)
+        self.keep_metadata_object = None
             
     def eof(self):
         return self.dataReceiver == None
@@ -226,12 +231,16 @@ class cwipc_certh:
         
     def get(self):
         data = self.queue.get()
-        if not data: return None
-        if DEBUG: print(f"cwipc_certh: received raw pointcloud", flush=True, file=sys.stderr)
-        assert self.receivedMetaData
-        if DEBUG: print(f"cwipc_certh: got data, {len(data)} bytes, address=0x{ctypes.addressof(ctypes.c_char_p(data)):x}", flush=True, file=sys.stderr)
+        if data == None:
+            if DEBUG: print("cwipc_certh: queue.get() got None result", flush=True, file=sys.stderr)
+            return
+        if not self.receivedMetaData: 
+            if DEBUG: print(f"cwipc_certh: received raw pointcloud but no metaData yet", flush=True, file=sys.stderr)
+            return
+        dataPointer = (ctypes.c_char * len(data)).from_buffer_copy(data)
+        if DEBUG: print(f"cwipc_certh: got raw pointcloud data, {len(dataPointer)} bytes, address=0x{ctypes.addressof(dataPointer):x}", flush=True, file=sys.stderr)
         try:
-            certhPC = _native_pcloud_receiver_dll().callColorizedPCloudFrameDLL(data, len(data), self.pcl_id)
+            certhPC = _native_pcloud_receiver_dll().callColorizedPCloudFrameDLL(ctypes.cast(dataPointer, ctypes.c_void_p), len(dataPointer), self.pcl_id)
         except Exception as e:
             print(f"cwipc_certh: Exception in callColorizedPCloudFrameDLL: {e}", flush=True, file=sys.stderr)
             return None
