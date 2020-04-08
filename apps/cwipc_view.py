@@ -104,19 +104,19 @@ class SourceServer:
         return pc
         
     def run(self):
-        sourceTime = 0
         if self.verbose: print('grab: started', flush=True)
         while not self.stopped:
             t0 = time.time()
             pc = self.grab_pc()
             if not pc:
                 print('grab: pointcloud==None')
-                break
-            self.pointcounts_grab.append(pc.count())
-            if self.verbose: print(f'grab: captured {pc.count()} points')
-            sourceTime = pc.timestamp()
-            t1 = time.time()
-            if self.viewer: self.viewer.feed(pc)
+                self.pointcounts_grab.append(0)
+                t1 = time.time()
+            else:
+                self.pointcounts_grab.append(pc.count())
+                if self.verbose: print(f'grab: captured {pc.count()} points')
+                t1 = time.time()
+                if self.viewer: self.viewer.feed(pc)
             self.times_grab.append(t1-t0)
             if self.count != None:
                 self.count -= 1
