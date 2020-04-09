@@ -1,18 +1,24 @@
 import ctypes
 import ctypes.util
-import threading
 
 LIBNAME='C:/Users/VRTogether/VRTogether/certh/ColoredPointcloudDLL/ColoredPointCloud/Assets/Plugins/pcloud_receiver.dll'
-USE_THREADS=False
 
+class CerthCoordinate(ctypes.Structure):
+    _fields_ = [
+        ("x", ctypes.c_float),
+        ("y", ctypes.c_float),
+        ("z", ctypes.c_float),
+        ("w", ctypes.c_float),
+    ]
+    
 class CerthPointCloud(ctypes.Structure):
     _fields_ = [
         ("numDevices", ctypes.c_int),
         ("vertexPtr", ctypes.c_void_p),
         ("normalPtr", ctypes.c_void_p),
         ("colorPtr", ctypes.c_void_p),
-        ("deviceNames", ctypes.c_void_p),
-        ("verticesPerCamera", ctypes.c_void_p),
+        ("deviceNames", ctypes.c_char_p),
+        ("numVerticesPerCamera", ctypes.c_void_p),
         ("vertexChannels", ctypes.c_void_p),
         ("normalChannels", ctypes.c_void_p),
         ("colorChannels", ctypes.c_void_p),
@@ -63,21 +69,49 @@ def test_data():
     print(f'volumetricData: address=0x{ctypes.addressof(volumetricDataPtr):x}, size={len(volumetricDataPtr)}', flush=True)
     pointcloudPtr = dll.callColorizedPCloudFrameDLL(ctypes.cast(volumetricDataPtr, ctypes.c_void_p), len(volumetricDataPtr), pcl_id)
     print(f'callColorizedPCloudFrameDLL returns 0x{pointcloudPtr}')
+    print(f"\tnumDevices={pointcloudPtr.contents.numDevices}")
+    print(f"\tvertexPtr=0x{pointcloudPtr.contents.vertexPtr:x}")
+    print(f"\tnormalPtr=0x{pointcloudPtr.contents.normalPtr:x}")
+    print(f"\tcolorPtr=0x{pointcloudPtr.contents.colorPtr:x}")
+    print(f"\tdeviceNames={pointcloudPtr.contents.deviceNames}")
+    print(f"\tnumVerticesPerCamera=0x{pointcloudPtr.contents.numVerticesPerCamera}")
+    print(f"\tvertexChannels=0x{pointcloudPtr.contents.vertexChannels:x}")
+    print(f"\tnormalChannels=0x{pointcloudPtr.contents.normalChannels:x}")
+    print(f"\tcolorChannels=0x{pointcloudPtr.contents.colorChannels:x}")
+    print(f"\tpclData=0x{pointcloudPtr.contents.pclData:x}")
+    
+    numDevices = pointcloudPtr.contents.numDevices
+    numVerticesPerCamera = ctypes.cast(pointcloudPtr.contents.numVerticesPerCamera, ctypes.POINTER(ctypes.c_int*numDevices))
+    vertexPtr = ctypes.cast(pointcloudPtr.contents.vertexPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
+    colorPtr = ctypes.cast(pointcloudPtr.contents.colorPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
+    
+    all_point_data = []
+    for camNum in range(numDevices):
+        numVertices = numVerticesPerCamera.contents[camNum]
+        print(f"camera[{camNum}]: {numVertices} vertices")
+        print(f"camera[{camNum}]: vertexPtr=0x{vertexPtr.contents[camNum]:x}")
+        print(f"camera[{camNum}]: colorPtr=0x{colorPtr.contents[camNum]:x}")
+        vertexArrayType = CerthCoordinate * numVertices
+        colorArrayType = ctypes.c_uint8 * (numVertices*3)
+        vertexArray = ctypes.cast(vertexPtr.contents[camNum], ctypes.POINTER(vertexArrayType))
+        colorArray = ctypes.cast(colorPtr.contents[camNum], ctypes.POINTER(colorArrayType))
+        print(f"camera[{camNum}]: first point x={vertexArray.contents[0].x} y={vertexArray.contents[0].y} z={vertexArray.contents[0].z} w={vertexArray.contents[0].w}")
+        print(f"camera[{camNum}]: first point r={colorArray.contents[0]} g={colorArray.contents[1]} b={colorArray.contents[2]}")
 
-if not USE_THREADS:
-    test_setup()
-    test_metadata()
-    test_data()
-else:
-    thread_setup = threading.Thread(target=test_setup, args=())
-    thread_setup.start()
-    thread_setup.join()
+        for vertexNum in range(numVertices):
+            x = vertexArray.contents[vertexNum].x
+            y = vertexArray.contents[vertexNum].y
+            z = vertexArray.contents[vertexNum].z
+            # Note: colors are ordered BGR
+            r = colorArray.contents[vertexNum*3 + 2]
+            g = colorArray.contents[vertexNum*3 + 1]
+            b = colorArray.contents[vertexNum*3 + 0]
+            tile = (1 << camNum)
+            
+            all_point_data.append((x, y, z, r, g, b, tile))
+        for p in all_point_data:
+            print(p)
 
-    thread_metadata = threading.Thread(target=test_metadata, args=())
-    thread_metadata.start()
-    thread_metadata.join()
-
-    thread_data = threading.Thread(target=test_data, args=())
-    thread_data.start()
-    thread_data.join()
-
+test_setup()
+test_metadata()
+test_data()
