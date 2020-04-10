@@ -40,7 +40,7 @@ class Visualizer:
     def run(self):
         while self.producer and self.producer.is_alive():
             try:
-                pc = self.queue.get(timeout=1)
+                pc = self.queue.get(timeout=0.033)
                 ok = self.draw_pc(pc)
                 if not ok: break
             except queue.Empty:
@@ -59,11 +59,12 @@ class Visualizer:
 
     def draw_pc(self, pc):
         """Draw open3d pointcloud"""
-        ok = self.visualiser.feed(pc, True)
-        pc.free()
-        if not ok: 
-            print('display: window.feed() returned False')
-            return False
+        if pc:
+            ok = self.visualiser.feed(pc, True)
+            pc.free()
+            if not ok: 
+                print('display: window.feed() returned False')
+                return False
         if self.visualiser.interact(None, "q", 30) == "q":
             return False
         return True
