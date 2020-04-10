@@ -51,40 +51,7 @@ class cwipc_certh:
         
     def get(self):
         if not self.certhPC: return None
-        numDevices = self.certhPC.contents.numDevices
-        numVerticesPerCamera = ctypes.cast(self.certhPC.contents.numVerticesPerCamera, ctypes.POINTER(ctypes.c_int*numDevices))
-        vertexPtr = ctypes.cast(self.certhPC.contents.vertexPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
-        colorPtr = ctypes.cast(self.certhPC.contents.colorPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
-    
-        all_point_data = []
-        for camNum in range(numDevices):
-            numVertices = numVerticesPerCamera.contents[camNum]
-            print(f"camera[{camNum}]: {numVertices} vertices")
-            print(f"camera[{camNum}]: vertexPtr=0x{vertexPtr.contents[camNum]:x}")
-            print(f"camera[{camNum}]: colorPtr=0x{colorPtr.contents[camNum]:x}")
-            vertexArrayType = CerthCoordinate * numVertices
-            colorArrayType = ctypes.c_uint8 * (numVertices*3)
-            vertexArray = ctypes.cast(vertexPtr.contents[camNum], ctypes.POINTER(vertexArrayType))
-            colorArray = ctypes.cast(colorPtr.contents[camNum], ctypes.POINTER(colorArrayType))
-            print(f"camera[{camNum}]: first point x={vertexArray.contents[0].x} y={vertexArray.contents[0].y} z={vertexArray.contents[0].z} w={vertexArray.contents[0].w}")
-            print(f"camera[{camNum}]: first point r={colorArray.contents[0]} g={colorArray.contents[1]} b={colorArray.contents[2]}")
-
-            for vertexNum in range(numVertices):
-                x = vertexArray.contents[vertexNum].x
-                y = vertexArray.contents[vertexNum].y
-                z = vertexArray.contents[vertexNum].z
-                # Note: colors are ordered BGR
-                r = colorArray.contents[vertexNum*3 + 2]
-                g = colorArray.contents[vertexNum*3 + 1]
-                b = colorArray.contents[vertexNum*3 + 0]
-                tile = (1 << camNum)
-            
-                if self.bbox:
-                    if x < self.bbox[0] or x > self.bbox[1]: continue
-                    if y < self.bbox[2] or x > self.bbox[3]: continue
-                    if z < self.bbox[4] or x > self.bbox[5]: continue
-                all_point_data.append((x, y, z, r, g, b, tile))
-        pc = cwipc.util.cwipc_from_points(all_point_data, self.certhPCtimestamp)
+        pc = cwipc.util.cwipc_from_certh(self.certhPC, self.certhPCtimestamp, self.bbox)
         return pc
 
 def test_setup():

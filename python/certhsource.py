@@ -15,28 +15,6 @@ DEBUG_MESSAGES=False
 DEBUG_SAVE_FIRST_DATA='DEBUG_SAVE_FIRST_DATA' in os.environ and os.environ['DEBUG_SAVE_FIRST_DATA']
 XXXJACK_KEEPIT=[]
 
-class CerthCoordinate(ctypes.Structure):
-    _fields_ = [
-        ("x", ctypes.c_float),
-        ("y", ctypes.c_float),
-        ("z", ctypes.c_float),
-        ("w", ctypes.c_float),
-    ]
-    
-class CerthPointCloud(ctypes.Structure):
-    _fields_ = [
-        ("numDevices", ctypes.c_int),
-        ("vertexPtr", ctypes.c_void_p),
-        ("normalPtr", ctypes.c_void_p),
-        ("colorPtr", ctypes.c_void_p),
-        ("deviceNames", ctypes.c_char_p),
-        ("numVerticesPerCamera", ctypes.c_void_p),
-        ("vertexChannels", ctypes.c_void_p),
-        ("normalChannels", ctypes.c_void_p),
-        ("colorChannels", ctypes.c_void_p),
-        ("pclData", ctypes.c_void_p),
-    ]
-            
 def _native_pcloud_receiver_dll(libname=None):
     global _native_pcloud_receiver_dll_reference
     if _native_pcloud_receiver_dll_reference: return _native_pcloud_receiver_dll_reference
@@ -52,7 +30,7 @@ def _native_pcloud_receiver_dll(libname=None):
     _native_pcloud_receiver_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
     _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.argstypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
-    _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.restype = ctypes.POINTER(CerthPointCloud)
+    _native_pcloud_receiver_dll_reference.callColorizedPCloudFrameDLL.restype = ctypes.c_void_p
     
     _native_pcloud_receiver_dll_reference.set_number_wrappers.argstypes = [ctypes.c_int]
     _native_pcloud_receiver_dll_reference.set_number_wrappers.restype = None
@@ -85,46 +63,6 @@ def _native_pcloud_receiver_dll(libname=None):
 #     _signals_unity_bridge_dll_reference.sub_grab_frame.restype = ctypes.c_size_t
     
     return _native_pcloud_receiver_dll_reference
-
-def cwipc_from_certh(certhPC, timestamp, bbox=None):
-    if not certhPC: return None
-    numDevices = certhPC.contents.numDevices
-    numVerticesPerCamera = ctypes.cast(certhPC.contents.numVerticesPerCamera, ctypes.POINTER(ctypes.c_int*numDevices))
-    vertexPtr = ctypes.cast(certhPC.contents.vertexPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
-    colorPtr = ctypes.cast(certhPC.contents.colorPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
-
-    all_point_data = []
-    for camNum in range(numDevices):
-        numVertices = numVerticesPerCamera.contents[camNum]
-        if DEBUG:
-            print(f"camera[{camNum}]: {numVertices} vertices")
-            print(f"camera[{camNum}]: vertexPtr=0x{vertexPtr.contents[camNum]:x}")
-            print(f"camera[{camNum}]: colorPtr=0x{colorPtr.contents[camNum]:x}")
-        vertexArrayType = CerthCoordinate * numVertices
-        colorArrayType = ctypes.c_uint8 * (numVertices*3)
-        vertexArray = ctypes.cast(vertexPtr.contents[camNum], ctypes.POINTER(vertexArrayType))
-        colorArray = ctypes.cast(colorPtr.contents[camNum], ctypes.POINTER(colorArrayType))
-        if DEBUG:
-            print(f"camera[{camNum}]: first point x={vertexArray.contents[0].x} y={vertexArray.contents[0].y} z={vertexArray.contents[0].z} w={vertexArray.contents[0].w}")
-            print(f"camera[{camNum}]: first point r={colorArray.contents[0]} g={colorArray.contents[1]} b={colorArray.contents[2]}")
-
-        for vertexNum in range(numVertices):
-            x = vertexArray.contents[vertexNum].x
-            y = vertexArray.contents[vertexNum].y
-            z = vertexArray.contents[vertexNum].z
-            # Note: colors are ordered BGR
-            r = colorArray.contents[vertexNum*3 + 2]
-            g = colorArray.contents[vertexNum*3 + 1]
-            b = colorArray.contents[vertexNum*3 + 0]
-            tile = (1 << camNum)
-        
-            if bbox:
-                if x < bbox[0] or x > bbox[1]: continue
-                if y < bbox[2] or x > bbox[3]: continue
-                if z < bbox[4] or x > bbox[5]: continue
-            all_point_data.append((x, y, z, r, g, b, tile))
-    pc = cwipc.util.cwipc_from_points(all_point_data, timestamp)
-    return pc
     
 class _RabbitmqReceiver:
     """Helper class to receive messages from a rabbitMQ channel and call a callback"""
@@ -219,6 +157,7 @@ class cwipc_certh:
         self.pcl_id = 0
         self.receivedMetaData = False
         self.receivedMetaDataBuffer = None
+        self.bbox = (-1.0, 1.0, -1.0, 0.5, -3.0, 1.0) # Random bounding box that works for camera on Jack's desk at home.
         self.queue = queue.Queue()
         # Load DLL early, so we get exceptions early
         _ = _native_pcloud_receiver_dll()
@@ -284,5 +223,5 @@ class cwipc_certh:
             print(f"cwipc_certh: Exception in callColorizedPCloudFrameDLL: {e}", flush=True, file=sys.stderr)
             return None
         if DEBUG: print(f"cwipc_certh: got certPC")
-        return cwipc_from_certh(certhPC, 0)
+        return cwipc.util.cwipc_from_certh(certhPC, 0, self.bbox)
 
