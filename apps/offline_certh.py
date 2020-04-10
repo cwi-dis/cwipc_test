@@ -1,5 +1,6 @@
 import ctypes
 import ctypes.util
+import cwipc.util
 
 LIBNAME='C:/Users/VRTogether/VRTogether/certh/ColoredPointcloudDLL/ColoredPointCloud/Assets/Plugins/pcloud_receiver.dll'
 
@@ -37,6 +38,54 @@ dll.received_metadata.argstypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_int]
 dll.received_metadata.restype = ctypes.c_bool
 
 pcl_id = 0
+
+class cwipc_certh:
+    def __init__(self, bbox=None):
+        self.bbox = bbox
+        self.certhPC = None
+        self.certhPCtimestamp = None
+        
+    def feed(self, certhPC, timestamp):
+        self.certhPCtimestamp = timestamp
+        self.certhPC = certhPC
+        
+    def get(self):
+        if not self.certhPC: return None
+        numDevices = self.certhPC.contents.numDevices
+        numVerticesPerCamera = ctypes.cast(self.certhPC.contents.numVerticesPerCamera, ctypes.POINTER(ctypes.c_int*numDevices))
+        vertexPtr = ctypes.cast(self.certhPC.contents.vertexPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
+        colorPtr = ctypes.cast(self.certhPC.contents.colorPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
+    
+        all_point_data = []
+        for camNum in range(numDevices):
+            numVertices = numVerticesPerCamera.contents[camNum]
+            print(f"camera[{camNum}]: {numVertices} vertices")
+            print(f"camera[{camNum}]: vertexPtr=0x{vertexPtr.contents[camNum]:x}")
+            print(f"camera[{camNum}]: colorPtr=0x{colorPtr.contents[camNum]:x}")
+            vertexArrayType = CerthCoordinate * numVertices
+            colorArrayType = ctypes.c_uint8 * (numVertices*3)
+            vertexArray = ctypes.cast(vertexPtr.contents[camNum], ctypes.POINTER(vertexArrayType))
+            colorArray = ctypes.cast(colorPtr.contents[camNum], ctypes.POINTER(colorArrayType))
+            print(f"camera[{camNum}]: first point x={vertexArray.contents[0].x} y={vertexArray.contents[0].y} z={vertexArray.contents[0].z} w={vertexArray.contents[0].w}")
+            print(f"camera[{camNum}]: first point r={colorArray.contents[0]} g={colorArray.contents[1]} b={colorArray.contents[2]}")
+
+            for vertexNum in range(numVertices):
+                x = vertexArray.contents[vertexNum].x
+                y = vertexArray.contents[vertexNum].y
+                z = vertexArray.contents[vertexNum].z
+                # Note: colors are ordered BGR
+                r = colorArray.contents[vertexNum*3 + 2]
+                g = colorArray.contents[vertexNum*3 + 1]
+                b = colorArray.contents[vertexNum*3 + 0]
+                tile = (1 << camNum)
+            
+                if self.bbox:
+                    if x < self.bbox[0] or x > self.bbox[1]: continue
+                    if y < self.bbox[2] or x > self.bbox[3]: continue
+                    if z < self.bbox[4] or x > self.bbox[5]: continue
+                all_point_data.append((x, y, z, r, g, b, tile))
+        pc = cwipc.util.cwipc_from_points(all_point_data, self.certhPCtimestamp)
+        return pc
 
 def test_setup():
     #
@@ -79,7 +128,9 @@ def test_data():
     print(f"\tnormalChannels=0x{pointcloudPtr.contents.normalChannels:x}")
     print(f"\tcolorChannels=0x{pointcloudPtr.contents.colorChannels:x}")
     print(f"\tpclData=0x{pointcloudPtr.contents.pclData:x}")
-    
+    return pointcloudPtr
+
+def dump_data(pointcloudPtr):    
     numDevices = pointcloudPtr.contents.numDevices
     numVerticesPerCamera = ctypes.cast(pointcloudPtr.contents.numVerticesPerCamera, ctypes.POINTER(ctypes.c_int*numDevices))
     vertexPtr = ctypes.cast(pointcloudPtr.contents.vertexPtr, ctypes.POINTER(ctypes.c_void_p*numDevices))
@@ -112,6 +163,17 @@ def test_data():
         for p in all_point_data:
             print(p)
 
+def show_data(certhPC):
+    source = cwipc_certh()
+    source.feed(certhPC, 0)
+    pc = source.get()
+    viewer = cwipc.util.cwipc_window("offline_certh")
+    viewer.feed(pc, True)
+    while viewer.interact("Press q to quit", "q", 1000):
+        pass
+    
 test_setup()
 test_metadata()
-test_data()
+certhPC = test_data()
+dump_data(certhPC)
+show_data(certhPC)
