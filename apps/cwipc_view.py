@@ -110,8 +110,7 @@ class SourceServer:
             pc = self.grab_pc()
             if not pc:
                 print('grab: pointcloud==None')
-                self.pointcounts_grab.append(0)
-                t1 = time.time()
+                continue
             else:
                 self.pointcounts_grab.append(pc.count())
                 if self.verbose: print(f'grab: captured {pc.count()} points')
