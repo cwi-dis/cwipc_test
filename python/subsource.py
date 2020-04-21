@@ -8,7 +8,7 @@ SLEEP_TIME=0.01
 # If no data is available from the sub for this long we treat it as end-of-file:
 EOF_TIME=10
 
-SUB_API_VERSION = 0x20200327A
+SUB_API_VERSION = 0x20200420A
 
 _signals_unity_bridge_dll_reference = None
 
@@ -23,7 +23,6 @@ class FrameInfo(ctypes.Structure):
         ("timestamp", ctypes.c_longlong)
     ]
     
-    
 class streamDesc(ctypes.Structure):
     _fields_ = [
         ("MP4_4CC", ctypes.c_uint32),
@@ -34,7 +33,14 @@ class streamDesc(ctypes.Structure):
         ("totalWidth", ctypes.c_uint32),
         ("totalHeight", ctypes.c_uint32),
     ]
-        
+      
+SubErrorCallbackType = ctypes.CFUNCTYPE(None, ctypes.c_char_p)
+
+def _onSubError(msg):
+    """Callback function passed to sub_create: re-raise SUB errors in Python environment"""
+    print(f"xxxjack SUB error: {msg}", file=sys.stderr, flush=True)
+    raise SubError(msg)
+    
 def _signals_unity_bridge_dll(libname=None):
     global _signals_unity_bridge_dll_reference
     if _signals_unity_bridge_dll_reference: return _signals_unity_bridge_dll_reference
@@ -55,7 +61,7 @@ def _signals_unity_bridge_dll(libname=None):
         os.putenv('SIGNALS_SMD_PATH', libdirname)
     _signals_unity_bridge_dll_reference = ctypes.cdll.LoadLibrary(libname)
     
-    _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p, ctypes.c_uint64]
+    _signals_unity_bridge_dll_reference.sub_create.argtypes = [ctypes.c_char_p, SubErrorCallbackType, ctypes.c_uint64]
     _signals_unity_bridge_dll_reference.sub_create.restype = sub_handle_p
     
     _signals_unity_bridge_dll_reference.sub_destroy.argtypes = [sub_handle_p]
@@ -90,7 +96,7 @@ class CpcSubSource:
         self.streamIndex = streamIndex
         self.dll = _signals_unity_bridge_dll()
         assert self.dll
-        self.handle = self.dll.sub_create("SUBsource".encode('utf8'), SUB_API_VERSION)
+        self.handle = self.dll.sub_create("SUBsource".encode('utf8'), SubErrorCallbackType(_onSubError), SUB_API_VERSION)
         if not self.handle:
             raise SubError("sub_create failed")
         
