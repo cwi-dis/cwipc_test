@@ -14,7 +14,7 @@ TRANSLATE_Y = 0     # Conversion (after scaling) of Y values
 TRANSLATE_Z = -0.35 # Conversion (after scaling) of Z values
 TIME_INCREMENT = 33 # Increment in timestamp between successive pointclouds
 
-MAXTILES=2  # Number of tiles (in addition to tile 0) to encode
+MAXTILES=4  # Number of tiles (in addition to tile 0) to encode
 ALSO_LOW=True   # Set to True to also do low quality cwicpc
 
 def read_loot_ply_o3d(filename):
@@ -45,8 +45,17 @@ def o3d_to_cwipc(o3dpc, timestamp):
     pointsandcolors = zip(points, colors)
     for (x, y, z), (r, g, b) in pointsandcolors:
         if MAXTILES > 0:
-            assert MAXTILES == 2
-            side = 1 if x < 0 else 2
+        	if MAXTILES == 2:
+             	side = 1 if x < 0 else 2
+            elif MAXTILES == 4:
+            	if x < 0 and z < 0:
+            		side = 1
+            	elif x < 0 and z >= 0:
+            		side = 2
+            	elif x >= 0 and z < 0:
+            		side = 3
+            	else:
+            		side = 4
         r = int(r*255)
         g = int(g*255)
         b = int(b*255)
