@@ -45,17 +45,17 @@ def o3d_to_cwipc(o3dpc, timestamp):
     pointsandcolors = zip(points, colors)
     for (x, y, z), (r, g, b) in pointsandcolors:
         if MAXTILES > 0:
-        	if MAXTILES == 2:
-             	side = 1 if x < 0 else 2
+            if MAXTILES == 2:
+                side = 1 if x < 0 else 2
             elif MAXTILES == 4:
-            	if x < 0 and z < 0:
-            		side = 1
-            	elif x < 0 and z >= 0:
-            		side = 2
-            	elif x >= 0 and z < 0:
-            		side = 3
-            	else:
-            		side = 4
+                if x < 0 and z < 0:
+                    side = 1
+                elif x < 0 and z >= 0:
+                    side = 2
+                elif x >= 0 and z < 0:
+                    side = 3
+                else:
+                    side = 4
         r = int(r*255)
         g = int(g*255)
         b = int(b*255)
