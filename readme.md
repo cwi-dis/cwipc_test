@@ -135,3 +135,7 @@ Some documents by Jack on the architecture (because he can't get his head around
 The arduino program in _neopixelsync_ should be built and flashed onto an Arduino Nano. Attach a strip of 18 neopixels (pin 6 is the data connection). Connect to USB power supply. The first two pixels will light up red and orangeish, the third pixel will be off. The rest will be a strip of green ones, with each next pixel lit up 3ms after the previous one.
 
 The script in `synch-scripts/dumpframes.sh` will capture 10 pointclouds from all attached cameras, and in addition it will dump the PNG images from the RGB data. Point all cameras at the led strip. Compare the corresponding images to see whether the cameras are in sync.
+
+## sandbox
+
+Random junk that may be useful.
