@@ -9,14 +9,14 @@ ADD_RELEASE=../Deployment/addReleaseToGitLab
 #
 # Select one of the following depending on whether tiling is supported
 
-COMPRESSED_DIRS_LOOT=lootCwicpc lootCwicpc1 lootCwicpc2 lootCwicpc-low lootCwicpc1-low lootCwicpc2-low
-COMPRESSED_DIRS_LONGDRESS=longdressCwicpc longdressCwicpc1 longdressCwicpc2 longdressCwicpc-low longdressCwicpc1-low longdressCwicpc2-low
-COMPRESSED_DIRS_REDANDBLACK=redandblackCwicpc redandblackCwicpc1 redandblackCwicpc2 redandblackCwicpc-low redandblackCwicpc1-low redandblackCwicpc2-low
+COMPRESSED_DIRS_LOOT=lootCwicpc lootCwicpc[0-9] lootCwicpc-low lootCwicpc[0-9]-low
+COMPRESSED_DIRS_LONGDRESS=longdressCwicpc longdressCwicpc[0-9] longdressCwicpc-low longdressCwicpc[0-9]-low
+COMPRESSED_DIRS_REDANDBLACK=redandblackCwicpc redandblackCwicpc[0-9] redandblackCwicpc-low redandblackCwicpc[0-9]-low
 COMPRESSED_DIRS=${COMPRESSED_DIRS_LOOT} ${COMPRESSED_DIRS_LONGDRESS} ${COMPRESSED_DIRS_REDANDBLACK}
 
 ZIPFILES_LOOT=deliverables/loot-ply.zip deliverables/loot-cwicpc.zip
 ZIPFILES_LONGDRESS=deliverables/longdress-ply.zip deliverables/longdress-cwicpc.zip
-ZIPFILES_LOOT=deliverables/redandblack-ply.zip deliverables/redandblack-cwicpc.zip
+ZIPFILES_REDANDBLACK=deliverables/redandblack-ply.zip deliverables/redandblack-cwicpc.zip
 ZIPFILES=${ZIPFILES_LOOT} ${ZIPFILES_LONGDRESS} ${ZIPFILES_REDANDBLACK}
 
 all: ${ZIPFILES}

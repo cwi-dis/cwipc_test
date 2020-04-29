@@ -3,11 +3,11 @@
 "private_token":"HkS6wGP5swoXoQ7Gj9t5",
 "GitLab_API_base_url":"https://baltig.viaccess-orca.com:8443/api/v4/projects/",
 "project_name":"cwipc_test",
-"tag_name":"v4.0",
+"tag_name":"v4.1",
 "branch_to_tag":"master",
-"release_name":"v4.0",
+"release_name":"v4.1",
 "stable_release" : false,
-"release_description":"loot/longdress/redandblack, each 10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files, tiled (4 tiles) and untiled, two qualities.",
+"release_description":"loot/longdress/redandblack, each 10 seconds of 30fps pointclouds, as 50Kpoint ply files and cwicpc compressed files, tiled (4 tiles) and untiled, two qualities. Included all tiles this time.",
 "assets": [
 	{
 		"file_to_upload":"loot-ply.zip",
