@@ -22,7 +22,7 @@ python3 -m pip install -r $dirname/cwipc_test/scripts/requirements.txt
 #
 # Setup for using getReleaseFromGitLab
 #
-gRFG=$dirname/Deployment/getReleaseFromGitLab
+gRFG=$dirname/Deployment/scripts/getReleaseFromGitLab
 cd $dirname
 mkdir -p installed
 
@@ -38,19 +38,17 @@ export GITLAB_ACCESS_USER_PASSWORD="VRTogether"
 # Install releases from gitlab
 #
 
-if false; then
+if true; then
 	python3 $gRFG --cicd --project_name cwipc_codec
-	(tarfile=$PWD/cwipc_codec_osx1012*.tgz && cd /usr/local && tar xvf $tarfile)
+	(tarfile=$PWD/cwipc_codec_osx1012*.tgz && cd /usr/local && tar -xvmf $tarfile)
 fi
-# Note: there is an issue with cwipc_realsense2 (or codec?) installing an older version of util.
-# For now ensure we install util last.
-if false; then
+if true; then
 	python3 $gRFG --cicd --project_name cwipc_realsense2
-	(tarfile=$PWD/cwipc_realsense2_osx1012*.tgz && cd /usr/local && tar xvf $tarfile)
+	(tarfile=$PWD/cwipc_realsense2_osx1012*.tgz && cd /usr/local && tar -xvmf $tarfile)
 fi
-if false; then
+if true; then
 	python3 $gRFG --cicd --project_name cwipc_util
-	(tarfile=$PWD/cwipc_util_osx1012*.tgz && cd /usr/local && tar xvf $tarfile)
+	(tarfile=$PWD/cwipc_util_osx1012*.tgz && cd /usr/local && tar -xvmf $tarfile)
 fi
 
 if false; then
