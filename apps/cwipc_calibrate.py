@@ -408,6 +408,9 @@ class Calibrator:
                 self.show_points(f'Inspect grab from {self.cameraserial[i]}', self.pointclouds[i])
             grab_ok = ask('Can you select the balls on the cross from this pointcloud?', canretry=True)
             if not grab_ok:
+                print('* discarding 10 pointclouds')
+                for i in range(10):
+                    self.get_pointclouds()
                 print('* Grabbing pointclouds again')
                 self.pointclouds = []
                 self.get_pointclouds()
@@ -526,9 +529,12 @@ class Calibrator:
         maxtile = self.grabber.getcount()
         if DEBUG: print('maxtile', maxtile)
         # Grab one combined pointcloud and split it into tiles
-        pc = self.grabber.getpointcloud()
-        if DEBUG: pc.save('cwipc_calibrate_captured.ply')
-        self.pointclouds = pc.split()
+        for i in range(10):
+            pc = self.grabber.getpointcloud()
+            if DEBUG: pc.save('cwipc_calibrate_captured.ply')
+            self.pointclouds = pc.split()
+            if len(self.pointclouds) == maxtile: break
+            print(f'Warning: got {len(self.pointclouds)} pointclouds in stead of {maxtile}. Retry.')
         assert len(self.pointclouds) == maxtile
         # xxxjack
         if DEBUG:
