@@ -200,9 +200,15 @@ class Pointcloud:
         """Split into per-tile Pointcloud objects"""
         self._ensure_cwipc()
         alltiles = set()
+        #
+        # This is stupid code, because we should really get a list of tilenumbers as parameter.
+        # The current code depends on the serial numbers having been collected in tile-number-order.
+        #
         for pt in self.cwipc.get_points():
             alltiles.add(pt.tile)
         rv = []
+        alltiles = list(alltiles)
+        alltiles.sort()
         for tilenum in alltiles:
             tile_pc = cwipc.codec.cwipc_tilefilter(self.cwipc, tilenum)
             rv.append(self.__class__.from_cwipc(tile_pc))
