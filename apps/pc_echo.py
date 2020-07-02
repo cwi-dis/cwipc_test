@@ -397,6 +397,7 @@ class SinkClient:
     def __init__(self, subUrl, count=None, delay=0, retry=0, pcsink=None, savedir=None, recvq=None, verbose=False):
         self.sinkNum = SinkClient.SINKNUM
         SinkClient.SINKNUM += 1
+        self.subUrl = subUrl
         self.verbose = verbose
         self.count = count
         self.delay = delay
@@ -411,7 +412,7 @@ class SinkClient:
         self.receivers = []
         self.threads = []
         if verbose: print(f"sink {self.sinkNum}: sub url={subUrl}", flush=True)
-        self.sub = CpcSubSource(subUrl)
+        self.sub = None
 
     def stop(self):
         if self.stopped: return
@@ -427,7 +428,9 @@ class SinkClient:
             if self.delay:
                 time.sleep(self.delay)
                 if self.verbose: print(f"recv {self.sinkNum}: starting", flush=True)
-            if self.sub.start():
+            sub = CpcSubSource(self.subUrl)
+            if sub.start():
+                self.sub = sub
                 break
             print(f"recv {self.sinkNum}: Compressed pointcloud receiver failed to start", flush=True)
             self.retry -= 1
