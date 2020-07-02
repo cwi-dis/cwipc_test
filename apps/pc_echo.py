@@ -485,8 +485,10 @@ class SinkClient:
                         selected = ti
                 if not selected:
                     print(f"recv{self.sinkNum}: tile {tileNum}: quality {self.wantedQuality} not available. Skipping tile.")
+                    self.sub.disable_stream(tileNum)
                     continue
             streamNum, quality = selected
+            self.sub.enable_stream(tileNum, quality)
             print(f"recv{self.sinkNum}: tile {tilenum}: selected stream {streamNum}, quality {quality}")
             receiver = Receiver(self.sub, self.sinkNum, streamNum, self.count, self.pcsink, self.savedir, self.verbose)
             thr = threading.Thread(target=receiver.run, args=())

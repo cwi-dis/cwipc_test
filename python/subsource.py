@@ -137,6 +137,18 @@ class CpcSubSource:
             raise SubError(f"sub_get_stream_info({num}) returned unexpected information")
         return (c_desc.MP4_4CC, c_desc.objectX, c_desc.objectY)
     
+    def enable_stream(self, tileNum, quality):
+        assert self.handle
+        assert self.dll
+        assert self.started
+        return self.dll.sub_enable_stream(self.handle, tileNum, quality)
+        
+    def disable_stream(self, tileNum):
+        assert self.handle
+        assert self.dll
+        assert self.started
+        return self.dll.sub_disable_stream(self.handle, tileNum)
+        
     def read_cpc(self, streamIndex=None):
         assert self.handle
         assert self.dll
