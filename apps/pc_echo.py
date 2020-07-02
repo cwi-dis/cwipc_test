@@ -25,8 +25,6 @@ from subsource import CpcSubSource
 # NOTE: open3d must be imported after all the DLLs have been loaded (sigh)
 import numpy as np
 
-ISSUE_20=False
-
 def _dump_app_stacks(*args):
     print("pc_echo: QUIT received, dumping all stacks, %d threads:" % len(sys._current_frames()), file=sys.stderr)
     for threadId, stack in list(sys._current_frames().items()):
@@ -154,8 +152,6 @@ class SourceServer:
         self.stopped = True
         for t in self.transmitters:
             t.stop()
-        if ISSUE_20:
-            self.transmittergroup.free()
         for t in self.threads:
             t.join()
         
@@ -472,7 +468,6 @@ class SinkClient:
             r.statistics()
         
 def main():
-    global ISSUE_20
     if hasattr(signal, 'SIGQUIT'):
         signal.signal(signal.SIGQUIT, _dump_app_stacks)
     default_url = "https://vrt-evanescent.viaccess-orca.com/echo-%d/" % int(time.time())
@@ -493,9 +488,7 @@ def main():
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel receivers", default=1)
     parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
-    parser.add_argument("--issue_20", action="store_true", help="Delay bin2dash shutdown to work around issue 20")
     args = parser.parse_args()
-    ISSUE_20 = args.issue_20
     if args.retry and not args.delay:
         args.delay = 1
     #
