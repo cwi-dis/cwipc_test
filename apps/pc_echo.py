@@ -394,7 +394,7 @@ class Receiver:
 class SinkClient:
     SINKNUM = 1
     
-    def __init__(self, subUrl, count=None, delay=0, retry=0, pcsink=None, savedir=None, verbose=False):
+    def __init__(self, subUrl, count=None, delay=0, retry=0, pcsink=None, savedir=None, recvq=None, verbose=False):
         self.sinkNum = SinkClient.SINKNUM
         SinkClient.SINKNUM += 1
         self.verbose = verbose
@@ -403,8 +403,11 @@ class SinkClient:
         self.retry = retry
         self.pcsink = pcsink
         self.savedir = savedir
+        self.wantedQuality = recvq
+        if self.wantedQuality == None:
+            self.wantedQuality = 'first'
         self.stopped = False
-        self.tile2stream = {}
+        self.tile2info = {}
         self.receivers = []
         self.threads = []
         if verbose: print(f"sink {self.sinkNum}: sub url={subUrl}", flush=True)
@@ -436,18 +439,55 @@ class SinkClient:
         if self.verbose:
             print(f"recv {self.sinkNum}: available streams: {nStream}", flush=True)
         #
-        # Iterate over the streams and collect all available tilenumbers
+        # Iterate over the streams and collect all available tilenumbers, stream numbers and qualities
         #
         for i in range(nStream):
             fourcc, tilenum, quality = self.sub.cpc_info_for_stream(i)
             if self.verbose:
                 print(f"recv {self.sinkNum}: stream {i}: 4CC={fourcc.to_bytes(4, 'big')}={fourcc}, tilenum={tilenum}, quality={quality}", flush=True)
-            if not tilenum in self.tile2stream:
-                self.tile2stream[tilenum] = i
+            infoList = self.tile2info.get(tilenum, [])
+            infoList.append((i, quality))
+            self.tile2info[tilenum] = infoList
         #
         # Start one receiver per tilenumber
         #
-        for streamNum in self.tile2stream.values():
+        tileNumbers = list(self.tile2info.keys())
+        tileNumbers.sort()
+        for tileNum in tileNumbers:
+            print(f"recv {self.sinkNum}: tile {tileNum}:", end='')
+            for sn, q in self.tile2info[tileNum]:
+                print(f" quality={q}:streamNum={sn}", end='')
+            print('', flush=True)
+        selected = None
+        for tileNum in tileNumbers:
+            tileInfo = self.tile2info[tileNum]
+            if self.wantedQuality == 'first':
+                selected = tileInfo[0]
+            elif self.wantedQuality == 'last':
+                selected = tileInfo[-1]
+            elif self.wantedQuality == 'lowest':
+                selected = tileInfo[0]
+                for ti in tileInfo[1:]:
+                    sn, q = ti
+                    if q < selected[1]:
+                        selected = ti
+            elif self.wantedQuality == 'highest':
+                selected = tileInfo[0]
+                for ti in tileInfo[1:]:
+                    sn, q = ti
+                    if q > selected[1]:
+                        selected = ti
+            else:
+                selected = None
+                for ti in tileInfo:
+                    sn, q = ti
+                    if q == int(self.wantedQuality):
+                        selected = ti
+                if not selected:
+                    print(f"recv{self.sinkNum}: tile {tileNum}: quality {self.wantedQuality} not available. Skipping tile.")
+                    continue
+            streamNum, quality = selected
+            print(f"recv{self.sinkNum}: tile {tilenum}: selected stream {streamNum}, quality {quality}")
             receiver = Receiver(self.sub, self.sinkNum, streamNum, self.count, self.pcsink, self.savedir, self.verbose)
             thr = threading.Thread(target=receiver.run, args=())
             self.receivers.append(receiver)
@@ -484,6 +524,7 @@ def main():
     parser.add_argument("--delay", action="store", type=int, default=1, metavar="SECS", help="Wait SECS seconds before starting receiver")
     parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails. Sets --delay to 1 if not set.", default=0)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop after receiving N pointclouds")
+    parser.add_argument("--recvq", type=str, metavar="Q", help="Receive each tile in quality Q. Special values: first, last, lowest, highest", default="first")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel receivers", default=1)
@@ -542,7 +583,7 @@ def main():
     clts = []
     threads = []
     for i in range(args.parallel):
-        clt = SinkClient(subUrl, args.count, args.delay, args.retry, thisVisualizer, args.savecwicpc, args.verbose)
+        clt = SinkClient(subUrl, args.count, args.delay, args.retry, thisVisualizer, args.savecwicpc, args.recvq, args.verbose)
         thread = threading.Thread(target=clt.run, args=())
         clts.append(clt)
         threads.append(thread)
