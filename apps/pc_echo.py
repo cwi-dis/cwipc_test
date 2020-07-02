@@ -100,8 +100,8 @@ class SourceServer:
             for i in range(maxTile):
                 tileInfo = self.grabber.get_tileinfo_dict(i)
                 if self.verbose: print(f"grab: tile {i}: {tileInfo}")
-            self.tiles = range(0, maxTile)
-            #self.tiles = range(1, maxTile)
+            #self.tiles = range(0, maxTile)
+            self.tiles = range(1, maxTile)
         else:
             self.tiles = [0]
             
