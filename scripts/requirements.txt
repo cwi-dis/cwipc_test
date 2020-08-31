@@ -1,4 +1,0 @@
-numpy
-open3d-python
-requests
-mechanize

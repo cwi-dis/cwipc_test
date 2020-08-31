@@ -1,4 +1,7 @@
 #!/bin/bash
+need_loot=false
+need_evanescent=false
+
 case x$1 in
 x)
 	echo Usage: $0 gitlab-api-access-token
@@ -17,7 +20,7 @@ dirname=`cd $dirname/../..; pwd`
 #
 # Install needed Python packages
 #
-python3 -m pip install -r $dirname/cwipc_test/scripts/requirements.txt
+python3 -m pip install -r $dirname/Deployment/scripts/requirements.txt
 
 #
 # Setup for using getReleaseFromGitLab
@@ -32,26 +35,29 @@ cd tmp-install
 
 export CI_API_V4_URL="https://baltig.viaccess-orca.com:8443/api/v4/"
 export GITLAB_ACCESS_USER_NAME="vrt_guest"
-export GITLAB_ACCESS_USER_PASSWORD="VRTogether"
+export GITLAB_ACCESS_USER_PASSWORD="SocialVRT2020"
 
 #
 # Install releases from gitlab
 #
 
 if true; then
+	python3 $gRFG --cicd --project_name cwipc_util
+	(tarfile=$PWD/cwipc_util_osx1014*.tgz && cd /usr/local && tar -xvmf $tarfile)
+fi
+if true; then
 	python3 $gRFG --cicd --project_name cwipc_codec
-	(tarfile=$PWD/cwipc_codec_osx1012*.tgz && cd /usr/local && tar -xvmf $tarfile)
+	(tarfile=$PWD/cwipc_codec_osx1014*.tgz && cd /usr/local && tar -xvmf $tarfile)
 fi
 if true; then
 	python3 $gRFG --cicd --project_name cwipc_realsense2
-	(tarfile=$PWD/cwipc_realsense2_osx1012*.tgz && cd /usr/local && tar -xvmf $tarfile)
+	(tarfile=$PWD/cwipc_realsense2_osx1014*.tgz && cd /usr/local && tar -xvmf $tarfile)
 fi
 if true; then
-	python3 $gRFG --cicd --project_name cwipc_util
-	(tarfile=$PWD/cwipc_util_osx1012*.tgz && cd /usr/local && tar -xvmf $tarfile)
+	sudo cwipc_pymodules_install.sh
 fi
 
-if false; then
+if $need_loot; then
 	python3 $gRFG --cicd --project_name cwipc_test --release_name v2.0
 	(zipfile=$PWD/loot-cwicpc.zip && cd ../installed && unzip -o $zipfile)
 	(zipfile=$PWD/loot-ply.zip && cd ../installed && unzip -o $zipfile)
@@ -72,7 +78,7 @@ if true; then
 	(cd ../pcl2dash ; ln -s [0-9]* installed)
 fi
 
-if false; then
+if $need_evanescent; then
 	python3 $gRFG --cicd --project_name DeliveryMCU
 	rm -rf ../evanescent
 	(tarfile=$PWD/evanescent-*.tar.bz2 && cd .. && tar xfv $tarfile)
