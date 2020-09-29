@@ -136,7 +136,7 @@ class SourceServer:
                 self.grabber = cwipc.realsense2.cwipc_realsense2()
             except cwipc.CwipcError as e:
                 print(f'Error opening grabber: {e}')
-                print('Using syenthetic grabber')
+                print('Using synthetic grabber')
                 self.grabber = cwipc.cwipc_synthetic()
         self.times_grab = []
         self.times_encode = []
