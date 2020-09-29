@@ -132,7 +132,12 @@ class SourceServer:
         elif plydir:
             self.grabber = cwipc_plydir_source(plydir)
         else:
-            self.grabber = cwipc.realsense2.cwipc_realsense2()
+            try:
+                self.grabber = cwipc.realsense2.cwipc_realsense2()
+            except cwipc.CwipcError as e:
+                print(f'Error opening grabber: {e}')
+                print('Using syenthetic grabber')
+                self.grabber = cwipc.cwipc_synthetic()
         self.times_grab = []
         self.times_encode = []
         self.sizes_encode = []
