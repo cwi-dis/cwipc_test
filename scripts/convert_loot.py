@@ -13,13 +13,20 @@ TRANSLATE_X = -0.35 # Conversion (after scaling) of X values
 TRANSLATE_Y = 0     # Conversion (after scaling) of Y values
 TRANSLATE_Z = -0.35 # Conversion (after scaling) of Z values
 TIME_INCREMENT = 33 # Increment in timestamp between successive pointclouds
+O3D_BROKEN = True
 
 MAXTILES=4  # Number of tiles (in addition to tile 0) to encode
 ALSO_LOW=True   # Set to True to also do low quality cwicpc
 
 def read_loot_ply_o3d(filename):
     """Read PLY file using open3d, scale it and downsample it. Returns open3d pointcloud"""
-    original = open3d.read_point_cloud(filename)
+    if O3D_BROKEN:
+        pc = cwipc.cwipc_read(filename, 0)
+        original = cwipc_to_o3d(pc)
+        pc.free()
+        del pc
+    else:
+        original = open3d.read_point_cloud(filename)
     downsampled = open3d.voxel_down_sample(original, voxel_size=VOXEL_SIZE)
     points = np.asarray(downsampled.points)
     translate = np.array([TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z])
