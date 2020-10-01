@@ -93,9 +93,7 @@ def main():
         print('Usage: %s source-ply-dir dest-dump-dir' % sys.argv[0])
         sys.exit(1)
     loot_source_dir = sys.argv[1]
-    ply_dest_dir = sys.argv[2]
     dump_dest_dir = sys.argv[2]
-    #os.mkdir(ply_dest_dir)
     if not os.path.exists(dump_dest_dir):
         os.mkdir(dump_dest_dir)
 
@@ -112,16 +110,12 @@ def main():
         pathname = os.path.join(loot_source_dir, filename)
         print(pathname, '...')
         basename = os.path.splitext(filename)[0]
-        ply_dest_pathname = os.path.join(ply_dest_dir, filename)
         dump_dest_pathname = os.path.join(dump_dest_dir, basename + '.cwipcdump')
         # Read original loot, downsample and scale.
         o3dpc = read_loot_ply_o3d(pathname)
 
         # Convert to cwipc
         pc = o3d_to_cwipc(o3dpc, timestamp)
-
-        # Save as a plyfile
-        #write_ply_cwipc(ply_dest_pathname, pc)
         
         #save as dump
         write_dump_cwipc(dump_dest_pathname, pc)
