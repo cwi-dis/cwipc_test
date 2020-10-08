@@ -31,6 +31,7 @@ if [ -d $i ]; then
 	git fetch
 	git pull
 	(
+		mkdir -p build
 		cd build
 		cmake ..
 		make

@@ -32,6 +32,7 @@ for i in $all ; do
 	git fetch
 	git pull
 	(
+		mkdir -p build
 		cd build
 		cmake .. -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX="$instdir" -DJPEG_Turbo_INCLUDE_DIR="C:/libjpeg-turbo64/include" -DJPEG_Turbo_LIBRARY="C:/libjpeg-turbo64/lib/jpeg.lib"
 		cmake --build . --config Release
