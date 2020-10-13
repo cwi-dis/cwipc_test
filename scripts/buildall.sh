@@ -35,7 +35,7 @@ if [ -d $i ]; then
 		cd build
 		cmake ..
 		make
-		if [ "$notest" != "notest"]; then
+		if [ "$notest" != "notest" ]; then
 			make test
 		fi
 		make install
