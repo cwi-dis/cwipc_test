@@ -36,7 +36,7 @@ for i in $all ; do
 		cd build
 		cmake .. -G "Visual Studio 16 2019" -DCMAKE_INSTALL_PREFIX="$instdir" -DJPEG_Turbo_INCLUDE_DIR="C:/libjpeg-turbo64/include" -DJPEG_Turbo_LIBRARY="C:/libjpeg-turbo64/lib/jpeg.lib"
 		cmake --build . --config Release
-		if [ "$notest" != "notest"]; then
+		if [ "$notest" != "notest" ]; then
 			cmake --build . --config Release --target RUN_TESTS
 		fi
 		cmake --build . --config Release --target INSTALL
