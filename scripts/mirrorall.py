@@ -1,9 +1,9 @@
 import sys
 import os
 
-dry_run=True
-do_mkdir=True
-do_clone=True
+dry_run=False
+do_mkdir=False
+do_clone=False
 do_fetch=True
 do_lfs_fetch=True
 do_mirror=True
@@ -65,30 +65,30 @@ if do_clone:
         if not dry_run:
             os.system(cmd)
             
-if do_lfs_fetch:
+if do_fetch:
     for a in All:
-        cmd = f'(cd {a} && git lfs fetch --all)'
+        cmd = f'(cd {a}.git && git fetch --all)'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
 
-if do_fetch:
+if do_lfs_fetch:
     for a in All:
-        cmd = f'(cd {a} && git fetch --all)'
+        cmd = f'(cd {a}.git && git lfs fetch --all)'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
 
 if do_mirror:
     for a in All:
-        cmd = f'cd {a} && git push --mirror {New}{a})'
+        cmd = f'cd {a}.git && git push --mirror {New}{a})'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
 
 if do_lfs_mirror:
     for a in All:
-        cmd = f'(cd {a} && git lfs push --all {New}{a})'
+        cmd = f'(cd {a}.git && git lfs push --all {New}{a})'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
