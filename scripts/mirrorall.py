@@ -88,7 +88,7 @@ if do_mirror:
 
 if do_lfs_mirror:
     for a in All:
-        cmd = f'(cd {a}.git && git lfs push --all {New}{a}'
+        cmd = f'cd {a}.git && git lfs push --all {New}{a}'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
