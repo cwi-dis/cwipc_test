@@ -1,5 +1,27 @@
 import sys
 import os
+
+dry_run=True
+do_mkdir=True
+do_clone=True
+do_fetch=True
+do_lfs_fetch=True
+do_mirror=True
+do_lfs_mirror=True
+
+#Note: must end in /, if applicable
+
+Old="ssh://git@baltig.viaccess-orca.com:8022/VRT/"
+New="ssh://git@192.168.37.11:222/VRT-"
+
+AllGroups=[
+    "nativeclient-group",
+    "deployment-group",
+    "orchestration-group",
+    "deliverymcu-group",
+    "webclient-group"
+]
+
 All=[
 	"nativeclient-group/VRTApp-MedicalExamination",
 	"nativeclient-group/VRTApp-HoloMeet",
@@ -30,12 +52,44 @@ All=[
 	"orchestration-group/Orchestration",
 ]
 
-os.mkdir('nativeclient-group')
-os.mkdir('deployment-group')
-os.mkdir('webclient')
-os.mkdir('orchestration-group')
-os.mkdir('deliverymcu-group')
-for a in All:
-    print('+ ', a)
-    os.system(f'git clone --mirror ssh://git@baltig.viaccess-orca.com:8022/VRT/{a}.git {a}.git')
+if do_mkdir:
+    for a in AllGroups:
+        print('+ mkdir', a)
+        if not dry_run:
+            os.mkdir(a)
     
+if do_clone:
+    for a in All:
+        cmd = f'git clone --mirror {Old}{a}.git {a}.git'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+            
+if do_lfs_fetch:
+    for a in All:
+        cmd = f'(cd {a} && git lfs fetch --all)'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+
+if do_fetch:
+    for a in All:
+        cmd = f'(cd {a} && git fetch --all)'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+
+if do_mirror:
+    for a in All:
+        cmd = f'cd {a} && git push --mirror {New}{a})'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+
+if do_lfs_mirror:
+    for a in All:
+        cmd = f'(cd {a} && git lfs push --all {New}{a})'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+
