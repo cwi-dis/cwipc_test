@@ -67,28 +67,28 @@ if do_clone:
             
 if do_fetch:
     for a in All:
-        cmd = f'(cd {a}.git && git fetch --all)'
+        cmd = f'cd {a}.git && git fetch --all'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
 
 if do_lfs_fetch:
     for a in All:
-        cmd = f'(cd {a}.git && git lfs fetch --all)'
+        cmd = f'cd {a}.git && git lfs fetch --all'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
 
 if do_mirror:
     for a in All:
-        cmd = f'cd {a}.git && git push --mirror {New}{a})'
+        cmd = f'cd {a}.git && git push --mirror {New}{a}'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
 
 if do_lfs_mirror:
     for a in All:
-        cmd = f'(cd {a}.git && git lfs push --all {New}{a})'
+        cmd = f'(cd {a}.git && git lfs push --all {New}{a}'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
