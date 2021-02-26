@@ -26,8 +26,8 @@ def read_loot_ply_o3d(filename):
         pc.free()
         del pc
     else:
-        original = open3d.read_point_cloud(filename)
-    downsampled = open3d.voxel_down_sample(original, voxel_size=VOXEL_SIZE)
+        original = open3d.io.read_point_cloud(filename)
+    downsampled = open3d.geometry.PointCloud.voxel_down_sample(original, voxel_size=VOXEL_SIZE)
     points = np.asarray(downsampled.points)
     translate = np.array([TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z])
     points /= SCALE_FACTOR
@@ -36,11 +36,11 @@ def read_loot_ply_o3d(filename):
     
 def write_ply_o3d(filename, o3dpc):
     """Write PLY file from open3d pointcloud"""
-    open3d.write_point_cloud(filename, o3dpc, write_ascii=True)
+    open3d.io.write_point_cloud(filename, o3dpc, write_ascii=True)
     
 def draw_o3d(o3dpc):
     """Draw open3d pointcloud"""
-    open3d.draw_geometries([o3dpc])
+    open3d.visualization.draw_geometries([o3dpc])
     
 def o3d_to_cwipc(o3dpc, timestamp):
     """Convert open3d pointcloud to cwipc pointcloud"""
@@ -79,9 +79,9 @@ def cwipc_to_o3d(pc):
     for p in pcpoints:
         points.append((p.x, p.y, p.z))  
         colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
-    points_v = open3d.Vector3dVector(points)
-    colors_v = open3d.Vector3dVector(colors)
-    rv = open3d.PointCloud()
+    points_v = open3d.utility.Vector3dVector(points)
+    colors_v = open3d.utility.Vector3dVector(colors)
+    rv = open3d.geometry.PointCloud()
     rv.points = points_v
     rv.colors = colors_v
     return rv
