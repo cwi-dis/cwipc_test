@@ -90,24 +90,42 @@ def write_ply_cwipc(filename, pc):
     """Write cwipc pointcloud to PLY file"""
     cwipc.cwipc_write(filename, pc)
     
+def write_dump_cwipc(filename, pc):
+    """Write cwipc pointcloud to cwipcdump file"""
+    cwipc.cwipc_write_debugdump(filename, pc)
+    
 def main():
-    if len(sys.argv) != 4:
-        print('Usage: %s loot-source-ply-dir dest-ply-dir dest-cwicpc-dir' % sys.argv[0])
+    if len(sys.argv) != 5:
+        print('Usage: %s loot-source-ply-dir dest-ply-dir dest-cwicpc-dir dest-cwipcdump-dir' % sys.argv[0])
+        print('Use - to skip an output format')
         sys.exit(1)
     loot_source_dir = sys.argv[1]
     ply_dest_dir = sys.argv[2]
     cwicpc_dest_dir = sys.argv[3]
-    os.mkdir(ply_dest_dir)
-    os.mkdir(cwicpc_dest_dir)
-    if MAXTILES > 0:
-        for i in range(1,MAXTILES+1):
-            os.mkdir(cwicpc_dest_dir+str(i))
-    if ALSO_LOW:
-        os.mkdir(cwicpc_dest_dir+'-low')
+    cwipcdump_dest_dir = sys.argv[4]
+    if ply_dest_dir == '-': 
+        ply_dest_dir = None
+    if cwicpc_dest_dir == '-': 
+        cwicpc_dest_dir = None
+    if cwipcdump_dest_dir == '-': 
+        cwipcdump_dest_dir = None
+    if ply_dest_dir: 
+        os.mkdir(ply_dest_dir)
+    if cwicpc_dest_dir: 
+        os.mkdir(cwicpc_dest_dir)
         if MAXTILES > 0:
             for i in range(1,MAXTILES+1):
-                os.mkdir(cwicpc_dest_dir+str(i)+'-low')
-    
+                os.mkdir(cwicpc_dest_dir+str(i))
+        if ALSO_LOW:
+            os.mkdir(cwicpc_dest_dir+'-low')
+            if MAXTILES > 0:
+                for i in range(1,MAXTILES+1):
+                    os.mkdir(cwicpc_dest_dir+str(i)+'-low')
+        
+    if cwipcdump_dest_dir: 
+        os.mkdir(cwipcdump_dest_dir)
+        
+        
     startTime = time.time()
     count = 0
     timestamp = 0
@@ -142,23 +160,27 @@ def main():
         pathname = os.path.join(loot_source_dir, filename)
         print(pathname, '...')
         basename = os.path.splitext(filename)[0]
-        ply_dest_pathname = os.path.join(ply_dest_dir, filename)
-        
-        cwicpc_dest_pathnames = []
-        cwicpc_dest_pathnames.append(os.path.join(cwicpc_dest_dir, basename + '.cwicpc'))
-        if MAXTILES > 0:
-            for i in range(1,MAXTILES+1):
-                cwicpc_dest_pathnames.append(
-                    os.path.join(cwicpc_dest_dir + str(i), basename + '.cwicpc')
-                )
-        if ALSO_LOW:
-            cwicpc_dest_pathnames.append(os.path.join(cwicpc_dest_dir + '-low', basename + '.cwicpc'))
+        if ply_dest_dir:
+            ply_dest_pathname = os.path.join(ply_dest_dir, filename)
+        if cwipcdump_dest_dir:
+            cwipcdump_dest_pathname = os.path.join(cwipcdump_dest_dir, basename + '.cwipcdump')
+       
+        if cwicpc_dest_dir:
+            cwicpc_dest_pathnames = []
+            cwicpc_dest_pathnames.append(os.path.join(cwicpc_dest_dir, basename + '.cwicpc'))
             if MAXTILES > 0:
                 for i in range(1,MAXTILES+1):
                     cwicpc_dest_pathnames.append(
-                        os.path.join(cwicpc_dest_dir + str(i) + '-low', basename + '.cwicpc')
+                        os.path.join(cwicpc_dest_dir + str(i), basename + '.cwicpc')
                     )
-        
+            if ALSO_LOW:
+                cwicpc_dest_pathnames.append(os.path.join(cwicpc_dest_dir + '-low', basename + '.cwicpc'))
+                if MAXTILES > 0:
+                    for i in range(1,MAXTILES+1):
+                        cwicpc_dest_pathnames.append(
+                            os.path.join(cwicpc_dest_dir + str(i) + '-low', basename + '.cwicpc')
+                        )
+            
         # Read original loot, downsample and scale.
         o3dpc = read_loot_ply_o3d(pathname)
 
@@ -166,16 +188,20 @@ def main():
         pc = o3d_to_cwipc(o3dpc, timestamp)
 
         # Save as a plyfile
-        write_ply_cwipc(ply_dest_pathname, pc)
-        
+        if ply_dest_dir:
+            write_ply_cwipc(ply_dest_pathname, pc)
+        # Save as dump
+        if cwipcdump_dest_dir:
+            write_dump_cwipc(cwipcdump_dest_pathname, pc)
         # compress and save
-        enc_group.feed(pc)
-        for i in range(len(encoders)):
-            ok = encoders[i].available(True)
-            assert ok
-            data = encoders[i].get_bytes()
-            with open(cwicpc_dest_pathnames[i], 'wb') as ofp:
-                ofp.write(data)
+        if cwicpc_dest_dir:
+            enc_group.feed(pc)
+            for i in range(len(encoders)):
+                ok = encoders[i].available(True)
+                assert ok
+                data = encoders[i].get_bytes()
+                with open(cwicpc_dest_pathnames[i], 'wb') as ofp:
+                    ofp.write(data)
 
         pc.free()
         
