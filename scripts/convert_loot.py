@@ -7,7 +7,7 @@ import cwipc.codec
 import cwipc.util
 import time
 
-VOXEL_SIZE = 3.5    # Larger numbers mean smaller output size
+VOXEL_SIZE = 2.5    # Larger numbers mean smaller output size
 SCALE_FACTOR = 500  # Conversion factor from loot xyz values to our xyz values
 TRANSLATE_X = -0.35 # Conversion (after scaling) of X values
 TRANSLATE_Y = 0     # Conversion (after scaling) of Y values
