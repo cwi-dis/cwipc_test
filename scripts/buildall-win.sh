@@ -1,6 +1,11 @@
 #!/bin/bash
 set -e
 set -x
+errorexit() {
+	echo '** Error: your buildall-win did not succeed. Check error log above.'
+	exit 1
+}
+trap errorexit ERR
 dirname=`dirname $0`
 dirname=`cd $dirname/../..; pwd`
 cd $dirname
