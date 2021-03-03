@@ -1,0 +1,1 @@
+start "Restarting Kinects" cmd /k "C:\Program Files\Azure Kinect SDK v1.4.1\tools\AzureKinectFirmwareTool.exe" -r
