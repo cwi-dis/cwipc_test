@@ -9,6 +9,7 @@ import time
 
 VOXEL_SIZE = 2.5    # Larger numbers mean smaller output size
 SCALE_FACTOR = 500  # Conversion factor from loot xyz values to our xyz values
+CWIPC_POINTSIZE = VOXEL_SIZE/SCALE_FACTOR
 TRANSLATE_X = -0.35 # Conversion (after scaling) of X values
 TRANSLATE_Y = 0     # Conversion (after scaling) of Y values
 TRANSLATE_Z = -0.35 # Conversion (after scaling) of Z values
@@ -67,7 +68,9 @@ def o3d_to_cwipc(o3dpc, timestamp):
         g = int(g*255)
         b = int(b*255)
         rv.append((x, y, z, r, g, b, side))
-    return cwipc.cwipc_from_points(rv, timestamp)
+    rv = cwipc.cwipc_from_points(rv, timestamp)
+    rv._set_cellsize(CWIPC_POINTSIZE)
+    return rv
     
 def cwipc_to_o3d(pc):
     """Convert cwipc pointcloud to open3d pointcloud"""
