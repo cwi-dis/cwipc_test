@@ -10,8 +10,11 @@ import threading
 import queue
 import cwipc
 import cwipc.codec
-import cwipc.realsense2
-
+try:
+    import cwipc.realsense2 as realsense2
+except ModuleNotFoundError:
+    realsense2 = None
+    
 # Convoluted code warning: adding ../python directory to path so we can import subsource
 _sourcedir = os.path.dirname(__file__)
 _sourcedir = os.path.realpath(_sourcedir)
@@ -90,8 +93,11 @@ class SourceServer:
                 
         if synthetic:
             self.grabber = cwipc.cwipc_synthetic()
+        elif realsense2:
+            self.grabber = realsense2.cwipc_realsense2()
         else:
-            self.grabber = cwipc.realsense2.cwipc_realsense2()
+            print(f"grab: No realsense support, using synthetic")
+            self.grabber = cwipc.cwipc_synthetic()
         
         if tile:
             self.tiles = []
