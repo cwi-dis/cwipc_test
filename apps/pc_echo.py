@@ -396,15 +396,40 @@ class Receiver:
             print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
         else:
             print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
+      
+class UnReceiver:
+    """Ensure no pointclouds are received on streams that are not enabled"""
+    
+    def __init__(self, sub, sinkNum, streamNumList):
+        self.sub = sub
+        self.sinkNum = sinkNum
+        self.streamNumList = streamNumList
+        self.stopped = False
 
+    def stop(self):
+        if self.stopped: return
+        self.stopped = True
+        
+    def run(self):
+        while not self.stopped:
+            anydone = False
+            for streamNum in self.streamNumList:
+                if self.sub.available(streamNum):
+                    anydone = True
+                    data = self.sub.read_cpc(streamNum)
+                    print(f"recv {self.sinkNum}.{streamNum}: ERROR: received data on disabled stream ({len(data)} bytes)")
+            if not anydone:
+                time.sleep(0.01)
+            
 class SinkClient:
     SINKNUM = 1
     
-    def __init__(self, subUrl, count=None, delay=0, retry=0, pcsink=None, savedir=None, recvq=None, verbose=False):
+    def __init__(self, subUrl, count=None, delay=0, retry=0, pcsink=None, savedir=None, recvq=None, verbose=False, issue27=False):
         self.sinkNum = SinkClient.SINKNUM
         SinkClient.SINKNUM += 1
         self.subUrl = subUrl
         self.verbose = verbose
+        self.issue27 = issue27
         self.count = count
         self.delay = delay
         self.retry = retry
@@ -507,6 +532,19 @@ class SinkClient:
             thr = threading.Thread(target=receiver.run, args=())
             self.receivers.append(receiver)
             self.threads.append(thr)
+            if self.issue27:
+                # Start a thread to ensure that no data is received on streams that should be disabled
+                unwantedStreams = []
+                for sn, q in self.tile2info[tileNum]:
+                    if q != quality:
+                        unwantedStreams.append(sn)
+                if unwantedStreams:
+                    print(f"recv{self.sinkNum}: issue27: monitoring unwanted streams: {unwantedStreams}")
+                    receiver = UnReceiver(self.sub, self.sinkNum, unwantedStreams)
+                    thr = threading.Thread(target=receiver.run, args=())
+                    self.receivers.append(receiver)
+                    self.threads.append(thr)
+                    
         if self.verbose:
             print(f"recv {self.sinkNum}: starting receivers", flush=True)
         for t in self.threads:
@@ -543,6 +581,7 @@ def main():
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel receivers", default=1)
+    parser.add_argument("--issue27", action="store_true", help="Attempt to read from disabled streams, to ensure there is no data received there")
     parser.add_argument("--verbose", action="store_true", help="Print information about each pointcloud after it has been received")
     args = parser.parse_args()
     if args.retry and not args.delay:
@@ -598,7 +637,7 @@ def main():
     clts = []
     threads = []
     for i in range(args.parallel):
-        clt = SinkClient(subUrl, args.count, args.delay, args.retry, thisVisualizer, args.savecwicpc, args.recvq, args.verbose)
+        clt = SinkClient(subUrl, args.count, args.delay, args.retry, thisVisualizer, args.savecwicpc, args.recvq, args.verbose, issue27=args.issue27)
         thread = threading.Thread(target=clt.run, args=())
         clts.append(clt)
         threads.append(thread)

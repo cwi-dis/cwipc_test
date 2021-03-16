@@ -174,3 +174,11 @@ class CpcSubSource:
             raise SubError("read_cpc(stream={streamIndex}: was promised {length} bytes but got only {length2})")
         return rv
         
+    def available(self, streamIndex=None):
+        assert self.handle
+        assert self.dll
+        assert self.started
+        if streamIndex == None:
+            streamIndex = self.streamIndex
+        length = self.dll.sub_grab_frame(self.handle, streamIndex, None, 0, None)
+        return length != 0
