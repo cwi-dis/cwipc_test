@@ -396,7 +396,7 @@ class Receiver:
             print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:d}, max={maxValue:d}')
         else:
             print(f'recv {self.sinkNum}.{self.streamNum}: {name}: count={count}, average={avgValue:.3f}, min={minValue:.3f}, max={maxValue:.3f}')
-      
+
 class SinkClient:
     SINKNUM = 1
     
@@ -470,7 +470,7 @@ class SinkClient:
         selected = None
         for tileNum in tileNumbers:
             tileInfo = self.tile2info[tileNum]
-            if self.wantedQuality == 'first':
+            if self.wantedQuality == 'first' or self.wantedQuality == 'default':
                 selected = tileInfo[0]
             elif self.wantedQuality == 'last':
                 selected = tileInfo[-1]
@@ -497,7 +497,11 @@ class SinkClient:
                     self.sub.disable_stream(tileNum)
                     continue
             streamNum, quality = selected
-            self.sub.enable_stream(tileNum, quality)
+            if self.wantedQuality == 'default':
+                # We don't use enable_stream, we just assume that the default stream
+                # (the first one for this tile) has already been enabled automatically by the
+                # sub.
+                self.sub.enable_stream(tileNum, quality)
             print(f"recv{self.sinkNum}: tile {tilenum}: selected stream {streamNum}, quality {quality}")
             receiver = Receiver(self.sub, self.sinkNum, streamNum, self.count, self.pcsink, self.savedir, self.verbose)
             thr = threading.Thread(target=receiver.run, args=())
@@ -535,7 +539,7 @@ def main():
     parser.add_argument("--delay", action="store", type=int, default=1, metavar="SECS", help="Wait SECS seconds before starting receiver")
     parser.add_argument("--retry", action="store", type=int, metavar="COUNT", help="Retry COUNT times when opening the receiver fails. Sets --delay to 1 if not set.", default=0)
     parser.add_argument("--count", type=int, action="store", metavar="N", help="Stop after receiving N pointclouds")
-    parser.add_argument("--recvq", type=str, metavar="Q", help="Receive each tile in quality Q. Special values: first, last, lowest, highest", default="first")
+    parser.add_argument("--recvq", type=str, metavar="Q", help="Receive each tile in quality Q. Special values: default, first, last, lowest, highest", default="default")
     parser.add_argument("--display", action="store_true", help="Display each pointcloud after it has been received")
     parser.add_argument("--savecwicpc", action="store", metavar="DIR", help="Save compressed pointclouds to DIR")
     parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel receivers", default=1)
