@@ -4,22 +4,25 @@ import os
 dry_run=False
 do_mkdir=False
 do_clone=False
-do_fetch=True
-do_lfs_fetch=True
+do_fetch=False
+do_lfs_fetch=False
+do_lfs_import=False
+do_lfs_info=False
 do_mirror=True
 do_lfs_mirror=True
 
 #Note: must end in /, if applicable
 
 Old="ssh://git@baltig.viaccess-orca.com:8022/VRT/"
-New="ssh://git@192.168.37.11:222/VRT-"
+#New="ssh://git@192.168.37.11:222/VRT-"
+New="ssh://git@baltig.viaccess-orca.com:8022/VRT/"
 
 AllGroups=[
     "nativeclient-group",
-    "deployment-group",
-    "orchestration-group",
-    "deliverymcu-group",
-    "webclient-group"
+#    "deployment-group",
+#    "orchestration-group",
+#    "deliverymcu-group",
+#    "webclient-group"
 ]
 
 All=[
@@ -31,25 +34,25 @@ All=[
 	"nativeclient-group/VRTApp-Pilot2",
 	"nativeclient-group/VRTApp-Pilot1",
 	"nativeclient-group/VRTApp-CWI_cake",
-	"nativeclient-group/VRTApplication",
-	"nativeclient-group/cwipc_kinect",
-	"deployment-group/E2Etests",
-	"nativeclient-group/Synchronizer",
-	"nativeclient-group/TVM_components",
-	"webclient/monitoringtools",
-	"orchestration-group/Web_Orchestration",
-	"nativeclient-group/cwipc_test",
-	"nativeclient-group/thirdpartyinstallers",
-	"nativeclient-group/Testbed",
-	"nativeclient-group/cwipc_codec",
-	"nativeclient-group/cwipc_realsense2",
-	"nativeclient-group/SUB",
-	"nativeclient-group/cwipc_util",
-	"deployment-group/Deployment",
-	"deliverymcu-group/DeliveryMCU",
-	"nativeclient-group/Playout",
-	"nativeclient-group/EncodingEncapsulation",
-	"orchestration-group/Orchestration",
+# 	"nativeclient-group/VRTApplication",
+# 	"nativeclient-group/cwipc_kinect",
+# 	"deployment-group/E2Etests",
+# 	"nativeclient-group/Synchronizer",
+# 	"nativeclient-group/TVM_components",
+# 	"webclient/monitoringtools",
+# 	"orchestration-group/Web_Orchestration",
+# 	"nativeclient-group/cwipc_test",
+# 	"nativeclient-group/thirdpartyinstallers",
+# 	"nativeclient-group/Testbed",
+# 	"nativeclient-group/cwipc_codec",
+# 	"nativeclient-group/cwipc_realsense2",
+# 	"nativeclient-group/SUB",
+# 	"nativeclient-group/cwipc_util",
+# 	"deployment-group/Deployment",
+# 	"deliverymcu-group/DeliveryMCU",
+# 	"nativeclient-group/Playout",
+# 	"nativeclient-group/EncodingEncapsulation",
+# 	"orchestration-group/Orchestration",
 ]
 
 if do_mkdir:
@@ -75,6 +78,20 @@ if do_fetch:
 if do_lfs_fetch:
     for a in All:
         cmd = f'cd {a}.git && git lfs fetch --all'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+
+if do_lfs_import:
+    for a in All:
+        cmd = f'cd {a}.git && git lfs migrate import --everything --include="*.png,*.asset,*.mp4,*.jpg,*.wav,*.fbx,*.Fbx,*.FBX,*.psd,*.tga,*.hdr,*.unity,*.exr"'
+        print('+ ', cmd)
+        if not dry_run:
+            os.system(cmd)
+
+if do_lfs_info:
+    for a in All:
+        cmd = f'cd {a}.git && git lfs migrate info --everything --top=10'
         print('+ ', cmd)
         if not dry_run:
             os.system(cmd)
