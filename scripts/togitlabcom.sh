@@ -15,8 +15,8 @@ if [ x$answer == xYES ]; then
 	git remote rename origin vo-gitlab
 	git fetch
 	git remote add origin $1
-	git fetch
-	git branch --set-upstream master origin/master
+	git fetch origin
+	git branch --set-upstream-to master origin/master
 	git remote -v
 	git branch -a
 else
