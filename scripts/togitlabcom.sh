@@ -11,12 +11,14 @@ git remote -v
 echo "Do you want to change origin to vo-gitlab and add a new origin $1 ? Type YES if so - "
 read answer
 if [ x$answer == xYES ]; then
-	set -x
+	set -xe
 	git remote rename origin vo-gitlab
 	git fetch
 	git remote add origin $1
 	git fetch origin
-	git branch --set-upstream-to master origin/master
+	git checkout master
+	git branch --set-upstream-to origin/master
+	git pull
 	git remote -v
 	git branch -a
 else
