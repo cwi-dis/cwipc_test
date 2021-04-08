@@ -11,6 +11,13 @@ x--notest)
 	shift
 	;;
 esac
+sudo=
+case x$1 in
+x--sudo)
+	sudo="sudo"
+	shift
+	;;
+esac
 case x$1 in
 x)
 	all="cwipc_util cwipc_realsense2 cwipc_codec"
@@ -38,7 +45,7 @@ if [ -d $i ]; then
 		if [ "$notest" != "notest" ]; then
 			make test
 		fi
-		make install
+		$sudo make install
 	)	
 )
 else
