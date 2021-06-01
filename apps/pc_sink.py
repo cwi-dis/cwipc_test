@@ -6,6 +6,8 @@ import argparse
 import traceback
 import cwipc
 import cwipc.codec
+#from cwipc.scripts._scriptsupport import *
+from cwipc.scripts.cwipc_view import Visualizer
 import threading
 
 # Convoluted code warning: adding ../python directory to path so we can import subsource
@@ -21,28 +23,6 @@ except RuntimeError:
     pass
 from subsource import CpcSubSource
 
-# NOTE: open3d must be imported after all the DLLs have been loaded (sigh)
-import numpy as np
-import open3d
-
-
-def cwipc_to_o3d(pc):
-    """Convert cwipc pointcloud to open3d pointcloud"""
-    # Note that this method is inefficient, it can probably be done
-    # in-place with some numpy magic
-    pcpoints = pc.get_points()
-    points = []
-    colors = []
-    for p in pcpoints:
-        points.append((p.x, p.y, p.z))  
-        colors.append((float(p.r)/255.0, float(p.g)/255.0, float(p.b)/255.0))
-    points_v = open3d.Vector3dVector(points)
-    colors_v = open3d.Vector3dVector(colors)
-    rv = open3d.PointCloud()
-    rv.points = points_v
-    rv.colors = colors_v
-    return rv
-        
 class CpcSocketSource:
     def __init__(self, hostname, port):
         self.hostname = hostname
@@ -66,25 +46,32 @@ class CpcSocketSource:
             return rv
         
 class SinkClient:
-    def __init__(self, hostname='localhost', port=4303, count=None, display=False, sub=None, savedir=None, verbose=False):
+    def __init__(self, hostname='localhost', port=4303, count=None, visualizer=None, sub=None, savedir=None, verbose=False):
         if sub:
             self.source = CpcSubSource(sub)
         else:
             self.source = CpcSocketSource(hostname, port)
         self.count = count
-        self.display = display
+        self.visualizer = visualizer
+        self.visualizer_thread = None
         self.times_recv = []
         self.times_decode = []
         self.times_latency = []
         self.times_completeloop = []
-        self.visualiser = None
-        self.visualiser_o3dpc = None
         self.savedir = savedir
         self.verbose = verbose
-
+        self.stopped = False
+        if self.visualizer:
+            self.visualizer.set_producer(self)
+        
+    def is_alive(self):
+        return not self.stopped
+        
     def receiver_loop(self):
         seqno = 1
         while True:
+            if self.visualizer and not self.visualizer.is_alive():
+                break
             t0 = time.time()
             cpc = self.source.read_cpc()
             if not cpc: break
@@ -103,16 +90,18 @@ class SinkClient:
                 seqno += 1
                 with open(os.path.join(self.savedir, savefile), 'wb') as fp:
                     fp.write(cpc)
-            if pc and self.display:
-                self.show(pc)
             if pc:
-                pc.free()
+                if self.visualizer:
+                    self.visualizer.feed(pc)
+                else:
+                    pc.free()
             if self.count != None:
                 self.count -= 1
                 if self.count <= 0:
                     break
             t3 = time.time()
             self.times_completeloop.append(t3-t0)
+        self.stopped = True
             
     def decompress(self, cpc):
         decomp = cwipc.codec.cwipc_new_decoder()
@@ -122,41 +111,20 @@ class SinkClient:
         pc = decomp.get()
         return pc
         
-    def show(self, pc):
-        o3dpc = cwipc_to_o3d(pc)
-        self.draw_o3d(o3dpc)
-            
-    def start_o3d(self):
-        self.visualiser = open3d.Visualizer()
-        self.visualiser.create_window(width=960, height=540)
-
-    def draw_o3d(self, o3dpc):
-        """Draw open3d pointcloud"""
-        if self.visualiser_o3dpc == None:
-            self.visualiser_o3dpc = o3dpc
-            self.visualiser.add_geometry(o3dpc)
-        else:
-            self.visualiser_o3dpc.points = o3dpc.points
-            self.visualiser_o3dpc.colors = o3dpc.colors
-        if self.verbose: print('display:', len(self.visualiser_o3dpc.points), 'points', flush=True)
-        self.visualiser.update_geometry()
-        self.visualiser.update_renderer()
-        self.visualiser.poll_events()
-        
-    def stop_o3d(self):
-        self.visualiser.destroy_window()
-
     def run(self):
         if not self.source.start():
             print("Compressed pointcloud source failed to start")
             return
-        if self.display:
-            self.start_o3d()
         try:
-            self.receiver_loop()
+            if self.visualizer:
+                my_thread = threading.Thread(target=self.receiver_loop, args=())
+                my_thread.start()
+                self.visualizer.run()
+                my_thread.join()
+            else:
+                self.receiver_loop()
         finally:
-            if self.display:
-                self.stop_o3d()
+            self.stopped = True
 
     def statistics(self):
         self.print1stat('recv', self.times_recv)
@@ -186,8 +154,12 @@ def main():
     parser.add_argument("--parallel", type=int, action="store", metavar="COUNT", help="Run COUNT parallel sessions", default=0)
     
     args = parser.parse_args()
+    visualizer = None
+    visualizer_thread = None
+    if args.display:
+        visualizer = Visualizer(verbose=args.verbose)
     if args.parallel == 0:
-        clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc, args.verbose)
+        clt = SinkClient(args.hostname, args.port, args.count, visualizer, args.sub, args.savecwicpc, args.verbose)
         try:
             clt.run()
         except (Exception, KeyboardInterrupt):
@@ -196,8 +168,9 @@ def main():
     else:
         clts = []
         for i in range(args.parallel):
-            clt = SinkClient(args.hostname, args.port, args.count, args.display, args.sub, args.savecwicpc, args.verbose)
+            clt = SinkClient(args.hostname, args.port, args.count, visualizer, args.sub, args.savecwicpc, args.verbose)
             clts.append(clt)
+            visualizer = None
         threads = []
         for clt in clts:
             threads.append(threading.Thread(target=clt.run, args=()))
