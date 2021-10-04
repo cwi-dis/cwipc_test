@@ -1,1 +1,0 @@
-CXXFLAGS="-I/d/Works/motion_spell/missions/201709_VRTogether/vo/Deployment/deliverables/pcl2dash/26 -I/d/Works/motion_spell/missions/201709_VRTogether/vo/Deployment/deliverables/signals-unity-bridge/36" make -j
