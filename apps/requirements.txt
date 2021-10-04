@@ -1,3 +1,0 @@
-numpy
-open3d==0.8.0.0
-pika
