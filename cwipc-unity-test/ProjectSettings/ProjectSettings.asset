@@ -704,7 +704,7 @@ PlayerSettings:
   webGLThreadsSupport: 0
   webGLDecompressionFallback: 0
   scriptingDefineSymbols:
-    Standalone: CWIPC_WITH_LOGGING
+    Standalone: CWIPC_WITH_LOGGING;VRT_WITH_STATS
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend: {}
