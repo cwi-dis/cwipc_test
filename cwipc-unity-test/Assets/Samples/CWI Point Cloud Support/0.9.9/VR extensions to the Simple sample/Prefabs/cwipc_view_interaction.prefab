@@ -566,7 +566,7 @@ MonoBehaviour:
   cameraOffset: {fileID: 4860176230166721858}
   player: {fileID: 4860176229091537137}
   playerCamera: {fileID: 4860176229602588885}
-  heightFactor: 0.01
+  heightFactor: 0.001
   m_ViewHeightAction:
     m_UseReference: 1
     m_Action:
@@ -1335,7 +1335,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_System: {fileID: 4860176229408347810}
-  m_MoveSpeed: 10
+  m_MoveSpeed: 1
   m_EnableStrafe: 1
   m_UseGravity: 1
   m_GravityApplicationMode: 0
