@@ -8,6 +8,7 @@ redandblackPly
 grabCwicpc*
 grabPly
 __pycache__
+.venv
 #
 # Unity ignores
 #
