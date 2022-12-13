@@ -9,6 +9,6 @@ fi
 if $use_venv; then
 	. .venv/bin/activate
 fi
-python ../../scripts/convert_image.py --pointsize 0.001 PM5644.svg.png ply/testpattern_000.ply
-python ../../scripts/convert_image.py --pointsize 0.001 PM5644.svg.png cwipcdump/testpattern_000.cwipcdump
+python ../../scripts/convert_image.py --pointsize 0.001 --bottom 1.4 PM5644.svg.png ply/testpattern_000.ply
+python ../../scripts/convert_image.py --pointsize 0.001 --bottom 1.4 PM5644.svg.png cwipcdump/testpattern_000.cwipcdump
 
