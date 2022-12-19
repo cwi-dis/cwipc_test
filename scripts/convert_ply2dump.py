@@ -8,7 +8,7 @@ import cwipc.util
 import time
 
 VOXEL_SIZE = 1    # Larger numbers mean smaller output size
-SCALE_FACTOR = 500  # Conversion factor from loot xyz values to our xyz values
+SCALE_FACTOR = 550  # Conversion factor from loot xyz values to our xyz values
 TRANSLATE_X = -0.35 # Conversion (after scaling) of X values
 TRANSLATE_Y = 0     # Conversion (after scaling) of Y values
 TRANSLATE_Z = -0.35 # Conversion (after scaling) of Z values
@@ -23,6 +23,11 @@ def read_loot_ply_o3d(filename):
     #downsampled = open3d.voxel_down_sample(original, voxel_size=VOXEL_SIZE)
     downsampled = original
     points = np.asarray(downsampled.points)
+    min_point = points.min(axis=0)
+    max_point = points.max(axis=0)
+    print(f"x: {TRANSLATE_X+min_point[0]/SCALE_FACTOR}..{TRANSLATE_X+max_point[0]/SCALE_FACTOR}")
+    print(f"y: {TRANSLATE_Y+min_point[1]/SCALE_FACTOR}..{TRANSLATE_Y+max_point[1]/SCALE_FACTOR}")
+    print(f"z: {TRANSLATE_Z+min_point[2]/SCALE_FACTOR}..{TRANSLATE_Z+max_point[2]/SCALE_FACTOR}")
     translate = np.array([TRANSLATE_X, TRANSLATE_Y, TRANSLATE_Z])
     points /= SCALE_FACTOR
     points += translate
