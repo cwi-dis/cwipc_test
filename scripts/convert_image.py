@@ -35,6 +35,7 @@ def convert(input : str, output : str, pointsize : float, bottom : float):
                 pt_mask = 0
                 points.append((pt_x, pt_y, pt_z, pt_r, pt_g, pt_b, pt_mask))
         pc = cwipc.cwipc_from_points(points, 0)
+        pc._set_cellsize(pointsize)
         if output.endswith(".ply"):
             cwipc.cwipc_write(output, pc)
         elif output.endswith(".cwipcdump"):
