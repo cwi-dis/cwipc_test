@@ -126,7 +126,7 @@ def main():
         pc = o3d_to_cwipc(o3dpc, timestamp)
         
         # Set the pointsize (guessed)
-        #pc._setcellsize(pointsize)
+        pc._setcellsize(pointsize)
         
         #save as dump
         write_dump_cwipc(dump_dest_pathname, pc)
