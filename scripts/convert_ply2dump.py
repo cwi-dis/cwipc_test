@@ -95,10 +95,13 @@ def write_dump_cwipc(filename, pc):
     
 def main():
     if len(sys.argv) != 3:
-        print('Usage: %s source-ply-dir dest-dump-dir' % sys.argv[0])
+        print('Usage: %s source-ply-dir dest-dump-dir [pointsize]' % sys.argv[0])
         sys.exit(1)
     loot_source_dir = sys.argv[1]
     dump_dest_dir = sys.argv[2]
+    pointsize = 0
+    if len(sys.argv) > 3:
+        pointsize = float(sys.argv[3])
     if not os.path.exists(dump_dest_dir):
         os.mkdir(dump_dest_dir)
 
@@ -121,6 +124,9 @@ def main():
 
         # Convert to cwipc
         pc = o3d_to_cwipc(o3dpc, timestamp)
+        
+        # Set the pointsize (guessed)
+        #pc._setcellsize(pointsize)
         
         #save as dump
         write_dump_cwipc(dump_dest_pathname, pc)
