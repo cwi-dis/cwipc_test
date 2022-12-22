@@ -94,7 +94,7 @@ def write_dump_cwipc(filename, pc):
     cwipc.cwipc_write_debugdump(filename, pc)
     
 def main():
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         print('Usage: %s source-ply-dir dest-dump-dir [pointsize]' % sys.argv[0])
         sys.exit(1)
     loot_source_dir = sys.argv[1]
@@ -126,7 +126,7 @@ def main():
         pc = o3d_to_cwipc(o3dpc, timestamp)
         
         # Set the pointsize (guessed)
-        pc._setcellsize(pointsize)
+        pc._set_cellsize(pointsize)
         
         #save as dump
         write_dump_cwipc(dump_dest_pathname, pc)
