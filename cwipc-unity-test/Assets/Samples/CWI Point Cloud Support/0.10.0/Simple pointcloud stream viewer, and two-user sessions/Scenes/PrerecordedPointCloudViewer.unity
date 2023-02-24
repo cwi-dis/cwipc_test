@@ -455,12 +455,24 @@ PrefabInstance:
       value: cwipc_playback
       objectReference: {fileID: 0}
     - target: {fileID: 8050546849639997281, guid: 8f66650911e9d488fbc12c201e6449de, type: 3}
+      propertyPath: fadeIn
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8050546849639997281, guid: 8f66650911e9d488fbc12c201e6449de, type: 3}
       propertyPath: dirName
       value: ../Samples/loot-150K-4tiles
       objectReference: {fileID: 0}
     - target: {fileID: 8050546849639997281, guid: 8f66650911e9d488fbc12c201e6449de, type: 3}
+      propertyPath: fadeOut
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8050546849639997281, guid: 8f66650911e9d488fbc12c201e6449de, type: 3}
+      propertyPath: preload
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8050546849639997281, guid: 8f66650911e9d488fbc12c201e6449de, type: 3}
       propertyPath: loopCount
-      value: 3
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8050546849639997281, guid: 8f66650911e9d488fbc12c201e6449de, type: 3}
       propertyPath: playOnStart
