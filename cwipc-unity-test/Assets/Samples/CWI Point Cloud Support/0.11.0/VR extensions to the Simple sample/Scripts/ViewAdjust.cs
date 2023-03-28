@@ -78,7 +78,7 @@ public class ViewAdjust : LocomotionProvider
             if (pcOrigin != Vector3.zero)
             {
                 Debug.Log($"ViewAdjust: adjust pointcloud to {pcOrigin}");
-                player.transform.position = -pcOrigin;
+                pointCloudPipeline.transform.localPosition = -pcOrigin;
             }
             EndLocomotion();
         }
