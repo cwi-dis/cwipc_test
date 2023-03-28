@@ -97,7 +97,7 @@ public class SampleTwoUserSessionController : MonoBehaviour
     /// </summary>
     protected virtual void InitializeSelf()
     {
-        PointCloudSelfPipelineSimple pipeline = selfPipeline.GetComponent<PointCloudSelfPipelineSimple>();
+        PointCloudSelfPipelineSimple pipeline = selfPipeline.GetComponentInChildren<PointCloudSelfPipelineSimple>();
         AbstractPointCloudSink transmitter = pipeline?.transmitter;
         if (transmitter == null) Debug.LogError($"SampleTowUserSessionController: transmitter is null for {selfPipeline}");
         transmitter.sinkType = AbstractPointCloudSink.SinkType.TCP;
@@ -114,7 +114,7 @@ public class SampleTwoUserSessionController : MonoBehaviour
     protected virtual void InitializeOther()
     {
 
-        PointCloudPipelineSimple receiver = otherPipeline.GetComponent<PointCloudPipelineSimple>();
+        PointCloudPipelineSimple receiver = otherPipeline.GetComponentInChildren<PointCloudPipelineSimple>();
         if (receiver == null) Debug.LogError($"SampleTowUserSessionController: receiver is null for {otherPipeline}");
         receiver.sourceType = PointCloudPipelineSimple.SourceType.TCP;
         receiver.inputUrl = $"tcp://{secondHost}:4303";

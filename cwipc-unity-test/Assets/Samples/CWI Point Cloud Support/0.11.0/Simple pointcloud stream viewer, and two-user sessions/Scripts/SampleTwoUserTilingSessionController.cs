@@ -59,7 +59,7 @@ public class SampleTwoUserTilingSessionController : SampleTwoUserSessionControll
     /// </summary>
     protected override void InitializeSelf()
     {
-        PointCloudSelfPipelineTiled pipeline = selfPipeline.GetComponent<PointCloudSelfPipelineTiled>();
+        PointCloudSelfPipelineTiled pipeline = selfPipeline.GetComponentInChildren<PointCloudSelfPipelineTiled>();
         AbstractPointCloudSink transmitter = pipeline?.transmitter;
         if (transmitter == null) Debug.LogError($"SampleTowUserSessionController: transmitter is null for {selfPipeline}");
         transmitter.sinkType = AbstractPointCloudSink.SinkType.TCP;
@@ -100,7 +100,7 @@ public class SampleTwoUserTilingSessionController : SampleTwoUserSessionControll
     protected override void InitializeOther()
     {
 
-        PointCloudPipelineTiled receiver = otherPipeline.GetComponent<PointCloudPipelineTiled>();
+        PointCloudPipelineTiled receiver = otherPipeline.GetComponentInChildren<PointCloudPipelineTiled>();
         if (receiver == null) Debug.LogError($"SampleTowUserSessionController: receiver is null for {otherPipeline}");
         receiver.sourceType = PointCloudPipelineTiled.SourceType.TCP;
         receiver.inputUrl = $"tcp://{secondHost}:4303";
