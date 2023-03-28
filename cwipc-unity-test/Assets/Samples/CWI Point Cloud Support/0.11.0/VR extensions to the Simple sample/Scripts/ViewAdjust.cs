@@ -64,33 +64,35 @@ public class ViewAdjust : LocomotionProvider
         if (BeginLocomotion())
         {
             Debug.Log("ViewAdjust: ResetOrigin");
-            Vector3 pcOrigin = PointCloudOrigin();
-            // First set correct rotation on the camera
+            Vector3 pcOriginLocal = Vector3.zero; // Point cloud origin relative to pointCloudPipeline
+            float pcRotationY = 0; // Rotation of camera relative to the point cloud
+          
+            // Rotation of camera relative to the player
             float rotationY = playerCamera.transform.rotation.eulerAngles.y - player.transform.rotation.eulerAngles.y;
+            Debug.Log($"ViewAdjust: camera rotation={rotationY}");
             cameraOffset.transform.Rotate(0, -rotationY, 0);
+            if (pointCloudPipeline != null)
+            {
+                pcOriginLocal = pointCloudPipeline.GetPosition();
+                pcRotationY = playerCamera.transform.rotation.eulerAngles.y - pointCloudPipeline.transform.rotation.eulerAngles.y;
+                Debug.Log($"ViewAdjust: pc rotation={pcRotationY}");
+                pointCloudPipeline.transform.Rotate(0, pcRotationY+rotationY, 0);
+            }
             // Next set correct position on the camera
             //Vector3 moveXZ = playerCamera.transform.position - cameraOffset.transform.position;
             Vector3 moveXZ = playerCamera.transform.position - player.transform.position;
             moveXZ.y = 0;
             Debug.Log($"ResetOrigin: move cameraOffset by {moveXZ} to worldpos={playerCamera.transform.position}");
             cameraOffset.transform.position -= moveXZ;
-            // Finally adjust the player position
-            if (pcOrigin != Vector3.zero)
+            // Finally adjust the pointcloud position and rotate it backwards (so we don't get a double rotation)
+            if (pcOriginLocal != Vector3.zero || pcRotationY != 0)
             {
-                Debug.Log($"ViewAdjust: adjust pointcloud to {pcOrigin}");
-                pointCloudPipeline.transform.localPosition = -pcOrigin;
+                Debug.Log($"ViewAdjust: adjust pointcloud to {pcOriginLocal}");
+                pointCloudPipeline.transform.localPosition = -pcOriginLocal;
+               
             }
             EndLocomotion();
         }
-    }
-
-    Vector3 PointCloudOrigin()
-    {
-        if (pointCloudPipeline == null)
-        {
-            return Vector3.zero;
-        }
-        return pointCloudPipeline.GetPosition();
     }
 
     protected void OnEnable()
