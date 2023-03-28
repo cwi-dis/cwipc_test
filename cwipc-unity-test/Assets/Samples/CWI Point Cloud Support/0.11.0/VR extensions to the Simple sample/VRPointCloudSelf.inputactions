@@ -2769,6 +2769,17 @@
                     "action": "ViewReset",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "143294e5-4e82-46c3-a999-2eaf63a28177",
+                    "path": "<Keyboard>/enter",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "KeyboardMouse",
+                    "action": "ViewReset",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         }

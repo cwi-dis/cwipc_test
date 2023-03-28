@@ -1,3 +1,4 @@
+using Cwipc;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -13,6 +14,9 @@ public class ViewAdjust : LocomotionProvider
 
     [Tooltip("Toplevel object of this player, usually the XROrigin, for resetting origin")]
     [SerializeField] GameObject player;
+
+    [Tooltip("Point cloud pipeline")]
+    [SerializeField] PointCloudPipelineSimple pointCloudPipeline;
 
     [Tooltip("Camera used for determining zero position, for resetting origin")]
     [SerializeField] Camera playerCamera;
@@ -59,17 +63,34 @@ public class ViewAdjust : LocomotionProvider
     {
         if (BeginLocomotion())
         {
-            Debug.Log("xxxjack should reset origin");
+            Debug.Log("ViewAdjust: ResetOrigin");
+            Vector3 pcOrigin = PointCloudOrigin();
+            // First set correct rotation on the camera
             float rotationY = playerCamera.transform.rotation.eulerAngles.y - player.transform.rotation.eulerAngles.y;
             cameraOffset.transform.Rotate(0, -rotationY, 0);
+            // Next set correct position on the camera
             //Vector3 moveXZ = playerCamera.transform.position - cameraOffset.transform.position;
             Vector3 moveXZ = playerCamera.transform.position - player.transform.position;
             moveXZ.y = 0;
-            Debug.Log($"xxxjack should move to {moveXZ} worldpos={playerCamera.transform.position}");
+            Debug.Log($"ResetOrigin: move cameraOffset by {moveXZ} to worldpos={playerCamera.transform.position}");
             cameraOffset.transform.position -= moveXZ;
-
+            // Finally adjust the player position
+            if (pcOrigin != Vector3.zero)
+            {
+                Debug.Log($"ViewAdjust: adjust pointcloud to {pcOrigin}");
+                player.transform.position = -pcOrigin;
+            }
             EndLocomotion();
         }
+    }
+
+    Vector3 PointCloudOrigin()
+    {
+        if (pointCloudPipeline == null)
+        {
+            return Vector3.zero;
+        }
+        return pointCloudPipeline.GetPosition();
     }
 
     protected void OnEnable()

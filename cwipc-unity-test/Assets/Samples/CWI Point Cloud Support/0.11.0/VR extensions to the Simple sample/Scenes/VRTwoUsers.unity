@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.18028305, g: 0.22571313, b: 0.3069213, a: 1}
+  m_IndirectSpecularColor: {r: 0.18028378, g: 0.22571412, b: 0.30692285, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -267,6 +267,7 @@ MonoBehaviour:
     m_Bits: 4294967295
   m_InteractionLayers:
     m_Bits: 1
+  m_DistanceCalculationMode: 1
   m_SelectMode: 1
   m_CustomReticle: {fileID: 0}
   m_FirstHoverEntered:
@@ -299,6 +300,8 @@ MonoBehaviour:
   m_Deactivated:
     m_PersistentCalls:
       m_Calls: []
+  m_StartingHoverFilters: []
+  m_StartingSelectFilters: []
   m_OnFirstHoverEntered:
     m_PersistentCalls:
       m_Calls: []
@@ -328,7 +331,10 @@ MonoBehaviour:
       m_Calls: []
   m_TeleportationProvider: {fileID: 1352245637}
   m_MatchOrientation: 0
+  m_MatchDirectionalInput: 0
   m_TeleportTrigger: 0
+  m_FilterSelectionByHitNormal: 0
+  m_UpNormalToleranceDegrees: 30
   m_Teleporting:
     m_PersistentCalls:
       m_Calls: []
@@ -418,10 +424,10 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 412585988363098140, guid: a3e9aeec6c4e96042b6010dc86ac69d3, type: 3}
-      propertyPath: player
-      value: 
-      objectReference: {fileID: 765728494}
+    - target: {fileID: 1911508270948310340, guid: a3e9aeec6c4e96042b6010dc86ac69d3, type: 3}
+      propertyPath: sourceType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2942035106827000202, guid: a3e9aeec6c4e96042b6010dc86ac69d3, type: 3}
       propertyPath: m_Name
       value: cwipc_avatar_self_xr
