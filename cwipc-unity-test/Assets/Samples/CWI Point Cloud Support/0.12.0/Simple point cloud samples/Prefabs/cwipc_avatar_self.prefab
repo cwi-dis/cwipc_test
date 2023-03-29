@@ -1,5 +1,66 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &828097007717403138
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2670826434901460526}
+  - component: {fileID: 4369117774537892958}
+  m_Layer: 0
+  m_Name: PointCloudPipelineSelf
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2670826434901460526
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 828097007717403138}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6473800109377461743}
+  - {fileID: 9014567391813078666}
+  m_Father: {fileID: 2942035106827000207}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4369117774537892958
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 828097007717403138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28ea6baabaf6c4e55889a771f62e2621, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceType: 0
+  PCrenderer: {fileID: 4770916539198233020}
+  framerate: 15
+  Preparer_DefaultCellSize: 0
+  Preparer_CellSizeFactor: 1.5
+  Synthetic_NPoints: 8000
+  configFileName: cameraconfig.xml
+  voxelSize: 0
+  directoryPath: ../prerecorded_pointclouds
+  inputUrl: 
+  compressedInputStream: 1
+  _enableSelfView: 1
+  _transmitter: {fileID: 3013360027428798611}
+  enableTransmission: 1
+  _forceUntiled: 0
 --- !u!1 &2942035106827000202
 GameObject:
   m_ObjectHideFlags: 0
@@ -9,7 +70,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2942035106827000207}
-  - component: {fileID: 6707972400606089489}
   - component: {fileID: 6051466313898402052}
   m_Layer: 0
   m_Name: cwipc_avatar_self
@@ -30,37 +90,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 6473800109377461743}
+  - {fileID: 2670826434901460526}
   - {fileID: 8500297140765208815}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6707972400606089489
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2942035106827000202}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 28ea6baabaf6c4e55889a771f62e2621, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sourceType: 0
-  PCrenderer: {fileID: 4770916539198233020}
-  framerate: 15
-  Preparer_DefaultCellSize: 0
-  Preparer_CellSizeFactor: 1.5
-  Synthetic_NPoints: 8000
-  configFileName: cameraconfig.xml
-  voxelSize: 0
-  directoryPath: ../prerecorded_pointclouds
-  inputUrl: 
-  compressedInputStream: 1
-  _enableSelfView: 1
-  _transmitter: {fileID: 6051466313898402052}
-  enableTransmission: 1
 --- !u!114 &6051466313898402052
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -77,7 +111,6 @@ MonoBehaviour:
   outputUrl: tcp://localhost:9303
   compressedOutputStreams: 1
   defaultOctreeBits: 10
-  forceUntiled: 0
   transmitterDescriptions: []
   encoderDescriptions: []
 --- !u!1 &4869906821256954691
@@ -188,12 +221,12 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8672829700311196926}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2942035106827000207}
+  m_Father: {fileID: 2670826434901460526}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4770916539198233020
@@ -211,12 +244,75 @@ MonoBehaviour:
   pointcloudSource: {fileID: 0}
   baseMaterial: {fileID: 2100000, guid: 1ea68d9ebfc1c704b8d72164da860d9d, type: 2}
   timeoutBeforeGhosting: 5
+  pointSizeFactor: 1
   pcMirrorX: 1
+  pcMirrorZ: 0
+  started:
+    m_PersistentCalls:
+      m_Calls: []
+  finished:
+    m_PersistentCalls:
+      m_Calls: []
   _RendererName: 
   _PreparerName: 
   material: {fileID: 0}
   dataIsMissing: 0
   timestampMostRecentReception: 0
+  metadataMostRecentReception:
+    timestamp: 0
+    dsi: 
+    dsi_size: 0
+    filename: 
   pointCountMostRecentReception: 0
   pointSizeMostRecentReception: 0
   paused: 0
+--- !u!1 &8703084569268283858
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9014567391813078666}
+  - component: {fileID: 3013360027428798611}
+  m_Layer: 0
+  m_Name: Transmitter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9014567391813078666
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8703084569268283858}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2670826434901460526}
+  m_RootOrder: 1
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &3013360027428798611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8703084569268283858}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8d7912c41ea246cab350310a99c361b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sinkType: 0
+  outputUrl: tcp://localhost:9303
+  compressedOutputStreams: 1
+  defaultOctreeBits: 10
+  transmitterDescriptions: []
+  encoderDescriptions: []

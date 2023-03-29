@@ -17,7 +17,7 @@ You can re-center your self-representation to make your virtual point cloud body
 
 ## Scenes
 
-- `VRPointCloudViewer` is like `SimplePointCloudViewer` but allows you to change viewpoint as explained above.
+- `VRPrerecordedPointCloudViewer` is like `PrerecordedPointCloudViewer` but allows you to adjust your position and view angle.
 - `VRTwoUsers` is like `TwoUsersTiled` but allows you to move your character andre-center your self-representation as explained above. 
 
 ## Prefabs

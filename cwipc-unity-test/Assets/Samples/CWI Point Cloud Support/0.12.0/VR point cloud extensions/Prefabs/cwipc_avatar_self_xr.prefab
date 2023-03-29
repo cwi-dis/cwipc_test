@@ -29,8 +29,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2942035106827000207}
-  m_RootOrder: 2
+  m_Father: {fileID: 7018784957318502208}
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &5158608789170169691
 MonoBehaviour:
@@ -50,7 +50,7 @@ MonoBehaviour:
   defaultOctreeBits: 10
   transmitterDescriptions: []
   encoderDescriptions: []
---- !u!1 &2942035106827000202
+--- !u!1 &2391882678302957417
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -58,41 +58,39 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 2942035106827000207}
-  - component: {fileID: 5181856269101224179}
+  - component: {fileID: 7018784957318502208}
+  - component: {fileID: 1911508270948310340}
   m_Layer: 0
-  m_Name: cwipc_avatar_self_xr
+  m_Name: PointCloudPipeline
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &2942035106827000207
+--- !u!4 &7018784957318502208
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2942035106827000202}
+  m_GameObject: {fileID: 2391882678302957417}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 412585988519733524}
   - {fileID: 6473800109377461743}
   - {fileID: 2761164448275226797}
-  - {fileID: 7824105976847138353}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 2942035106827000207}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5181856269101224179
+--- !u!114 &1911508270948310340
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2942035106827000202}
+  m_GameObject: {fileID: 2391882678302957417}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28ea6baabaf6c4e55889a771f62e2621, type: 3}
@@ -113,6 +111,40 @@ MonoBehaviour:
   _transmitter: {fileID: 5158608789170169691}
   enableTransmission: 1
   _forceUntiled: 0
+--- !u!1 &2942035106827000202
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2942035106827000207}
+  m_Layer: 0
+  m_Name: cwipc_avatar_self_xr
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2942035106827000207
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2942035106827000202}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7018784957318502208}
+  - {fileID: 412585988519733524}
+  - {fileID: 7824105976847138353}
+  m_Father: {fileID: 0}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2997031952681987209
 GameObject:
   m_ObjectHideFlags: 0
@@ -243,7 +275,7 @@ Transform:
   m_Children:
   - {fileID: 4217426904527613869}
   m_Father: {fileID: 2942035106827000207}
-  m_RootOrder: 3
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &3164644487198048855
 MeshFilter:
@@ -333,13 +365,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8672829700311196926}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 2942035106827000207}
-  m_RootOrder: 1
+  m_Father: {fileID: 7018784957318502208}
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4770916539198233020
 MonoBehaviour:
@@ -356,12 +388,25 @@ MonoBehaviour:
   pointcloudSource: {fileID: 0}
   baseMaterial: {fileID: 2100000, guid: 1ea68d9ebfc1c704b8d72164da860d9d, type: 2}
   timeoutBeforeGhosting: 5
+  pointSizeFactor: 1
   pcMirrorX: 1
+  pcMirrorZ: 0
+  started:
+    m_PersistentCalls:
+      m_Calls: []
+  finished:
+    m_PersistentCalls:
+      m_Calls: []
   _RendererName: 
   _PreparerName: 
   material: {fileID: 0}
   dataIsMissing: 0
   timestampMostRecentReception: 0
+  metadataMostRecentReception:
+    timestamp: 0
+    dsi: 
+    dsi_size: 0
+    filename: 
   pointCountMostRecentReception: 0
   pointSizeMostRecentReception: 0
   paused: 0
@@ -372,6 +417,14 @@ PrefabInstance:
   m_Modification:
     m_TransformParent: {fileID: 2942035106827000207}
     m_Modifications:
+    - target: {fileID: 4860176228497449861, guid: 5553f6bccdc163740a900449b94a4183, type: 3}
+      propertyPath: player
+      value: 
+      objectReference: {fileID: 2942035106827000202}
+    - target: {fileID: 4860176228497449861, guid: 5553f6bccdc163740a900449b94a4183, type: 3}
+      propertyPath: pointCloudPipeline
+      value: 
+      objectReference: {fileID: 1911508270948310340}
     - target: {fileID: 4860176229091537139, guid: 5553f6bccdc163740a900449b94a4183, type: 3}
       propertyPath: m_OriginBaseGameObject
       value: 
@@ -390,7 +443,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4860176230215406221, guid: 5553f6bccdc163740a900449b94a4183, type: 3}
       propertyPath: m_RootOrder
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4860176230215406221, guid: 5553f6bccdc163740a900449b94a4183, type: 3}
       propertyPath: m_LocalPosition.x

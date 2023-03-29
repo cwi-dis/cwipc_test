@@ -99,6 +99,60 @@ CapsuleCollider:
   m_Height: 2
   m_Direction: 1
   m_Center: {x: 0.000000059604645, y: 0, z: -0.00000008940697}
+--- !u!1 &1188569884670811831
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5098094928915819988}
+  - component: {fileID: 1884279282219968218}
+  m_Layer: 0
+  m_Name: PointCloudPipelineOther
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5098094928915819988
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188569884670811831}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 5268418992943051938}
+  m_Father: {fileID: 2942035106827000207}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1884279282219968218
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1188569884670811831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63ae19db12d29478d9875988ca3b66fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sourceType: 0
+  PCrendererPrefab: {fileID: 8672829700311196926}
+  Preparer_DefaultCellSize: 0
+  Preparer_CellSizeFactor: 1.5
+  inputUrl: 
+  compressedInputStream: 1
+  nTiles: 0
+  tileDescription: []
+  PCrenderers: []
 --- !u!1 &2325189352691538302
 GameObject:
   m_ObjectHideFlags: 0
@@ -122,13 +176,13 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2325189352691538302}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6473800109377461743}
-  m_Father: {fileID: 2942035106827000207}
+  m_Father: {fileID: 5098094928915819988}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2942035106827000202
@@ -140,7 +194,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2942035106827000207}
-  - component: {fileID: 3238466466019172238}
   m_Layer: 0
   m_Name: cwipc_avatar_other
   m_TagString: Untagged
@@ -160,32 +213,11 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5268418992943051938}
+  - {fileID: 5098094928915819988}
   - {fileID: 8382835674899376218}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3238466466019172238
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2942035106827000202}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63ae19db12d29478d9875988ca3b66fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sourceType: 4
-  PCrendererPrefab: {fileID: 8672829700311196926}
-  Preparer_DefaultCellSize: 0
-  Preparer_CellSizeFactor: 1.5
-  inputUrl: 
-  compressedInputStream: 1
-  nTiles: 0
-  tileDescription: []
-  PCrenderers: []
 --- !u!1 &4471245343599222587
 GameObject:
   m_ObjectHideFlags: 0
@@ -330,12 +362,25 @@ MonoBehaviour:
   pointcloudSource: {fileID: 0}
   baseMaterial: {fileID: 2100000, guid: 1ea68d9ebfc1c704b8d72164da860d9d, type: 2}
   timeoutBeforeGhosting: 5
+  pointSizeFactor: 1
   pcMirrorX: 1
+  pcMirrorZ: 0
+  started:
+    m_PersistentCalls:
+      m_Calls: []
+  finished:
+    m_PersistentCalls:
+      m_Calls: []
   _RendererName: 
   _PreparerName: 
   material: {fileID: 0}
   dataIsMissing: 0
   timestampMostRecentReception: 0
+  metadataMostRecentReception:
+    timestamp: 0
+    dsi: 
+    dsi_size: 0
+    filename: 
   pointCountMostRecentReception: 0
   pointSizeMostRecentReception: 0
   paused: 0
