@@ -18,7 +18,7 @@ public class ViewAdjust : LocomotionProvider
     [Tooltip("Point cloud pipeline")]
     [SerializeField] PointCloudPipelineSimple pointCloudPipeline;
 
-    [Tooltip("Camera used for determining zero position, for resetting origin")]
+    [Tooltip("Camera used for determining zero position and orientation, for resetting origin")]
     [SerializeField] Camera playerCamera;
 
     [Tooltip("Multiplication factor for height adjustment")]
@@ -65,18 +65,22 @@ public class ViewAdjust : LocomotionProvider
         {
             Debug.Log("ViewAdjust: ResetOrigin");
             Vector3 pcOriginLocal = Vector3.zero; // Point cloud origin relative to pointCloudPipeline
-            float pcRotationY = 0; // Rotation of camera relative to the point cloud
-          
-            // Rotation of camera relative to the player
-            float rotationY = playerCamera.transform.rotation.eulerAngles.y - player.transform.rotation.eulerAngles.y;
-            Debug.Log($"ViewAdjust: camera rotation={rotationY}");
-            cameraOffset.transform.Rotate(0, -rotationY, 0);
+            float pcToCameraRotationY = 0; // Rotation of camera relative to the point cloud
             if (pointCloudPipeline != null)
             {
                 pcOriginLocal = pointCloudPipeline.GetPosition();
-                pcRotationY = playerCamera.transform.rotation.eulerAngles.y - pointCloudPipeline.transform.rotation.eulerAngles.y;
-                Debug.Log($"ViewAdjust: pc rotation={pcRotationY}");
-                pointCloudPipeline.transform.Rotate(0, pcRotationY+rotationY, 0);
+                pcToCameraRotationY =  pointCloudPipeline.transform.rotation.eulerAngles.y - playerCamera.transform.rotation.eulerAngles.y;
+            }
+            // Rotation of camera relative to the player
+            float cameraToPlayerRotationY = playerCamera.transform.rotation.eulerAngles.y - player.transform.rotation.eulerAngles.y;
+            Debug.Log($"ViewAdjust: camera rotation={cameraToPlayerRotationY}");
+            // Apply the inverse rotation to cameraOffset to make the camera point in the same direction as the player
+            cameraOffset.transform.Rotate(0, -cameraToPlayerRotationY, 0);
+            if (pointCloudPipeline != null)
+            {
+                float pcToCameraNewRotationY = pointCloudPipeline.transform.rotation.eulerAngles.y - playerCamera.transform.rotation.eulerAngles.y;
+                Debug.Log($"ViewAdjust: pc rotation={pcToCameraRotationY} but is {pcToCameraNewRotationY}");
+                pointCloudPipeline.transform.Rotate(0, pcToCameraNewRotationY-pcToCameraRotationY, 0);
             }
             // Next set correct position on the camera
             //Vector3 moveXZ = playerCamera.transform.position - cameraOffset.transform.position;
@@ -85,7 +89,7 @@ public class ViewAdjust : LocomotionProvider
             Debug.Log($"ResetOrigin: move cameraOffset by {moveXZ} to worldpos={playerCamera.transform.position}");
             cameraOffset.transform.position -= moveXZ;
             // Finally adjust the pointcloud position and rotate it backwards (so we don't get a double rotation)
-            if (pcOriginLocal != Vector3.zero || pcRotationY != 0)
+            if (pcOriginLocal != Vector3.zero || pcToCameraRotationY != 0)
             {
                 Debug.Log($"ViewAdjust: adjust pointcloud to {pcOriginLocal}");
                 pointCloudPipeline.transform.localPosition = -pcOriginLocal;
