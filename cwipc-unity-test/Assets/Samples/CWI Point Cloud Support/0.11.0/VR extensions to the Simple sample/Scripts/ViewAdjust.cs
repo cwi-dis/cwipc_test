@@ -33,6 +33,9 @@ public class ViewAdjust : LocomotionProvider
     [Tooltip("The Input System Action that will be used to reset view origin.")]
     [SerializeField] InputActionProperty m_resetOriginAction;
 
+    [Tooltip("Debug output")]
+    [SerializeField] bool debug = false;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -64,34 +67,28 @@ public class ViewAdjust : LocomotionProvider
         if (BeginLocomotion())
         {
             Debug.Log("ViewAdjust: ResetOrigin");
-            Vector3 pcOriginLocal = Vector3.zero; // Point cloud origin relative to pointCloudPipeline
-            float pcToCameraRotationY = 0; // Rotation of camera relative to the point cloud
-            if (pointCloudPipeline != null)
-            {
-                pcOriginLocal = pointCloudPipeline.GetPosition();
-                pcToCameraRotationY =  pointCloudPipeline.transform.rotation.eulerAngles.y - playerCamera.transform.rotation.eulerAngles.y;
-            }
             // Rotation of camera relative to the player
             float cameraToPlayerRotationY = playerCamera.transform.rotation.eulerAngles.y - player.transform.rotation.eulerAngles.y;
-            Debug.Log($"ViewAdjust: camera rotation={cameraToPlayerRotationY}");
+            if (debug) Debug.Log($"ViewAdjust: camera rotation={cameraToPlayerRotationY}");
             // Apply the inverse rotation to cameraOffset to make the camera point in the same direction as the player
             cameraOffset.transform.Rotate(0, -cameraToPlayerRotationY, 0);
             if (pointCloudPipeline != null)
             {
-                float pcToCameraNewRotationY = pointCloudPipeline.transform.rotation.eulerAngles.y - playerCamera.transform.rotation.eulerAngles.y;
-                Debug.Log($"ViewAdjust: pc rotation={pcToCameraRotationY} but is {pcToCameraNewRotationY}");
-                pointCloudPipeline.transform.Rotate(0, pcToCameraNewRotationY-pcToCameraRotationY, 0);
+                // Now the camera is pointing forward from the users point of view.
+                // Rotate the point cloud so it is in the same direction.
+                float cameraToPointcloudRotationY = playerCamera.transform.rotation.eulerAngles.y - pointCloudPipeline.transform.rotation.eulerAngles.y;
+                pointCloudPipeline.transform.Rotate(0, cameraToPointcloudRotationY, 0);
             }
             // Next set correct position on the camera
-            //Vector3 moveXZ = playerCamera.transform.position - cameraOffset.transform.position;
             Vector3 moveXZ = playerCamera.transform.position - player.transform.position;
             moveXZ.y = 0;
-            Debug.Log($"ResetOrigin: move cameraOffset by {moveXZ} to worldpos={playerCamera.transform.position}");
+            if (debug) Debug.Log($"ResetOrigin: move cameraOffset by {moveXZ} to worldpos={playerCamera.transform.position}");
             cameraOffset.transform.position -= moveXZ;
-            // Finally adjust the pointcloud position and rotate it backwards (so we don't get a double rotation)
-            if (pcOriginLocal != Vector3.zero || pcToCameraRotationY != 0)
+            // Finally adjust the pointcloud position
+            if (pointCloudPipeline != null)
             {
-                Debug.Log($"ViewAdjust: adjust pointcloud to {pcOriginLocal}");
+                Vector3 pcOriginLocal = pointCloudPipeline.GetPosition();
+                if (debug) Debug.Log($"ViewAdjust: adjust pointcloud to {pcOriginLocal}");
                 pointCloudPipeline.transform.localPosition = -pcOriginLocal;
                
             }
