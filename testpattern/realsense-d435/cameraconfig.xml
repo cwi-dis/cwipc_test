@@ -1,0 +1,14 @@
+<file>
+    <CameraConfig version="2">
+        <system usb2width="640" usb2height="480" usb2fps="15" usb3width="1280" usb3height="720" usb3fps="30" usb2allowed="0" exposure="-1" whitebalance="-1" backlight_compensation="0" laser_power="360" density_preferred="1" />
+        <skeleton />
+        <postprocessing height_min="0.1" height_max="2" radius_filter="0.5" greenscreenremoval="0">
+            <depthfilterparameters do_threshold="1" threshold_near="0.2" threshold_far="4" depth_x_erosion="2" depth_y_erosion="2" do_decimation="1" decimation_value="2" do_spatial="1" spatial_iterations="1" spatial_alpha="0.5" spatial_delta="20" spatial_filling="1" do_temporal="1" temporal_alpha="0.4" temporal_delta="20" temporal_percistency="3" />
+        </postprocessing>
+        <camera serial="838212073556" type="realsense">
+            <trafo>
+                <values v00="0.019062064131706146" v01="0.9936768173296061" v02="0.11064818305216297" v03="-0.17267468442067022" v10="0.9720284536382872" v11="0.007492458079169821" v12="-0.23474358008152943" v13="1.311158781980038" v20="-0.23408828041702603" v21="0.11202787944810037" v22="-0.9657393184487015" v23="1.6254494003468154" v30="0.0" v31="0.0" v32="0.0" v33="1.0" />
+            </trafo>
+        </camera>
+    </CameraConfig>
+</file>
