@@ -17,18 +17,16 @@ git config --global core.symlinks true
 > and if you have checked out the repo before, to remove any per-repository overrides
 
 ```
-git config 
+git config --local --unset core.symlinks
 ```
 
 - check out the `cwipc_test` repository.
 - In the same parent directory, check out the `cwipc` repository.
 - Open the `cwipc_unity_test` Unity project.
 
-There will be a symlink inside the unity project that points to the `cwipc_unity` package.
+There will be a symlink inside the unity project that points to the `cwipc_unity` package and another symlink to ensure you can edit the samples.
 
 You should now be able to edit anything and the edits should go to the correct repository.
-
-(whether modifying the `Sample` content works remains to be tested).
 
 ## apps
 
