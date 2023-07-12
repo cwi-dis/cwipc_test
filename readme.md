@@ -8,6 +8,18 @@ This is a Unity project intended to help development of the `cwipc_unity` packag
 
 To use:
 
+> **Note**
+> On Windows, make sure you enable symlinks, with
+
+```
+git config --global core.symlinks true
+```
+> and if you have checked out the repo before, to remove any per-repository overrides
+
+```
+git config 
+```
+
 - check out the `cwipc_test` repository.
 - In the same parent directory, check out the `cwipc` repository.
 - Open the `cwipc_unity_test` Unity project.
