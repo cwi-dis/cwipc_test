@@ -9,15 +9,11 @@ This is a Unity project intended to help development of the `cwipc_unity` packag
 To use:
 
 > **Note**
-> On Windows, make sure you enable symlinks, with
+> On Windows, make sure you enable symlinks, by enabling them in _Settings, Privacy & Security_, _Developer Mode_ and then telling git about them, with
 
 ```
 git config --global core.symlinks true
-```
-> and if you have checked out the repo before, to remove any per-repository overrides
-
-```
-git config --local --unset core.symlinks
+git config --local core.symlinks true
 ```
 
 - check out the `cwipc_test` repository.
