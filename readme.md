@@ -2,6 +2,28 @@
 
 Repo for pointcloud tests and other miscellaneous stuff.
 
+## cwipc\_unity\_test
+
+This is a Unity project intended to help development of the `cwipc_unity` package (which lives on github in <https://github.com/cwi-dis/cwipc_unity>, but is usually checked out as a submodule of <https://github.com/cwi-dis/cwipc>.
+
+To use:
+
+> **Note**
+> On Windows, make sure you enable symlinks, by enabling them in _Settings, Privacy & Security_, _Developer Mode_ and then telling git about them, with
+
+```
+git config --global core.symlinks true
+git config --local core.symlinks true
+```
+
+- check out the `cwipc_test` repository.
+- In the same parent directory, check out the `cwipc` repository.
+- Open the `cwipc_unity_test` Unity project.
+
+There will be a symlink inside the unity project that points to the `cwipc_unity` package and another symlink to ensure you can edit the samples.
+
+You should now be able to edit anything and the edits should go to the correct repository.
+
 ## apps
 
 There are a number of applications. All written in Python (Python 3 only), and they require all three of _cwipc\_util_, _cwipc\_realsense2_ and _cwipc\_codec_ to be installed. _PYTHONPATH_ must include `.../share/cwipc_util/python` so the programs can import the `cwipc` python module.
