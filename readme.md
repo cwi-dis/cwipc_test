@@ -4,7 +4,7 @@ Repo for pointcloud tests and other miscellaneous stuff.
 
 ## cwipc\_unity\_test
 
-This is a Unity project intended to help development of the `cwipc_unity` package (which lives on github in <https://github.com/cwi-dis/cwipc_unity>, but is usually checked out as a submodule of <https://github.com/cwi-dis/cwipc>.
+This is a Unity project intended to help development of the `cwipc_unity` package (which lives on github in <https://github.com/cwi-dis/cwipc_unity>).
 
 To use:
 
@@ -17,7 +17,7 @@ git config --local core.symlinks true
 ```
 
 - check out the `cwipc_test` repository.
-- In the same parent directory, check out the `cwipc` repository.
+- In the same parent directory, check out the `cwipc_unity` repository.
 - Open the `cwipc_unity_test` Unity project.
 
 There will be a symlink inside the unity project that points to the `cwipc_unity` package and another symlink to ensure you can edit the samples.
