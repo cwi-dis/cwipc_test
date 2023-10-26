@@ -9,6 +9,7 @@ grabCwicpc*
 grabPly
 __pycache__
 .venv
+cwipc-unity-test/cameraconfig.json
 #
 # Unity ignores
 #
