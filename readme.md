@@ -2,6 +2,8 @@
 
 Repo for pointcloud tests and other miscellaneous stuff.
 
+> As of December 2023 this readme file is seriously outdated, and often plainly wrong.
+
 ## cwipc\_unity\_test
 
 This is a Unity project intended to help development of the `cwipc_unity` package (which lives on github in <https://github.com/cwi-dis/cwipc_unity>).
