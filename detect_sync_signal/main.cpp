@@ -17,7 +17,7 @@ void loop() {
     unsigned long pulseLen = lastPulse - currentPulse;
     currentPulse = lastPulse;
 
-    Serial.print("Pulse lengtLast h: ");
+    Serial.print("Last pulse length: ");
     Serial.println(pulseLen);
   }
 }
