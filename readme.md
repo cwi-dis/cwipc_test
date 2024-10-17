@@ -18,6 +18,7 @@ Documents for testing point cloud capture color matching.
 
 Documents for testing point cloud registration.
 
+## test
 
 ## Helper scripts
 
