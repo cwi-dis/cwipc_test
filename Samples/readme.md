@@ -8,7 +8,7 @@ They have been used for various papers and it is a good idea to keep them.
 
 Let's presume we want to create a dataset of loot, compressed at various levels of detail.
 
-Get a copy of the original 8i loot ply files, and put it in a folder `loot` next to the toplevel `cwipc_test` folder.
+Get a copy of the original 8i loot ply files, and put it in a folder `loot` next to the toplevel `cwipc_test` folder. The original 8i datasets can be found at <https://jpeg.org/plenodb/pc/8ilabs/>.
 
 First we need to determine the parameters for converting loot to our coordinate system and scale:
 
