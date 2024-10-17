@@ -6,6 +6,19 @@ Repo for pointcloud tests and other miscellaneous stuff.
 
 Various sets of compressed and uncompressed point cloud sequences. See [Samples/readme.md](Samples/readme.md).
 
+## doc
+
+Historical significance: documentation of the VRTogether pipeline.
+
+## pointcloud-color-test
+
+Documents for testing point cloud capture color matching.
+
+## pointcloud-registration-test
+
+Documents for testing point cloud registration.
+
+
 ## Helper scripts
 
 ## Installing developer dependencies
