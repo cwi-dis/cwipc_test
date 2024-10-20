@@ -2,13 +2,17 @@
 #include <esp_sleep.h>
 #include <Adafruit_NeoPixel.h>
 
-// Which pin on the Arduino is connected to the NeoPixels?
+// Which GPIO pin on the esp32 is connected to the NeoPixels?
 const int PIN = 12;
 
+// Which GPIO pin is used for sourcing power to the strip?
+const int POWER_PIN = 13;
+
+// Which pin is 
 // How many NeoPixels are attached? The first 3 pixels are used with a fixed
 // pattern (red, blue, off) to allow finding the strip automatically. So the Gray
 // code will be displayed in NUMPIXELS-3 bits.
-const int NUMPIXELS = 18;
+const int NUMPIXELS = 19;
 
 // Intensity values (0..255) for red, green and blue pixels.
 // Select these values so the colors are bright enough so the cameras can see them,
@@ -40,6 +44,17 @@ uint32_t step_num = 0;
 uint32_t grayValue;
 // Individual bits of the current gray code
 uint8_t grayBits[32];
+
+void initPower() {
+  pinMode(POWER_PIN, OUTPUT);
+  gpio_set_drive_capability((gpio_num_t)POWER_PIN, GPIO_DRIVE_CAP_3);
+  digitalWrite(POWER_PIN, 1);
+}
+
+void shutdownPower() {
+  digitalWrite(POWER_PIN, 0);
+  pinMode(POWER_PIN, INPUT);
+}
 
 void initStrip() {
   pixels.begin();
@@ -86,11 +101,13 @@ void shutdown() {
   shutdownStrip();
   Serial.println("shutdown");
   Serial.println();
+  shutdownPower();
   esp_deep_sleep_start();
 }
 
 void setup() {
   // put your setup code here, to run once:
+  initPower();
   Serial.begin(115200);
   initStrip();
 }
