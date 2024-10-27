@@ -9,10 +9,10 @@ const int PIN = 12;
 const int POWER_PIN = 13;
 
 // Which pin is 
-// How many NeoPixels are attached? The first 3 pixels are used with a fixed
-// pattern (red, blue, off) to allow finding the strip automatically. So the Gray
-// code will be displayed in NUMPIXELS-3 bits.
-const int NUMPIXELS = 19;
+// How many NeoPixels are attached? The first pixel is red, the last pixel is blue,
+// to allow finding the strip automatically. So the Gray
+// code will be displayed in NUMPIXELS-2 bits.
+const int NUMPIXELS = 18;
 
 // Intensity values (0..255) for red, green and blue pixels.
 // Select these values so the colors are bright enough so the cameras can see them,
@@ -69,10 +69,10 @@ void refreshStrip() {
   uint32_t onColor = pixels.Color(0, GREEN_I, 0);
   pixels.clear();
   pixels.setPixelColor(0, pixels.Color(RED_I, 0, 0));
-  pixels.setPixelColor(1, pixels.Color(0, 0, BLUE_I));
+  pixels.setPixelColor(NUMPIXELS-1, pixels.Color(0, 0, BLUE_I));
   pixels.setPixelColor(2, pixels.Color(0, 0, 0));
-  for(int i=3; i<NUMPIXELS; i++) {
-    if (grayBits[i-3]) {
+  for(int i=1; i<NUMPIXELS-1; i++) {
+    if (grayBits[i-1]) {
       pixels.setPixelColor(i, onColor);
     }
   }
