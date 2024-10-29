@@ -1,6 +1,6 @@
 FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
-ENV CWIPCDEB=https://github.com/cwi-dis/cwipc/releases/download/v7.5.3/cwipc-ubuntu2204-v7.5.3.deb
+ENV CWIPCDEB=https://github.com/cwi-dis/cwipc/releases/download/nightly/cwipc-ubuntu2204-nightly.deb
 ENV PATH=/bin:/usr/bin:/usr/local/bin:
 RUN apt-get -y update
 RUN apt-get -y upgrade
