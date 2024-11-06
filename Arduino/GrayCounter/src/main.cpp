@@ -17,9 +17,9 @@ const int NUMPIXELS = 18;
 // Intensity values (0..255) for red, green and blue pixels.
 // Select these values so the colors are bright enough so the cameras can see them,
 // but not so bright the color is drowned out.
-const int RED_I = 8;
-const int GREEN_I = 8;
-const int BLUE_I = 8;
+const int RED_I = 32;
+const int GREEN_I = 32;
+const int BLUE_I = 32;
 
 // Interval in microseconds between changes in pattern
 const ulong interval_us = 1000;
