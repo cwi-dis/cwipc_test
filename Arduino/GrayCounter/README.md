@@ -8,7 +8,7 @@ This means that if you capture the strip with two cameras that _should_ be frame
 
 As-is the project uses a _Lolin 32 Lite_ ESP32 board. This board was selected because it can be operated from a lipo battery, and has an on-board charger.
 
-You need a 19 LED NeoPixel strip. Connect
+You need an 18 LED NeoPixel strip, 60 LEDs per meter or even 30 LEDs per meter preferred. Connect
 
 - strip GND to Lolin GND, 
 - strip 5V to Lolin GPIO 13 (_indeed!_), 
@@ -28,6 +28,12 @@ If you want to get fancy you can 3D print a case. In directory `hardware/3dmodel
 
 ![Board complete with housing](hardware/complete.jpeg)
 
+There is also a `LedStripBase.stl` and the accompanying `.f3d`, if you print two of these and glue the strip to it you can be sure they are in a straight line.
+
+We have found that using a permanent marker to make the strips as black as possible (with the exception of the LED windows, obviously) helps detection.
+
+Here is the complete result:
+![Board in operation](hardware/inoperation.jpeg)
 
 ## Use
 
