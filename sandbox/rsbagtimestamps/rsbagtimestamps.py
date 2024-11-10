@@ -14,6 +14,11 @@ class BagPipeline:
         self.config.enable_stream(rs.stream.depth, rs.format.z16, 0)
         self.config.enable_stream(rs.stream.color, rs.format.rgb8, 0)
         self.profile = self.config.resolve(self.pipeline)
+        self.depth_fps = self.profile.get_stream(rs.stream.depth).fps()
+        self.color_fps = self.profile.get_stream(rs.stream.color).fps()
+        self.wanted_depth_duration = int(1000.0 / self.depth_fps)
+        self.wanted_color_duration = int(1000.0 / self.color_fps)
+        print(f"color_fps={self.color_fps} ({self.wanted_color_duration} ms), depth_fps={self.depth_fps} ({self.wanted_depth_duration} ms)")
         self.pipeline.start(self.config)
         self.current_depth_timestamp = 0
         self.current_color_timestamp = 0
@@ -21,8 +26,8 @@ class BagPipeline:
         self.current_color_duration = 0
         self.current_frames = None
 
-    def nextframe(self, notbefore : int) -> bool:
-        if notbefore == 0 or notbefore >= self.current_depth_timestamp:
+    def nextframe(self, earliest_timestamp : int) -> bool:
+        while earliest_timestamp == 0 or earliest_timestamp > self.current_depth_timestamp:
             frames = self.pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
@@ -44,6 +49,7 @@ class BagPipeline:
             self.current_color_duration = color_timestamp - self.current_color_timestamp
             self.current_depth_timestamp = depth_timestamp
             self.current_color_timestamp = color_timestamp
+            earliest_timestamp = self.current_depth_timestamp
         return True
 
     def get_frames(self) -> Any:
@@ -64,16 +70,16 @@ def main():
 def printstamps(filenames : List[str]) -> None:
     bagpipeline = BagPipeline(filenames[0])
     print("rgb_d_offset,d_dur,rgb_dur")
-    prev_timestamp = 0
+    earliest_next_timestamp = 0
     while True:
-        ok = bagpipeline.nextframe(prev_timestamp)
+        ok = bagpipeline.nextframe(earliest_next_timestamp)
         if not ok:
             break
         frames = bagpipeline.get_frames()
         depth_timestamp, color_timestamp = bagpipeline.get_timestamps()
         depth_duration, color_duration = bagpipeline.get_durations()
         print(f"{depth_timestamp-color_timestamp}, {depth_duration}, {color_duration}")
-        prev_timestamp = depth_timestamp
+        earliest_next_timestamp = depth_timestamp+1
 
 if __name__ == "__main__":
     main()
