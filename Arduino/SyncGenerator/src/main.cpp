@@ -4,7 +4,7 @@
 const int DIGITAL_PIN = 12;
 const int ANALOG_PIN = 25;
 
-const float fps = 25.0;
+const float fps = 15.0;
 const float duty_cycle = 0.33;
 const float analog_voltage = 1.8;
 
