@@ -15,8 +15,8 @@ def printstamps(filenames : List[str]) -> None:
     config = rs.config()
     for fn in filenames:
         rs.config.enable_device_from_file(config, fn)
-    config.enable_stream(rs.stream.depth, rs.format.z16, 30)
-    config.enable_stream(rs.stream.color, rs.format.rgb8, 30)
+    config.enable_stream(rs.stream.depth, rs.format.z16, 0)
+    config.enable_stream(rs.stream.color, rs.format.rgb8, 0)
     profile = config.resolve(pipeline)
     pipeline.start(config)
     prev_depth_timestamp = 0
