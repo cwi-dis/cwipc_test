@@ -6,7 +6,8 @@ import time
 
 class BagPipeline:
 
-    def __init__(self, filename: str):
+    def __init__(self, camnum : int, filename: str):
+        self.camnum = camnum
         self.filename = filename
         self.pipeline = rs.pipeline()
         self.config = rs.config()
@@ -27,7 +28,9 @@ class BagPipeline:
         self.current_frames = None
 
     def nextframe(self, earliest_timestamp : int) -> bool:
-        while earliest_timestamp == 0 or earliest_timestamp > self.current_depth_timestamp:
+        loopcount = 0
+        while earliest_timestamp == 0 or self.current_depth_timestamp < earliest_timestamp:
+            loopcount += 1
             frames = self.pipeline.wait_for_frames()
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
@@ -49,7 +52,12 @@ class BagPipeline:
             self.current_color_duration = color_timestamp - self.current_color_timestamp
             self.current_depth_timestamp = depth_timestamp
             self.current_color_timestamp = color_timestamp
-            earliest_timestamp = self.current_depth_timestamp
+            if earliest_timestamp == 0:
+                break
+        if loopcount == 0:
+            print(f"Camera {self.camnum}: Return old frame")
+        elif loopcount > 1:
+            print(f"Camera {self.camnum}: Skipped {loopcount} frames")
         return True
 
     def get_frames(self) -> Any:
@@ -63,23 +71,47 @@ class BagPipeline:
 
 def main():
     parser = argparse.ArgumentParser(sys.argv[0], "Print timestamps from recorded realsense bag file")
-    parser.add_argument("bagfile", help="File to print timestamps from")
+    parser.add_argument("bagfile", nargs="*", help="File to print timestamps from")
     args = parser.parse_args()
-    printstamps([args.bagfile])
+    printstamps(args.bagfile)
 
 def printstamps(filenames : List[str]) -> None:
-    bagpipeline = BagPipeline(filenames[0])
-    print("rgb_d_offset,d_dur,rgb_dur")
+    readers = []
+    camnum = 0
+    for filename in filenames:
+        reader = BagPipeline(camnum, filename)
+        readers.append(reader)
+        camnum += 1
+    master_cam = readers[0]
+    del readers[0]
+    print("camnum,masteroffset,rgb_d_offset,d_dur,rgb_dur")
     earliest_next_timestamp = 0
     while True:
-        ok = bagpipeline.nextframe(earliest_next_timestamp)
+        ok = master_cam.nextframe(earliest_next_timestamp)
         if not ok:
             break
-        frames = bagpipeline.get_frames()
-        depth_timestamp, color_timestamp = bagpipeline.get_timestamps()
-        depth_duration, color_duration = bagpipeline.get_durations()
-        print(f"{depth_timestamp-color_timestamp}, {depth_duration}, {color_duration}")
-        earliest_next_timestamp = depth_timestamp+1
+        frames = master_cam.get_frames()
+        master_depth_timestamp, master_color_timestamp = master_cam.get_timestamps()
+        depth_duration, color_duration = master_cam.get_durations()
+        print(f"0, 0, {master_depth_timestamp-master_color_timestamp}, {depth_duration}, {color_duration}")
+        earliest_next_timestamp = master_depth_timestamp
+        cam_index = 0
+        for cam in readers:
+            cam_index += 1
+            ok = cam.nextframe(earliest_next_timestamp)
+            if not ok:
+                print(f"Camera {cam_index} hit EOF early")
+                break
+            frames = cam.get_frames()
+            depth_timestamp, color_timestamp = cam.get_timestamps()
+            depth_duration, color_duration = cam.get_durations()
+            print(f"{cam_index}, {depth_timestamp-master_depth_timestamp}, {master_depth_timestamp-master_color_timestamp}, {depth_duration}, {color_duration}")
+            if depth_timestamp > master_depth_timestamp + depth_duration:
+                print(f"Camera {cam_index}: Adjust earliest_next_timestamp to {depth_timestamp} (delta={depth_timestamp-earliest_next_timestamp})")
+                earliest_next_timestamp = depth_timestamp
+        earliest_next_timestamp = earliest_next_timestamp+1
+            
+
 
 if __name__ == "__main__":
     main()
