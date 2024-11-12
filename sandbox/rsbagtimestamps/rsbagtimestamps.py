@@ -25,10 +25,15 @@ class BagPipeline:
         self.current_color_timestamp = 0
         self.current_depth_duration = 0
         self.current_color_duration = 0
+        self.current_outdated_ms = 0
+        self.current_skipped_ms = 0
         self.current_frames = None
 
     def nextframe(self, earliest_timestamp : int) -> bool:
         loopcount = 0
+        self.current_outdated_ms = 0
+        self.current_skipped = 0
+        previous_depth_timestamp = self.current_depth_timestamp
         while earliest_timestamp == 0 or self.current_depth_timestamp < earliest_timestamp:
             loopcount += 1
             frames = self.pipeline.wait_for_frames()
@@ -54,10 +59,10 @@ class BagPipeline:
             self.current_color_timestamp = color_timestamp
             if earliest_timestamp == 0:
                 break
-        if loopcount == 0:
-            print(f"Camera {self.camnum}: Return old frame")
-        elif loopcount > 1:
+        self.current_outdated_ms = earliest_timestamp - self.current_depth_timestamp
+        if loopcount > 1:
             print(f"Camera {self.camnum}: Skipped {loopcount} frames")
+            self.current_skipped_ms = self.current_depth_timestamp - previous_depth_timestamp
         return True
 
     def get_frames(self) -> Any:
@@ -69,6 +74,9 @@ class BagPipeline:
     def get_durations(self) -> Tuple[int, int]:
         return self.current_depth_duration, self.current_color_duration
 
+    def get_resync_params(self) -> Tuple[int, int]:
+        return self.current_outdated_ms, self.current_skipped_ms
+    
 def main():
     parser = argparse.ArgumentParser(sys.argv[0], "Print timestamps from recorded realsense bag file")
     parser.add_argument("bagfile", nargs="*", help="File to print timestamps from")
@@ -84,7 +92,7 @@ def printstamps(filenames : List[str]) -> None:
         camnum += 1
     master_cam = readers[0]
     del readers[0]
-    print("camnum,masteroffset,rgb_d_offset,d_dur,rgb_dur")
+    print("camnum,masteroffset,mslate,msskipped,rgb_d_offset,d_dur,rgb_dur")
     earliest_next_timestamp = 0
     while True:
         ok = master_cam.nextframe(earliest_next_timestamp)
@@ -93,7 +101,8 @@ def printstamps(filenames : List[str]) -> None:
         frames = master_cam.get_frames()
         master_depth_timestamp, master_color_timestamp = master_cam.get_timestamps()
         depth_duration, color_duration = master_cam.get_durations()
-        print(f"0, 0, {master_depth_timestamp-master_color_timestamp}, {depth_duration}, {color_duration}")
+        mslate, msskipped = master_cam.get_resync_params()
+        print(f"0, 0, {mslate}, {msskipped}, {master_depth_timestamp-master_color_timestamp}, {depth_duration}, {color_duration}")
         earliest_next_timestamp = master_depth_timestamp
         cam_index = 0
         for cam in readers:
@@ -105,7 +114,8 @@ def printstamps(filenames : List[str]) -> None:
             frames = cam.get_frames()
             depth_timestamp, color_timestamp = cam.get_timestamps()
             depth_duration, color_duration = cam.get_durations()
-            print(f"{cam_index}, {depth_timestamp-master_depth_timestamp}, {master_depth_timestamp-master_color_timestamp}, {depth_duration}, {color_duration}")
+            mslate, msskipped = cam.get_resync_params()
+            print(f"{cam_index}, {depth_timestamp-master_depth_timestamp}, {mslate}, {msskipped}, {master_depth_timestamp-master_color_timestamp}, {depth_duration}, {color_duration}")
             if depth_timestamp > master_depth_timestamp + depth_duration:
                 print(f"Camera {cam_index}: Adjust earliest_next_timestamp to {depth_timestamp} (delta={depth_timestamp-earliest_next_timestamp})")
                 earliest_next_timestamp = depth_timestamp
