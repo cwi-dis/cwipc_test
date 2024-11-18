@@ -1,1 +1,2 @@
-pyrealsense2-macosx
+pyrealsense2-macosx ; sys_platform == 'darwin'
+pyrealsense2 ; sys_platform != 'darwin'
