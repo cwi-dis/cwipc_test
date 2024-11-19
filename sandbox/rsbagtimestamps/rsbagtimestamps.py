@@ -22,7 +22,7 @@ class BagPipeline:
         self.color_fps = self.profile.get_stream(rs.stream.color).fps()
         self.wanted_depth_duration = int(1000.0 / self.depth_fps)
         self.wanted_color_duration = int(1000.0 / self.color_fps)
-        print(f"color_fps={self.color_fps} ({self.wanted_color_duration} ms), depth_fps={self.depth_fps} ({self.wanted_depth_duration} ms)", file=sys.stderr)
+        print(f"{self.filename}: camera={self.camnum} color_fps={self.color_fps} ({self.wanted_color_duration} ms), depth_fps={self.depth_fps} ({self.wanted_depth_duration} ms)", file=sys.stderr)
         self.pipeline.start(self.config)
         self.current_depth_timestamp = 0
         self.current_color_timestamp = 0
