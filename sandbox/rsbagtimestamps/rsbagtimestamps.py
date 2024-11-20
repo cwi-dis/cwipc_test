@@ -64,7 +64,10 @@ class BagPipeline:
         if self.debug: print(f"xxxjack cam {self.camnum} earliest {earliest_timestamp} current {self.current_frame_timestamp}", file=sys.stderr)
         while earliest_timestamp == 0 or self.current_frame_timestamp <= earliest_timestamp:
             loopcount += 1
-            frames = self.framesource.wait_for_frames()
+            try:
+                frames = self.framesource.wait_for_frames()
+            except RuntimeError:
+                return False
             depth_frame = frames.get_depth_frame()
             color_frame = frames.get_color_frame()
             if self.nodepth:
