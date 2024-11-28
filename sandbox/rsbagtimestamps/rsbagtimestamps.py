@@ -65,7 +65,9 @@ class BagPipeline:
         while earliest_timestamp == 0 or self.current_frame_timestamp <= earliest_timestamp:
             loopcount += 1
             try:
+                self.current_frames = None
                 frames = self.framesource.wait_for_frames()
+                self.current_frames = frames
             except RuntimeError:
                 return False
             depth_frame = frames.get_depth_frame()
@@ -127,6 +129,25 @@ class BagPipeline:
     def get_resync_params(self) -> Tuple[int, int]:
         return self.current_late_ms, self.current_skipped_ms
     
+    def print_detail(self) -> None:
+        if not self.current_frames:
+            print(f"details: cam={self.camnum}", file=sys.stderr)
+            return
+        playback = self.pipeline.get_active_profile().get_device().as_playback()
+        position_ns = playback.get_position()
+        print(f"details: cam={self.camnum}, fileposition_is={position_ns}", file=sys.stderr)
+        depth_frame = self.current_frames.get_depth_frame()
+        self._print_frame_detail("depth", depth_frame)
+        color_frame = self.current_frames.get_color_frame()
+        self._print_frame_detail("color", color_frame)
+
+    def _print_frame_detail(self, frame_name : str, frame : Any) -> None:
+        print(f"details: cam={self.camnum}, frame={frame_name}, idx={frame.get_frame_number()}, ts={frame.get_timestamp()}, time={time.ctime(frame.get_timestamp()/1000)}", file=sys.stderr)
+        print(f"details: cam={self.camnum}, frame={frame_name}, backend_timestamp={frame.get_frame_metadata(rs.frame_metadata_value.backend_timestamp)}", file=sys.stderr)
+        print(f"details: cam={self.camnum}, frame={frame_name}, frame_timestamp={frame.get_frame_metadata(rs.frame_metadata_value.frame_timestamp)}", file=sys.stderr)
+        print(f"details: cam={self.camnum}, frame={frame_name}, sensor_timestamp={frame.get_frame_metadata(rs.frame_metadata_value.sensor_timestamp)}", file=sys.stderr)
+        print(f"details: cam={self.camnum}, frame={frame_name}, time_of_arrival={frame.get_frame_metadata(rs.frame_metadata_value.time_of_arrival)}", file=sys.stderr)
+    
 def main():
     parser = argparse.ArgumentParser(sys.argv[0], "Print timestamps from recorded realsense bag file")
     parser.add_argument("--concurrent", default=False, action="store_true", help="Attempt to synchronise files. Implies --stdout")
@@ -136,6 +157,7 @@ def main():
     parser.add_argument("--multisync", action="store_true", help="Attempt multi-camera sync (for --concurrent)")
     parser.add_argument("--nocolor", action="store_true", help="Ignore color frames")
     parser.add_argument("--nodepth", action="store_true", help="Ignore depth frames")
+    parser.add_argument("--detail", action="store_true", help="Print very detailed timestamp information")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
 
     parser.add_argument("bagfile", nargs="*", help="File(s) to print timestamps from")
@@ -150,6 +172,7 @@ def main():
 def printstamps(filenames : List[str], args : argparse.Namespace) -> None:
     readers : List[BagPipeline]= []
     csv_output : TextIO
+    detail : bool = args.detail
     if args.stdout or len(filenames) > 1:
         csv_output = sys.stdout
     else:
@@ -175,6 +198,8 @@ def printstamps(filenames : List[str], args : argparse.Namespace) -> None:
         frame_duration, depth_duration, color_duration = master_cam.get_durations()
         mslate, msskipped = master_cam.get_resync_params()
         print(f"0,{master_frame_timestamp},{master_depth_timestamp},{master_color_timestamp},0,{mslate},{msskipped},{master_depth_timestamp-master_color_timestamp},{frame_duration},{depth_duration},{color_duration}", file=csv_output)
+        if detail:
+            master_cam.print_detail()
         earliest_next_timestamp = master_frame_timestamp
         if recording_start_time == 0:
             recording_start_time = master_frame_timestamp
@@ -190,6 +215,8 @@ def printstamps(filenames : List[str], args : argparse.Namespace) -> None:
             frame_duration, depth_duration, color_duration = cam.get_durations()
             mslate, msskipped = cam.get_resync_params()
             print(f"{cam_index},{frame_timestamp},{depth_timestamp},{color_timestamp},{depth_timestamp-master_depth_timestamp},{mslate},{msskipped},{depth_timestamp-color_timestamp},{frame_duration},{depth_duration},{color_duration}", file=csv_output)
+            if detail:
+                cam.print_detail()
             if depth_timestamp > master_depth_timestamp + depth_duration:
                 print(f"Camera {cam_index}: Adjust earliest_next_timestamp to {depth_timestamp} (delta={depth_timestamp-earliest_next_timestamp})", file=sys.stderr)
                 earliest_next_timestamp = depth_timestamp
