@@ -2,6 +2,7 @@
 #include <esp_sleep.h>
 #include <Adafruit_NeoPixel.h>
 #include "gray_counter.h"
+#include "iotsaConfigFile.h"
 
 // Which GPIO pin on the esp32 is connected to the NeoPixels?
 const int PIN = 12;
@@ -18,9 +19,9 @@ const int NUMPIXELS = 18;
 // Intensity values (0..255) for red, green and blue pixels.
 // Select these values so the colors are bright enough so the cameras can see them,
 // but not so bright the color is drowned out.
-const int RED_I = 32;
-const int GREEN_I = 32;
-const int BLUE_I = 32;
+int RED_I = 32;
+int GREEN_I = 32;
+int BLUE_I = 32;
 
 // Interval in microseconds between changes in pattern
 const ulong interval_us = 1000;
@@ -112,9 +113,54 @@ void IotsaGraycounterMod::setup() {
   Serial.begin(115200);
   initStrip();
 }
-void IotsaGraycounterMod::serverSetup() {};
-String IotsaGraycounterMod::info() { return ""; };
-void IotsaGraycounterMod::handler() {};
+void IotsaGraycounterMod::serverSetup() {
+  server->on("/graycounter", std::bind(&IotsaGraycounterMod::handler, this));
+
+}
+
+void IotsaGraycounterMod::configLoad() {
+  IotsaConfigFileLoad cf("/config/graycounter.cfg");
+  cf.get("RED_I", RED_I, RED_I);
+  cf.get("GREEN_I", GREEN_I, GREEN_I);
+  cf.get("BLUE_I", BLUE_I, BLUE_I);
+}
+
+void IotsaGraycounterMod::configSave() {
+  IotsaConfigFileSave cf("/config/graycounter.cfg");
+  cf.put("RED_I", RED_I);
+  cf.put("GREEN_I", GREEN_I);
+  cf.put("BLUE_I", BLUE_I);
+}
+
+String IotsaGraycounterMod::info() {
+  String message = "<p>Flashes a LED strip to allow determining whether multiple video cameras capture in sync.<br>See <a href=\"/graycounter\">/graycounter</a> to change settings</p>";
+  return message;
+};
+void IotsaGraycounterMod::handler() 
+{
+  bool anyChanged = false;
+  if (server->hasArg("RED_I")) {
+    RED_I = server->arg("RED_I").toInt();
+    anyChanged = true;
+  }
+  if (server->hasArg("GREEN_I")) {
+    GREEN_I = server->arg("GREEN_I").toInt();
+    anyChanged = true;
+  }
+  if (server->hasArg("BLUE_I")) {
+    BLUE_I = server->arg("BLUE_I").toInt();
+    anyChanged = true;
+  }
+  if (anyChanged) {
+    configSave();
+  }
+  String message = "<html><head><title>Graycounter configuration</title></head><body><h1>Graycounter configuration</h1>";
+  message += "Intensity R: <input name='RED_I' value='" + String(RED_I) + "'><br>";
+  message += "Intensity G: <input name='GREEN_I' value='" + String(GREEN_I) + "'><br>";
+  message += "Intensity B: <input name='BLUE_I' value='" + String(BLUE_I) + "'><br>";
+  message += "<input type='submit'></form>";
+  server->send(200, "text/html", message);
+};
 
 void IotsaGraycounterMod::loop() {
   // put your main code here, to run repeatedly:

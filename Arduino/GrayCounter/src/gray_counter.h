@@ -7,6 +7,9 @@ public:
     void serverSetup() override;
     void loop() override;
     String info() override;
+protected:
+    void configLoad() override;
+    void configSave() override;
 private:
     void handler();
 };
