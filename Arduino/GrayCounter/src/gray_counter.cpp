@@ -23,14 +23,20 @@ int RED_I = 32;
 int GREEN_I = 32;
 int BLUE_I = 32;
 
-// Interval in microseconds between changes in pattern
-const ulong interval_us = 1000;
+// Target frame rate, and interval in microseconds between changes in pattern (computed as 1/(2*fps))
+float target_fps = 30;
+ulong interval_us = 0;
 
-// After how many intervals will the esp32 power down?
-const int max_step = 65532;
+// Interval in seconds between "clapboard" flashes (All LEDs same color for 1/(fps/2) seconds)
+int clapboard = 5;
+ulong next_clapboard_ms = 0;
+
+// After how many seconds will the esp32 power down? Reset every time the web interface is accessed.
+int wake_duration = 60;
+int sleep_after_millis_time = 0;
 
 // Every so many steps we print something to serial (mainly for debugging)
-const int print_step_interval = 1000;
+int print_step_interval = 1000;
 
 // Our neopixel strip
 Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
@@ -96,7 +102,7 @@ void step() {
 }
 
 bool done() {
-  return step_num > max_step;
+  return millis() > sleep_after_millis_time;
 }
 
 void shutdown() {
@@ -116,7 +122,6 @@ void IotsaGraycounterMod::setup() {
 }
 void IotsaGraycounterMod::serverSetup() {
   server->on("/graycounter", std::bind(&IotsaGraycounterMod::handler, this));
-
 }
 
 void IotsaGraycounterMod::configLoad() {
@@ -124,7 +129,10 @@ void IotsaGraycounterMod::configLoad() {
   cf.get("RED_I", RED_I, RED_I);
   cf.get("GREEN_I", GREEN_I, GREEN_I);
   cf.get("BLUE_I", BLUE_I, BLUE_I);
-  IotsaSerial.printf("Loaded config, RED_I=%d\n", RED_I);
+  cf.get("target_fps", target_fps, target_fps);
+  cf.get("clapboard", clapboard, clapboard);
+  cf.get("wake_duration", wake_duration, wake_duration);
+  update_vars();
 }
 
 void IotsaGraycounterMod::configSave() {
@@ -132,7 +140,17 @@ void IotsaGraycounterMod::configSave() {
   cf.put("RED_I", RED_I);
   cf.put("GREEN_I", GREEN_I);
   cf.put("BLUE_I", BLUE_I);
-  IotsaSerial.printf("Saved config, RED_I=%d\n", RED_I);
+  cf.put("target_fps", target_fps);
+  cf.put("clapboard", clapboard);
+  cf.put("wake_duration", wake_duration);
+  update_vars();
+}
+
+void IotsaGraycounterMod::update_vars() {
+  interval_us = (ulong)(1000000.0 / (2*target_fps));
+  next_clapboard_ms = millis() + (clapboard * 1000);
+  sleep_after_millis_time = millis() + (wake_duration * 1000);
+  IFDEBUG IotsaSerial.printf("interval_us=%ld, next_clapboard_ms=%ld, sleep_after_millis_time=%ld\n", interval_us, next_clapboard_ms, sleep_after_millis_time);
 }
 
 String IotsaGraycounterMod::info() {
@@ -154,16 +172,39 @@ void IotsaGraycounterMod::handler()
     BLUE_I = server->arg("BLUE_I").toInt();
     anyChanged = true;
   }
+  if (server->hasArg("target_fps")) {
+    target_fps = server->arg("target_fps").toFloat();
+    anyChanged = true;
+  }
+  if (server->hasArg("clapboard")) {
+    clapboard = server->arg("clapboard").toInt();
+    anyChanged = true;
+  }
+  if (server->hasArg("wake_duration")) {
+    wake_duration = server->arg("wake_duration").toInt();
+    anyChanged = true;
+  }
   if (anyChanged) {
     configSave();
   }
   String message = "<html><head><title>Graycounter configuration</title></head><body><h1>Graycounter configuration</h1>";
   message += "<form method='get'>";
+  message += "<h3>LED brightness</h3>";
   message += "Intensity R: <input name='RED_I' value='" + String(RED_I) + "'><br>";
   message += "Intensity G: <input name='GREEN_I' value='" + String(GREEN_I) + "'><br>";
   message += "Intensity B: <input name='BLUE_I' value='" + String(BLUE_I) + "'><br>";
+  message += "<h3>Pattern timing</h3>";
+  message += "Target frame rate: <input name='target_fps' value='" + String(target_fps) + "'>";
+  message += "<I>(pattern will change at twice this rate)</i><br>";
+  message += "Clapboard interval: <input name='clapboard' value='" + String(clapboard) + "'>";
+  message += "<I>(Every so many seconds all LEDs will be the same color for 2 frame durations)</I><br>";
+  message += "<h3>Power saving</h3>";
+  message += "Wake duration: <input name='wake_duration' value='" + String(wake_duration) + "'>";
+  message += "<I>(After this many seconds the device will power off)</I><br>";
+  message += "<br>";
   message += "<input type='submit'></form>";
   server->send(200, "text/html", message);
+  update_vars(); // Really only needs to set the sleep time...
 };
 
 void IotsaGraycounterMod::loop() {

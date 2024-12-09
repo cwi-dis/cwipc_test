@@ -12,4 +12,5 @@ protected:
     void configSave() override;
 private:
     void handler();
+    void update_vars();
 };
