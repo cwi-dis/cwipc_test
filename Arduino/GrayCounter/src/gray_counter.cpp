@@ -29,7 +29,8 @@ ulong interval_us = 0;
 
 // Interval in seconds between "clapboard" flashes (All LEDs same color for 1/(fps/2) seconds)
 int clapboard = 5;
-ulong next_clapboard_ms = 0;
+ulong next_clapboard_us = 0;
+ulong end_clapboard_us = 0;
 
 // After how many seconds will the esp32 power down? Reset every time the web interface is accessed.
 int wake_duration = 60;
@@ -78,7 +79,6 @@ void refreshStrip() {
   pixels.clear();
   pixels.setPixelColor(0, pixels.Color(RED_I, 0, 0));
   pixels.setPixelColor(NUMPIXELS-1, pixels.Color(0, 0, BLUE_I));
-  pixels.setPixelColor(2, pixels.Color(0, 0, 0));
   for(int i=1; i<NUMPIXELS-1; i++) {
     if (grayBits[i-1]) {
       pixels.setPixelColor(i, onColor);
@@ -98,7 +98,19 @@ void step() {
   refreshStrip();
   if (step_num % print_step_interval == 0) {
     Serial.printf("step %4d, gray %d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d\n", step_num, grayBits[0],grayBits[1],grayBits[2],grayBits[3],grayBits[4],grayBits[5],grayBits[6],grayBits[7],grayBits[8],grayBits[9],grayBits[10],grayBits[11],grayBits[12],grayBits[13],grayBits[14],grayBits[15]);
+  }
 }
+
+void show_clapboard() {
+  IFDEBUG IotsaSerial.println("clapboard");
+  uint32_t onColor = pixels.Color(RED_I, 0, BLUE_I);
+  pixels.clear();
+  pixels.setPixelColor(0, pixels.Color(RED_I, 0, 0));
+  pixels.setPixelColor(NUMPIXELS-1, pixels.Color(0, 0, BLUE_I));
+  for(int i=1; i<NUMPIXELS-1; i++) {
+    pixels.setPixelColor(i, onColor);
+  }
+  pixels.show();
 }
 
 bool done() {
@@ -148,9 +160,9 @@ void IotsaGraycounterMod::configSave() {
 
 void IotsaGraycounterMod::update_vars() {
   interval_us = (ulong)(1000000.0 / (2*target_fps));
-  next_clapboard_ms = millis() + (clapboard * 1000);
+  next_clapboard_us = micros() + (clapboard * 1000000);
   sleep_after_millis_time = millis() + (wake_duration * 1000);
-  IFDEBUG IotsaSerial.printf("interval_us=%ld, next_clapboard_ms=%ld, sleep_after_millis_time=%ld\n", interval_us, next_clapboard_ms, sleep_after_millis_time);
+  IFDEBUG IotsaSerial.printf("interval_us=%ld, next_clapboard_us=%ld, sleep_after_millis_time=%ld\n", interval_us, next_clapboard_us, sleep_after_millis_time);
 }
 
 String IotsaGraycounterMod::info() {
@@ -208,11 +220,26 @@ void IotsaGraycounterMod::handler()
 };
 
 void IotsaGraycounterMod::loop() {
-  // put your main code here, to run repeatedly:
   ulong now_us = micros();
+  if (now_us > next_clapboard_us) {
+    if (end_clapboard_us == 0) {
+      // First time we get here this clapboard cycle.
+      show_clapboard();
+      end_clapboard_us = now_us + 4 * interval_us;
+    }
+    // First check whether the clapboard should be finished already
+    if (now_us > end_clapboard_us ) {
+      next_clapboard_us = now_us + clapboard * 1000000;
+      end_clapboard_us = 0;
+    } else {
+      // Still showing the clapboard. Don't do anything else.
+      return;
+    }
+  }
   if (now_us < last_timestamp_us) {
     // Microsecond clock has wrapped.
     last_timestamp_us = 0;
+    next_clapboard_us = 0;
   }
   if (now_us > last_timestamp_us + interval_us) {
     // Time to do a next step
