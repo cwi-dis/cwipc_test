@@ -158,6 +158,7 @@ void IotsaGraycounterMod::handler()
     configSave();
   }
   String message = "<html><head><title>Graycounter configuration</title></head><body><h1>Graycounter configuration</h1>";
+  message += "<form method='get'>";
   message += "Intensity R: <input name='RED_I' value='" + String(RED_I) + "'><br>";
   message += "Intensity G: <input name='GREEN_I' value='" + String(GREEN_I) + "'><br>";
   message += "Intensity B: <input name='BLUE_I' value='" + String(BLUE_I) + "'><br>";
