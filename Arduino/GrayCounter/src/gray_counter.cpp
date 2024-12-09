@@ -112,6 +112,7 @@ void IotsaGraycounterMod::setup() {
   initPower();
   Serial.begin(115200);
   initStrip();
+  configLoad();
 }
 void IotsaGraycounterMod::serverSetup() {
   server->on("/graycounter", std::bind(&IotsaGraycounterMod::handler, this));
@@ -123,6 +124,7 @@ void IotsaGraycounterMod::configLoad() {
   cf.get("RED_I", RED_I, RED_I);
   cf.get("GREEN_I", GREEN_I, GREEN_I);
   cf.get("BLUE_I", BLUE_I, BLUE_I);
+  IotsaSerial.printf("Loaded config, RED_I=%d\n", RED_I);
 }
 
 void IotsaGraycounterMod::configSave() {
@@ -130,6 +132,7 @@ void IotsaGraycounterMod::configSave() {
   cf.put("RED_I", RED_I);
   cf.put("GREEN_I", GREEN_I);
   cf.put("BLUE_I", BLUE_I);
+  IotsaSerial.printf("Saved config, RED_I=%d\n", RED_I);
 }
 
 String IotsaGraycounterMod::info() {
