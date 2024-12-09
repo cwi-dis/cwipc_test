@@ -135,7 +135,7 @@ class BagPipeline:
             return
         playback = self.pipeline.get_active_profile().get_device().as_playback()
         position_ns = playback.get_position()
-        print(f"details: cam={self.camnum}, fileposition_is={position_ns}", file=sys.stderr)
+        print(f"details: cam={self.camnum}, fileposition_ns={position_ns}", file=sys.stderr)
         depth_frame = self.current_frames.get_depth_frame()
         self._print_frame_detail("depth", depth_frame)
         color_frame = self.current_frames.get_color_frame()
