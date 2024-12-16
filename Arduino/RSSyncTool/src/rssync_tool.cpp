@@ -23,6 +23,7 @@ void IotsaRSSyncToolMod::configLoad() {
   IotsaConfigFileLoad cf("/config/rssynctool.cfg");
   cf.get("divider", divider, divider);
   update_vars();
+  display.display(fps_in, fps_out, divider);
 }
 
 void IotsaRSSyncToolMod::configSave() {
