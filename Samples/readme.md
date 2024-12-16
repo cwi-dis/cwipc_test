@@ -19,7 +19,7 @@ cwipc_view --filter analyze --playback ../../loot
 Let it run for a bit (you won't see anything because loot is going to be _very_ big), then press quit. You will get a suggested transform. Modify to your needs, and inspect the result:
 
 ```
-cwipc_view --filter 'transform(-200,-300,0.0018)' --playback ../../loot
+cwipc_view --filter 'transform(-200,0,-300,0.0018)' --playback ../../loot
 ```
 
 If that looks good create your output
