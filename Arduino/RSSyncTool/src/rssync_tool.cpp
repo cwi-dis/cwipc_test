@@ -33,6 +33,7 @@ void IotsaRSSyncToolMod::configSave() {
 }
 
 void IotsaRSSyncToolMod::update_vars() {
+  display.display(fps_in, fps_out, divider);
 }
 
 String IotsaRSSyncToolMod::info() {
