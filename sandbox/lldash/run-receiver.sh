@@ -5,4 +5,4 @@ lldash_bin_dir=$lldash_dir/bin
 lldash_lib_dir=$lldash_dir/lib
 # source $my_dir/../../../cwipc/scripts/activate
 export SIGNALS_SMD_PATH=$lldash_lib_dir
-cwipc_view --synthetic # --sub http://localhost:9000/jacktest/
+cwipc_view --sub http://localhost:9000/jacktest/
