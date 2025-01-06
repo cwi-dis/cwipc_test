@@ -2,6 +2,8 @@ import csv
 import argparse
 
 def check_consecutive_zeros(file_path):
+    all_ok = True
+    print(f"{file_path}:")
     with open(file_path, 'r') as file:
         reader = csv.reader(file)
         next(reader)  # Skip the header row
@@ -19,7 +21,8 @@ def check_consecutive_zeros(file_path):
                 d_dur = int(row[-2])
                 rgb_dur = int(row[-1])
             except ValueError:
-                print("Skipping invalid row:", row)
+                print(f"{file_path}: Skipping invalid row:", row)
+                all_ok = False
                 continue
 
             if previous_row is not None:
@@ -27,11 +30,16 @@ def check_consecutive_zeros(file_path):
 
                 # Check for consecutive zeros in the same positions
                 if (prev_d_dur == 0 and d_dur == 0) or (prev_rgb_dur == 0 and rgb_dur == 0):
-                    print(f"Consecutive Zeros at row {previous_row_number} (timestamp: {prev_timestamp}) "
+                    print(f"{file_path}: Consecutive Zeros at row {previous_row_number} (timestamp: {prev_timestamp}) "
                           f"and row {current_row_number} (timestamp: {timestamp})")
+                    all_ok = False
 
             previous_row = (timestamp, d_dur, rgb_dur)
             previous_row_number = current_row_number
+    if all_ok:
+        print(f"{file_path}: No problems detected")
+    else:
+        print(f"{file_path}: Problems detected")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Check for consecutive zeros in specific columns of a CSV file.")
