@@ -10,4 +10,4 @@ Linux)
     export LD_LIBRARY_PATH=$SIGNALS_SMD_PATH:$LD_LIBRARY_PATH
     ;;
 esac
-cwipc_view --sub http://localhost:9000/jacktest/
+cwipc_view --sub http://localhost:9000/jacktest/bin2dashSink.mpd

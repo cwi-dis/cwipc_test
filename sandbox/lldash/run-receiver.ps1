@@ -6,4 +6,4 @@ $lldash_bin_dir = $lldash_dir + "\bin"
 $Env:PATH = $lldash_bin_dir + ";" + $Env:PATH
 $Env:SIGNALS_SMD_PATH = $lldash_bin_dir
 & $cwipc_dir\scripts\activate.ps1
-cwipc_view --sub http://localhost:9000/jacktest/
+cwipc_view --sub http://localhost:9000/jacktest/bin2dashSink.mpd
