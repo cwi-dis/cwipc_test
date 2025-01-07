@@ -5,4 +5,9 @@ lldash_bin_dir=$lldash_dir/bin
 lldash_lib_dir=$lldash_dir/lib
 # source $my_dir/../../../cwipc/scripts/activate
 export SIGNALS_SMD_PATH=$lldash_lib_dir
+case `uname -s` in
+Linux)
+    export LD_LIBRARY_PATH=$SIGNALS_SMD_PATH:$LD_LIBRARY_PATH
+    ;;
+esac
 cwipc_forward --synthetic --nodrop --bin2dash http://localhost:9000/jacktest/
