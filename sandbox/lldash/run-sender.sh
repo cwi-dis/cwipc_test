@@ -1,6 +1,14 @@
+case x$1 in
+  x)
+    echo Usage: $0 lldash-dir
+    echo lldash-dir is toplevel directory of lldash installation
+    exit 1
+    ;;
+  x*)
+    lldash_dir=`realpath $1`
+    ;;
+esac
 set -x
-my_dir=`dirname $0`
-lldash_dir=`cd $my_dir/../../../lldash/installed && pwd`
 lldash_bin_dir=$lldash_dir/bin
 lldash_lib_dir=$lldash_dir/lib
 # source $my_dir/../../../cwipc/scripts/activate
