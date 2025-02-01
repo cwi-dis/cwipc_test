@@ -19,4 +19,6 @@ protected:
 private:
     void handler();
     void update_vars();
+    void inputTrigger();
+    void outputSyncPulse();
 };

@@ -23,6 +23,19 @@ enum SyncSource syncsource = FREE;
 
 // FPS when free-running
 float fps_free = 29.97;
+
+// Free-running interval in microseconds
+unsigned long free_interval = 0;
+// Free-running next trigger time in microseconds
+unsigned long free_next_micros = 0;
+
+// Last input trigger time (microseconds)
+unsigned long last_input_micros = 0;
+
+// How often to update the display (microseconds)
+unsigned long display_interval = 1000000;
+// When to display next (microseconds)
+unsigned long display_next_micros = 0;
 // Current incoming FPS (frames per second)
 float fps_in;
 // Divider between fps_in and fps_out
@@ -57,7 +70,12 @@ void IotsaRSSyncToolMod::configSave() {
 }
 
 void IotsaRSSyncToolMod::update_vars() {
-  display.display(syncSourceToString(syncsource), fps_in, fps_out, divider);
+  free_interval = 1000000 / fps_free;
+  free_next_micros = 0;
+  fps_in = 0;
+  fps_out = 0;
+  last_input_micros = micros();
+  display_next_micros = 0;
 }
 
 String IotsaRSSyncToolMod::info() {
@@ -108,5 +126,33 @@ void IotsaRSSyncToolMod::handler()
 };
 
 void IotsaRSSyncToolMod::loop() {
+  unsigned long now = micros();
+  if (syncsource == FREE) {
+    if (now >= free_next_micros) {
+      inputTrigger();
+      if (free_next_micros > 0) {
+        free_next_micros += free_interval;
+      } else {
+        free_next_micros = now + free_interval;
+      }
+    }
+  }
+  if (now >= display_next_micros) {
+    display_next_micros = now + display_interval;
+    display.display(syncSourceToString(syncsource), fps_in, fps_out, divider);
+  }
+}
+
+void IotsaRSSyncToolMod::inputTrigger() {
+  unsigned long now = micros();
+  if (last_input_micros > 0) {
+    unsigned long delta = now - last_input_micros;
+    fps_in = 1000000.0 / delta;
+    IotsaSerial.printf("Input trigger: %ld %ld %f\n", now, delta, fps_in);
+  }
+  last_input_micros = now;
+}
+
+void IotsaRSSyncToolMod::outputSyncPulse() {
 
 }
