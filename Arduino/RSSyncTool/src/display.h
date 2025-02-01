@@ -3,7 +3,7 @@
 
 class DisplayInterface {
 public:
-    virtual void display(float fps_in, float fps_out, int divider) = 0;
+    virtual void display(const char *syncsource, float fps_in, float fps_out, int divider) = 0;
 };
 
 class DisplayMod : public IotsaMod, public DisplayInterface {
@@ -13,7 +13,7 @@ public:
     void serverSetup() override {};
     void loop() override;
     String info() override { return "";};
-    virtual void display(float fps_in, float fps_out, int divider) override;
+    virtual void display(const char *syncsource, float fps_in, float fps_out, int divider) override;
 protected:
 //    void configLoad() override;
 //    void configSave() override;

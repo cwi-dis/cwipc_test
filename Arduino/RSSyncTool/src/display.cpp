@@ -41,7 +41,7 @@ void DisplayMod::loop() {
 }
 
 //    String info() override;
-void DisplayMod::display(float fps_in, float fps_out, int divider) {
+void DisplayMod::display(const char *syncsource, float fps_in, float fps_out, int divider) {
     initialize();
-    displayString("\xbb 00.00 FPS", "\xab 00.00 FPS", nullptr);
+    displayString(syncsource, "\xbb 00.00 FPS", "\xab 00.00 FPS");
 }
