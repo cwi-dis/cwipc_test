@@ -148,7 +148,7 @@ void IotsaRSSyncToolMod::inputTrigger() {
   if (last_input_micros > 0) {
     unsigned long delta = now - last_input_micros;
     fps_in = 1000000.0 / delta;
-    IotsaSerial.printf("Input trigger: %ld %ld %f\n", now, delta, fps_in);
+    // IotsaSerial.printf("Input trigger: %ld %ld %f\n", now, delta, fps_in);
   }
   last_input_micros = now;
 }
