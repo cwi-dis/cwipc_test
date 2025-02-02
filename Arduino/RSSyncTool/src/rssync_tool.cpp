@@ -4,6 +4,15 @@
 #include "rssync_tool.h"
 #include "iotsaConfigFile.h"
 
+#define PIN_SYNC_IN 3
+#define PIN_SYNC_OUT_REALSENSE 0
+#define PIN_SYNC_OUT_GENLOCK 1
+
+// Realsense documentation (https://dev.intelrealsense.com/docs/multiple-depth-cameras-configuration)
+// says the pulse duration is 100 microseconds. Assume this is the mimimum pulse duration, so use
+// a bit more.
+const unsigned long realsense_pulse_duration = 200;
+
 enum SyncSource {
   FREE,
   REALSENSE,
@@ -30,12 +39,19 @@ unsigned long free_interval = 0;
 // Free-running next trigger time in microseconds
 unsigned long free_next_micros = 0;
 
+// Flag to remember whether input interrupt is configured.
+bool input_interrupt_configured = false;
+
 // Last input trigger time (microseconds)
 unsigned long last_input_micros = 0;
 int cur_input_count = 0;
 
 // Last output trigger time (microseconds)
 unsigned long last_output_micros = 0;
+// When to reset the realsense output (microseconds)
+unsigned long realsense_reset_micros = 0;
+// When to reset the genlock output (microseconds)
+unsigned long genlock_reset_micros = 0;
 
 // How often to update the display (microseconds)
 unsigned long display_interval = 1000000;
@@ -52,12 +68,22 @@ float fps_out;
 // Static function to handle the output trigger
 void outputSyncPulse() {
   unsigned long now = micros();
-  if (last_output_micros > 0) {
-    unsigned long delta = now - last_output_micros;
-    fps_out = 1000000.0 / delta;
-    // IotsaSerial.printf("Output trigger: %ld %ld %f\n", now, delta, fps_out);
+  if (last_output_micros == 0) {
+    // The first output pulse we don't generate, we just record the time
+    // so when we output a pulse we can calculate the FPS and also the duration.
+    last_output_micros = now;
+    return;
   }
+  unsigned long delta = now - last_output_micros;
+  fps_out = 1000000.0 / delta;
+  // IotsaSerial.printf("Output trigger: %ld %ld %f\n", now, delta, fps_out);
   last_output_micros = now;
+  unsigned long genlock_pulse_duration = delta / 3;
+  digitalWrite(PIN_SYNC_OUT_REALSENSE, HIGH);
+  digitalWrite(PIN_SYNC_OUT_GENLOCK, HIGH);
+  genlock_reset_micros = now + genlock_pulse_duration;
+  realsense_reset_micros = now + realsense_pulse_duration;
+
 }
 
 // Static function to handle the input trigger
@@ -77,9 +103,11 @@ void inputTrigger() {
 }
 
 void IotsaRSSyncToolMod::setup() {
-  // put your setup code here, to run once:
+  pinMode(PIN_SYNC_OUT_REALSENSE, OUTPUT);
+  pinMode(PIN_SYNC_OUT_GENLOCK, OUTPUT);
   configLoad();
 }
+
 void IotsaRSSyncToolMod::serverSetup() {
   server->on("/rssynctool", std::bind(&IotsaRSSyncToolMod::handler, this));
 }
@@ -111,8 +139,14 @@ void IotsaRSSyncToolMod::update_vars() {
   display_next_micros = 0;
   // Clear the old timer or interrupt
   if (free_timer) {
+    timerAlarmDisable(free_timer);
+    timerDetachInterrupt(free_timer);
     timerEnd(free_timer);
     free_timer = NULL;
+  }
+  if (input_interrupt_configured) {
+    detachInterrupt(PIN_SYNC_IN);
+    input_interrupt_configured = false;
   }
   // Now setup the timer or the interrupt
   if (syncsource == FREE) {
@@ -120,7 +154,12 @@ void IotsaRSSyncToolMod::update_vars() {
     timerAttachInterrupt(free_timer, inputTrigger, true);
     timerAlarmWrite(free_timer, free_interval, true);
     timerAlarmEnable(free_timer);
-  } 
+  } else {
+    // Realsense or Genlock. Hope these can be handled identically.
+    pinMode(PIN_SYNC_IN, INPUT);
+    attachInterrupt(PIN_SYNC_IN, inputTrigger, RISING);
+    input_interrupt_configured = true;
+  }
   
 }
 
@@ -173,8 +212,23 @@ void IotsaRSSyncToolMod::handler()
 
 void IotsaRSSyncToolMod::loop() {
   unsigned long now = micros();
-
+  if (realsense_reset_micros > 0 && now >= realsense_reset_micros) {
+    digitalWrite(PIN_SYNC_OUT_REALSENSE, LOW);
+    realsense_reset_micros = 0;
+  }
+  if (genlock_reset_micros > 0 && now >= genlock_reset_micros) {
+    digitalWrite(PIN_SYNC_OUT_GENLOCK, LOW);
+    genlock_reset_micros = 0;
+  }
   if (now >= display_next_micros) {
+    if (last_input_micros < now - 1000000) {
+      // No input triggers in the last second, assume we have no input signal
+      fps_in = 0;
+    }
+    if (last_output_micros < now - 1000000) {
+      // No output triggers in the last second, assume we have no output signal
+      fps_out = 0;
+    } 
     display_next_micros = now + display_interval;
     display.display(syncSourceToString(syncsource), fps_in, fps_out, divider);
   }

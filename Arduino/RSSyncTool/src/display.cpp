@@ -43,8 +43,9 @@ void DisplayMod::loop() {
 //    String info() override;
 void DisplayMod::display(const char *syncsource, float fps_in, float fps_out, int divider) {
     initialize();
-    char buf_in[16], buf_out[16];
-    snprintf(buf_in, sizeof(buf_in), "\xbb %5.2f FPS", fps_in);
-    snprintf(buf_out, sizeof(buf_out), "\xab %5.2f FPS", fps_out);
+    char buf_in[16] = "\xbb --.-- FPS";
+    char buf_out[16] = "\xab --.-- FPS";
+    if (fps_in > 0) snprintf(buf_in, sizeof(buf_in), "\xbb %5.2f FPS", fps_in);
+    if (fps_out > 0) snprintf(buf_out, sizeof(buf_out), "\xab %5.2f FPS", fps_out);
     displayString(syncsource, buf_in, buf_out);
 }
