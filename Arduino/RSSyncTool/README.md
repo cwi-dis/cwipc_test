@@ -47,6 +47,10 @@ For this device it is best to leave it at that, and not connect the device to yo
 
 ## Use
 
+During normal operation the device needs only power from the USB port. So connect it to a USB power supply and put it in a convenient place.
+
+Connect the sync out (and possibly the sync in).
+
 With a phone or laptop connect to the `config-syncer` network.
 
 Visit `http://syncer.local`. Go to the synctool configuration page.
