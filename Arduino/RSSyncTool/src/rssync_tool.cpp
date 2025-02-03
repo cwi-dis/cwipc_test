@@ -180,6 +180,15 @@ void IotsaRSSyncToolMod::handler()
     divider = server->arg("divider").toInt();
     anyChanged = true;
   }
+  if (server->hasArg("fps_free")) {
+    float s_fps_free = server->arg("fps_free").toFloat();
+    if (s_fps_free > 0) {
+      fps_free = s_fps_free;
+      anyChanged = true;
+    } else {
+      errorStr = "<p><em>Error: Invalid fps_free</em></p>";
+    }
+  }
   if (server->hasArg("syncsource")) {
     int s_syncsource = server->arg("syncsource").toInt();
     if (s_syncsource >= 0 && s_syncsource <= 2) {
