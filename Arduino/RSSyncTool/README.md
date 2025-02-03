@@ -59,3 +59,41 @@ Here you can set where the input signal comes from:
 
 The device display will show you the current incoming sync signal frequency and the outgoing sync signal frequency.
 
+## Checking that it works
+
+These instructions should go elsewhere, but I'll put them here for now.
+
+- Create a `cameraconfig.json` for your realsense cameras with `cwipc_register --noregister`.
+- Create a coarse registration with `cwipc_register --nofine --interactive --rgb` with the Aruco target.
+  - If it cannot find the aruco target you may have to increase the color and depth width and height in `cameraconfig.json`, and/or change `map_color_to_depth`.
+- No need for fine calibration just yet.
+- Edit your `cameraconfig.json` and set `sync_master_serial=external`.
+- Connect your `RSSyncTool` to your cameras with the sync cables and the dongels.
+- Provide an input sync signal to the RSSyncTool (or set it to free-running).
+- Run `cwipc_timing`. This will give you detailed timing information about all point clouds captured and all RGB and D frames used for those point clouds.
+- First check is that the point cloud frame rate is as expected. If it is lower (or sometimes lower) then you should lower the framerate `fps` in the `cameraconfig.json`.
+- When that's fine you should see that initially (the first few seconds) the RGB and D images used for the point cloud will be varying per camera, but after a few seconds everything should stabilise and you should see that all the timestamps used are the same.
+  - Except that there is currently (3-Feb-2025) a bug that sometimes uses a frame that is one frametime too old for one of the cameras. This will be fixed.
+
+### Bonus checks
+
+If you also build the `../GrayCounter` device you can do even more checks to see that your cameras are in sync, and also that they are in sync with any other cameras in your system.
+
+- Set the GrayCounter frequency to twice your wanted FPS.
+- Put it somewhere where all cameras can see it.
+- Start a capture.
+- Press the _Reset_ button on the GrayCounter, which will make it run for one minute.
+- Grab RGB image sequences off all cameras. For the realsenses, use
+  
+  ```
+  mkdir tmp
+  cwipc_grab --nopointclouds --rgb png --count 300 tmp
+  ```
+  
+  This will grab 300 point clouds and throw them away, but it will store `png` images of every RGB capture of all cameras in the `tmp` directory.
+
+- You can now inspect the corresponding captures of the cameras to ensure the Gray code is either identical or off by one bit at most.
+  - But do remember that it takes a few seconds before the cameras are in sync, so you should start looking at capture 200 or so.
+  - Every few seconds that GrayCounter will show solid pink for a few frame times. This is to make it easier to ensure that overall sync is somewhat correct. If you happen to have selected a frame to inspect that is in this "pink time" just select another one a few frames further.
+  - How to find the corresponding capture of any other camera systems that should be in sync I leave to you:-)
+  - There is currently (03-Feb-2025) a bug that causes the color channels to be mixed up in the RGB capture. You'll have to live with this until it is fixed.
