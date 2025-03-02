@@ -1,0 +1,180 @@
+{
+  "camera": [
+    {
+      "playback_inpoint_micros": 0,
+      "serial": "241122301362",
+      "trafo": [
+        [
+          0.1509737831664372,
+          -0.01996824947152841,
+          0.9883360692646279,
+          -1.7744932200703518
+        ],
+        [
+          0.987139250216127,
+          0.05620837833680114,
+          -0.14965533364196862,
+          1.2335214086785726
+        ],
+        [
+          -0.052564412668225445,
+          0.9982193582664026,
+          0.028197434334610524,
+          -0.23411032862283251
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "realsense_playback"
+    },
+    {
+      "playback_inpoint_micros": 0,
+      "serial": "241122300814",
+      "trafo": [
+        [
+          0.04507899004380523,
+          -0.18286694616181168,
+          -0.9821036425235797,
+          1.6685910326068616
+        ],
+        [
+          0.9984742221015974,
+          0.03963286443016904,
+          0.038450797854786785,
+          1.0104967568893588
+        ],
+        [
+          0.03189220053932233,
+          -0.9823384936255494,
+          0.1843745413180647,
+          -0.4386454742827859
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "realsense_playback"
+    },
+    {
+      "playback_inpoint_micros": 0,
+      "serial": "241122306946",
+      "trafo": [
+        [
+          0.02105873034180382,
+          0.9741499552337094,
+          0.224918639944653,
+          -0.5564329582850096
+        ],
+        [
+          0.9961046060731533,
+          -0.0011756518824941706,
+          -0.08817160315259401,
+          1.2775844683010686
+        ],
+        [
+          -0.08562793724152493,
+          0.2258992752551735,
+          -0.9703800151502238,
+          1.7698748769046424
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "realsense_playback"
+    },
+    {
+      "playback_inpoint_micros": 0,
+      "serial": "241122304643",
+      "trafo": [
+        [
+          -0.09812555932831475,
+          -0.8393098797480403,
+          -0.5347245088490289,
+          0.8412382294303189
+        ],
+        [
+          0.9884348762092577,
+          -0.019771058524153676,
+          -0.15035159040736415,
+          1.311473826131915
+        ],
+        [
+          0.115619505705978,
+          -0.5432936876148704,
+          0.8315432032661573,
+          -1.5077233891005237
+        ],
+        [
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      ],
+      "type": "realsense_playback"
+    }
+  ],
+  "filtering": {
+    "decimation_magnitude": 1,
+    "do_decimation": false,
+    "do_hole_filling": false,
+    "do_spatial": false,
+    "do_temporal": false,
+    "do_threshold": false,
+    "hole_filling_mode": 0,
+    "map_color_to_depth": 0,
+    "spatial_holes_fill": 1,
+    "spatial_magnitude": 2,
+    "spatial_smooth_alpha": 0.5,
+    "spatial_smooth_delta": 20,
+    "temporal_persistency": 3,
+    "temporal_smooth_alpha": 0.4000000059604645,
+    "temporal_smooth_delta": 20,
+    "threshold_max_distance": 4.0,
+    "threshold_min_distance": 0.15000000596046448
+  },
+  "hardware": {
+    "backlight_compensation": 0,
+    "color_exposure": 156,
+    "color_gain": 64,
+    "color_height": 720,
+    "color_width": 1280,
+    "depth_exposure": 33000,
+    "depth_gain": 16,
+    "depth_height": 720,
+    "depth_width": 1280,
+    "fps": 15,
+    "laser_power": 150,
+    "visual_preset": 3,
+    "whitebalance": 3600
+  },
+  "processing": {
+    "greenscreen_removal": false,
+    "height_max": 0.0,
+    "height_min": 0.0,
+    "radius_filter": 1.0
+  },
+  "sync": {
+    "sync_master_serial": "241122301362",
+    "sync_mode": 3
+  },
+  "system": {
+    "debug": false,
+    "playback_realtime": false,
+    "prefer_color_timing": true,
+    "record_to_directory": ""
+  },
+  "type": "realsense_playback",
+  "version": 4
+}

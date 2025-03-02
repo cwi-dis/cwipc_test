@@ -12,6 +12,8 @@ __pycache__
 .pio
 .vscode
 cwipc-unity-test/cameraconfig.json
+*.bag
+*.mkv
 #
 # Unity ignores
 #
