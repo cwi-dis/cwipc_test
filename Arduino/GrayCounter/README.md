@@ -35,11 +35,27 @@ We have found that using a permanent marker to make the strips as black as possi
 Here is the complete result:
 ![Board in operation](hardware/inoperation.jpeg)
 
+## Building the software
+
+- Install `vscode`
+- Open this directory.
+- VSCode will probably suggest you install the `Platformio IDE`, otherwise do so yourself from the extensions page.
+- After reloading vscode the PlatformIO extension will download all the needed compilers and frameworks for this project.
+- You will get a _Platformio: build_ button in your bottom bar, or else you use the platformio tab and build from there.
+- Connect your Lolin 32lite board with USB.
+- Use _PlatformIO: Serial Monitor_ to test that you can connect to the board.
+	- I have seen issues with this. sometimes you have to reverse the USB-C connector. Sometimes something else needs to be done.
+- If you now press the RESET on the board you should see all sorts of output in the serial monitor, either from the firmware that is factory-flashed into the Lolin or from whatever you previously ran on theis board.
+- Now use _PlatformIO: Upload_ to build and flash to the board.
+- The board now prints (on the serial monitor) all sorts of debugging output.
+- Now try to connect to the board over WiFi (see below).
+- You may want to set the board's hostname , for example to `graystrip`. This will change the WiFi name to `config-graystrip`, and you will also be able to access the board's webpage as `http://graystrip.local`.
+
 ## Prepare for use
 
 - Charge the lipo.
 - Reset the board. It will start flashing.
-- At the same time it will start a WiFi access point, and it will start a webserver on that wifi network. The network will be called something like `config-ledstrip` or `config-esp12345678`. This wifi network and webserver will disappear again when leds stop flashing, so you have about one minute to do the next steps. Try again if you fail to do it in time.
+- At the same time it will start a WiFi access point, and it will start a webserver on that wifi network. The network will be called something like `config-ledstrip` or `config-iotsa12345678`. This wifi network and webserver will disappear again when leds stop flashing, so you have about one minute to do the next steps. Try again if you fail to do it in time.
 - Get a laptop/phone/tablet and connect to that open WiFi network.
 - Open a webbrowser to `http://192.168.4.1`.
 - Go to the graycounter configuration page.
