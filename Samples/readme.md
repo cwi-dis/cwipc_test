@@ -4,6 +4,18 @@ First: please leave the existing `loot-110K-4tiles`, `loot-150K-4tiles` and `Ull
 
 They have been used for various papers and it is a good idea to keep them.
 
+## Existing samples
+
+The `loot-110K-4tiles` and `loot-150K-4tiles` were created using the old method (outlined below).
+
+The `loot-600K-4tiles` dataset has been created using the newer `simulatecams` filter, it produces output that is closer to what a set of RGBD cameras would produce. Definitely not identical, but closer.
+
+The script to produce this set:
+
+```
+cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0021)' --filter 'simulatecams(4)' --playback ../../loot loot-600K-4tiles
+```
+
 ## Creating new samples
 
 Let's presume we want to create a dataset of loot, compressed at various levels of detail.
