@@ -1,6 +1,6 @@
 # Millisecond Gray code counter
 
-This project drives an 18-LED NeoPixel strip to show a pattern that changes every millisecond. Moreover, each pattern will differ **in only one led** from the previous pattern.
+This project drives an 18-LED NeoPixel strip to show a pattern that changes every frame. Moreover, each pattern will differ **in only one led** from the previous pattern.
 
 This means that if you capture the strip with two cameras that _should_ be frame accurately synchronized you can determine whether this is actually the case: if the frame duration is less than `2**x ms` at most `x` LEDs may have a different value (or an indeterminate half-on-half-off value).
 
@@ -35,18 +35,48 @@ We have found that using a permanent marker to make the strips as black as possi
 Here is the complete result:
 ![Board in operation](hardware/inoperation.jpeg)
 
+## Building the software
+
+- Install `vscode`
+- Open this directory.
+- VSCode will probably suggest you install the `Platformio IDE`, otherwise do so yourself from the extensions page.
+- After reloading vscode the PlatformIO extension will download all the needed compilers and frameworks for this project.
+- You will get a _Platformio: build_ button in your bottom bar, or else you use the platformio tab and build from there.
+- Connect your Lolin 32lite board with USB.
+- Use _PlatformIO: Serial Monitor_ to test that you can connect to the board.
+	- I have seen issues with this. sometimes you have to reverse the USB-C connector. Sometimes something else needs to be done.
+- If you now press the RESET on the board you should see all sorts of output in the serial monitor, either from the firmware that is factory-flashed into the Lolin or from whatever you previously ran on theis board.
+- Now use _PlatformIO: Upload_ to build and flash to the board.
+- The board now prints (on the serial monitor) all sorts of debugging output.
+- Now try to connect to the board over WiFi (see below).
+- You may want to set the board's hostname , for example to `graystrip`. This will change the WiFi name to `config-graystrip`, and you will also be able to access the board's webpage as `http://graystrip.local`.
+
+## Prepare for use
+
+- Charge the lipo.
+- Reset the board. It will start flashing.
+- At the same time it will start a WiFi access point, and it will start a webserver on that wifi network. The network will be called something like `config-ledstrip` or `config-iotsa12345678`. This wifi network and webserver will disappear again when leds stop flashing, so you have about one minute to do the next steps. Try again if you fail to do it in time.
+- Get a laptop/phone/tablet and connect to that open WiFi network.
+- Open a webbrowser to `http://192.168.4.1`.
+- Go to the graycounter configuration page.
+- The most important parameter to set is _Target Frame Rate_. This should be the frame rate of your fastest camera. The ledstrip will change at twice this frequency.
+- You may also want to change _Clapboard interval_, LED brightness, total sequence duration, some more.
+
+Your settings will be remembered.
+
+
 ## Use
 
+After you have configure the GrayCounter you are ready for taking measurements.
 Charge the lipo.
 
-When you `RESET` the board it will go through the whole sequence, and after 65532 steps (just over a minute) it will go to deep sleep. It will also power down the NeoPixel strip, so power consumption should be absolutely minimal (micro-amps).
+When you `RESET` the board it will go through the whole sequence, and after that (just over a minute, by default) it will go to deep sleep. It will also power down the NeoPixel strip, so power consumption should be absolutely minimal (micro-amps).
 
 The first and last LEDs are fixed: RED and BLUE. All other LEDs are either GREEN or OFF, and show the Gray code.
+
+> Except for a _Clapperboard Pattern_ shown at an interval (default ever two seconds) when all LEDs will pight up in pink for the duration of two frames. These are very useful to get a first coarse-grained synchronization.
 
 Maybe one day we will add the code to `cwipc_register` so that it can automatically find the LED strips in the captured RGB images, but for now you have do this yourself (you, the human):
 
 - Capture a set of RGB images, one from each camera, that you expect to be synchronized.
-- if `N` low-order pixels (near the red marker) are different the pictures were captured `2**N` milliseconds apart.
-- In other words: if you are capturing at `30fps` you expect at most 5 low order pixels to be different, and no high order pixels.
-
-  > This is not completely true, technically, because at some points in time a high order pixel will flip. Then you expect at most 4 low order pixels to be different. Read up on Gray code if you want to know more.
+- The gray codes changes every half-frame, so all cameras are expected to see the same pattern with one "LED of uncertainty"
