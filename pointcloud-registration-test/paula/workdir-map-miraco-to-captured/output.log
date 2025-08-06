@@ -1,0 +1,50 @@
+((venv) ) jack@sap:tmp% python -m cwipc.scripts.cwipc_find_transform --plot --dump --verbose ../paula-miraco-resized.ply ../paula-captured.ply
+objc[57699]: Class GLFWHelper is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x112edfa28) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x122235818). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[57699]: Class GLFWApplicationDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x112edfa78) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x122235868). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[57699]: Class GLFWWindowDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x112edfaa0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x122235890). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[57699]: Class GLFWContentView is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x112edfaf0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1222358e0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[57699]: Class GLFWWindow is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x112edfb68) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x122235958). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+[pcl::PLYReader] ../paula-miraco-resized.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-miraco-resized.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-miraco-resized.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-miraco-resized.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-miraco-resized.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-miraco-resized.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-miraco-resized.ply:34: property 'float32 k2' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../paula-captured.ply:34: property 'float32 k2' of element 'camera' is not handled
+Dumping point clouds to find_transform_before.ply
+RegistrationAnalyzer: Setting target point cloud with 210904 points
+RegistrationAnalyzer: Setting source point cloud with 634006 points
+                min=0, max=0.2941098656912466, min_correspondence_distance=0.0007352746642281165 (based on bincount=400)
+                gaussian_kde: bandwidth=0.06911643454138346, nPoint=634006
+                median=0.09401437016139905, mean=0.10108565109302692, std=0.0748634591318146, nPoint=634006
+                result: tilemask=None, corr=0.10108565109302692, sigma=0.0748634591318146, nPoint=508652 of 634006, fraction=0.8022826282401113
+Before alignment: correspondence: 0.10108565109302692, sigma: 0.0748634591318146, count: 508652, percentage: 80.23%
+Using aligner RegistrationComputer_ICP_Point2Plane with correspondence threshold 0.1759491102248415
+RegistrationComputer_ICP_Point2Plane: Setting target point cloud with 210904 points
+RegistrationComputer_ICP_Point2Plane: Setting source point cloud with 634006 points
+RegistrationComputer_ICP_Point2Plane: with 634006 points and 210904 reference points
+RegistrationComputer_ICP_Point2Plane: RegistrationComputer_ICP_Point2Plane result: RegistrationResult with fitness=1.000000e+00, inlier_rmse=1.086770e-02, and correspondence_set size of 634006
+Access transformation to get result.
+        overlap: 100%
+        inlier RMSE: 0.0109
+        transformation:
+[[ 0.89367203 -0.09423216  0.43871472 -0.16778379]
+ [ 0.03606212  0.98962111  0.13910277  0.00524234]
+ [-0.44726931 -0.10849128  0.88779491  0.12690584]
+ [ 0.          0.          0.          1.        ]]
+Dumping point clouds to find_transform_after.ply
+RegistrationAnalyzer: Setting target point cloud with 210904 points
+RegistrationAnalyzer: Setting source point cloud with 634006 points
+                min=0, max=0.03494911259733668, min_correspondence_distance=8.73727814933417e-05 (based on bincount=400)
+                gaussian_kde: bandwidth=0.06911643454138346, nPoint=634006
+                median=0.008088262137430052, mean=0.009176886221038204, std=0.005821650874524626, nPoint=634006
+                result: tilemask=None, corr=0.009176886221038204, sigma=0.005821650874524626, nPoint=531715 of 634006, fraction=0.8386592555906411
+After alignment: correspondence: 0.009176886221038204, sigma: 0.005821650874524626, count: 531715, percentage: 83.87%
+Transform filter needed: --filter 'transform44([[0.8936720266977755, -0.09423216478760452, 0.43871472259012634, -0.16778378971473618], [0.03606211598653521, 0.9896211102407868, 0.1391027747975063, 0.005242338279640231], [-0.4472693064457517, -0.10849127746152591, 0.8877949145080197, 0.12690583674455294], [0.0, 0.0, 0.0, 1.0]])'
