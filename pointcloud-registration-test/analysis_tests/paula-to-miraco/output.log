@@ -1,0 +1,147 @@
+((venv) ) boor:paula-to-miraco jack$ python -m cwipc.scripts.cwipc_find_transform --sourcetile 1 --plot ../../paula/paula-captured.ply ../../paula/paula-miraco.ply 
+objc[50083]: Class GLFWHelper is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x110bf3a28) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1168b5770). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50083]: Class GLFWApplicationDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x110bf3a78) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1168b57c0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50083]: Class GLFWWindowDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x110bf3aa0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1168b57e8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50083]: Class GLFWContentView is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x110bf3af0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1168b5838). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50083]: Class GLFWWindow is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x110bf3b68) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1168b58b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+[pcl::PLYReader] ../../paula/paula-captured.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:34: property 'float32 k2' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:34: property 'float32 k2' of element 'camera' is not handled
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: divide by zero encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: overflow encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: invalid value encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+Before alignment: correspondence: 0.011423864902957595, sigma: 0.012429903339908626, count: 64369, percentage: 95.06%
+Using aligner RegistrationComputer_ICP_Point2Plane with correspondence threshold 0.02385376824286622
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: divide by zero encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: overflow encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: invalid value encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+After alignment: correspondence: 0.006217882032529193, sigma: 0.012392642119665022, count: 65320, percentage: 96.46%
+Transform filter needed: --filter 'transform44([[0.9999862253389863, -0.004838231154377254, -0.0020348591063256353, -0.007999335718342108], [0.004826034910775725, 0.9999706145823527, -0.005956455223676687, -0.007051256947902635], [0.002063618018373789, 0.005946552874439501, 0.9999801897985708, -0.01627822131653602], [0.0, 0.0, 0.0, 1.0]])'
+((venv) ) boor:paula-to-miraco jack$ python -m cwipc.scripts.cwipc_find_transform --sourcetile 2 --plot ../../paula/paula-captured.ply ../../paula/paula-miraco.ply 
+objc[50262]: Class GLFWHelper is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1112ffa28) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120a69770). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50262]: Class GLFWApplicationDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1112ffa78) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120a697c0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50262]: Class GLFWWindowDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1112ffaa0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120a697e8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50262]: Class GLFWContentView is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1112ffaf0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120a69838). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50262]: Class GLFWWindow is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1112ffb68) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120a698b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+[pcl::PLYReader] ../../paula/paula-captured.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:34: property 'float32 k2' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:34: property 'float32 k2' of element 'camera' is not handled
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: divide by zero encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: overflow encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: invalid value encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+Before alignment: correspondence: 0.015142178983848339, sigma: 0.017759526885062587, count: 45521, percentage: 96.86%
+Using aligner RegistrationComputer_ICP_Point2Plane with correspondence threshold 0.032901705868910926
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: divide by zero encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: overflow encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: invalid value encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+After alignment: correspondence: 0.007881199189744165, sigma: 0.01729341590884381, count: 45122, percentage: 96.01%
+Transform filter needed: --filter 'transform44([[0.9999995958857436, 0.0004147280248066545, -0.0007976396524506087, -0.011277089045948367], [-0.00041824564182565066, 0.9999901666672861, -0.004414933670617407, -0.002295758459610326], [0.0007958008122736524, 0.004415265495788155, 0.9999899360151925, 0.010687277203229052], [0.0, 0.0, 0.0, 1.0]])'
+((venv) ) boor:paula-to-miraco jack$ python -m cwipc.scripts.cwipc_find_transform --sourcetile 3 --plot ../../paula/paula-captured.ply ../../paula/paula-miraco.ply 
+objc[50400]: Class GLFWHelper is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1126cfa28) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120e5d770). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50400]: Class GLFWApplicationDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1126cfa78) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120e5d7c0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50400]: Class GLFWWindowDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1126cfaa0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120e5d7e8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50400]: Class GLFWContentView is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1126cfaf0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120e5d838). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50400]: Class GLFWWindow is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x1126cfb68) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x120e5d8b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+[pcl::PLYReader] ../../paula/paula-captured.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:34: property 'float32 k2' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:34: property 'float32 k2' of element 'camera' is not handled
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: divide by zero encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: overflow encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: invalid value encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+Before alignment: correspondence: 0.0129472476214898, sigma: 0.014958803204989676, count: 110816, percentage: 96.60%
+Using aligner RegistrationComputer_ICP_Point2Plane with correspondence threshold 0.027906050826479477
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: divide by zero encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: overflow encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: invalid value encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+After alignment: correspondence: 0.010108910866203129, sigma: 0.014968201408775085, count: 111255, percentage: 96.98%
+Transform filter needed: --filter 'transform44([[0.9999739710059418, 0.0004896588990394896, 0.007198440440148509, -0.017260007353896985], [-0.0004846821843319496, 0.9999996423557796, -0.0006930883731056953, -0.0014692093637336853], [-0.007198777242557602, 0.0006895813768762354, 0.9999738506999756, -0.003386521323827734], [0.0, 0.0, 0.0, 1.0]])'
+((venv) ) boor:paula-to-miraco jack$ python -m cwipc.scripts.cwipc_find_transform --sourcetile 4 --plot ../../paula/paula-captured.ply ../../paula/paula-miraco.ply 
+objc[50528]: Class GLFWHelper is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x115273a28) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1247e1770). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50528]: Class GLFWApplicationDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x115273a78) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1247e17c0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50528]: Class GLFWWindowDelegate is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x115273aa0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1247e17e8). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50528]: Class GLFWContentView is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x115273af0) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1247e1838). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+objc[50528]: Class GLFWWindow is implemented in both /Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/open3d/cpu/pybind.cpython-312-darwin.so (0x115273b68) and /opt/homebrew/Cellar/glfw/3.4/lib/libglfw.3.4.dylib (0x1247e18b0). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+[pcl::PLYReader] ../../paula/paula-captured.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-captured.ply:34: property 'float32 k2' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:26: property 'float32 focal' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:27: property 'float32 scalex' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:28: property 'float32 scaley' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:29: property 'float32 centerx' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:30: property 'float32 centery' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:33: property 'float32 k1' of element 'camera' is not handled
+[pcl::PLYReader] ../../paula/paula-miraco.ply:34: property 'float32 k2' of element 'camera' is not handled
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: divide by zero encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: overflow encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+/Users/jack/src/VRTogether/cwipc/build/venv/lib/python3.12/site-packages/scipy/_lib/_util.py:1272: RuntimeWarning: invalid value encountered in vecdot
+  return np.vecdot(x1, x2, axis=axis)
+Before alignment: correspondence: 0.016081099224622093, sigma: 0.017761605825376833, count: 49559, percentage: 97.21%
+Using aligner RegistrationComputer_ICP_Point2Plane with correspondence threshold 0.03384270504999892
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: divide by zero encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: overflow encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+/Users/jack/src/VRTogether/cwipc/cwipc_util/python/cwipc/registration/util.py:154: RuntimeWarning: invalid value encountered in matmul
+  np_points_transformed = (rotmat @ np_points_xyz.transpose()).transpose()
+After alignment: correspondence: 0.00713241189788897, sigma: 0.016953385411460974, count: 49506, percentage: 97.11%
+Transform filter needed: --filter 'transform44([[0.9988062492860202, -0.0050135539293430795, -0.048589511874366276, 0.02029925264825168], [0.004529098936377259, 0.9999389855617685, -0.010075337042777148, -0.005236665769056648], [0.04863706045821559, 0.009843242895439464, 0.9987680145655873, 0.018155516291547148], [0.0, 0.0, 0.0, 1.0]])'
+((venv) ) boor:paula-to-miraco jack$ ls
+tile1-after.png         tile1-before.png        tile2-after.png         tile2-before.png        tile3-after.png         tile3-before.png        tile4-after.png         tile4-before.png
+((venv) ) boor:paula-to-miraco jack$ 
