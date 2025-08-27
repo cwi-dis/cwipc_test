@@ -8,7 +8,7 @@ They have been used for various papers and it is a good idea to keep them.
 
 The `loot-110K-4tiles` and `loot-150K-4tiles` were created using the old method (outlined below).
 
-The `loot-600K-4tiles` dataset has been created using the newer `simulatecams` filter, it produces output that is closer to what a set of RGBD cameras would produce. Definitely not identical, but closer.
+The `loot-600K-4tiles` and `loot-600K-4tiles` dataset has been created using the newer `simulatecams` filter, it produces output that is closer to what a set of RGBD cameras would produce. Definitely not identical, but closer.
 
 The script to produce this set:
 
@@ -17,6 +17,8 @@ cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(
 ```
 
 ## Creating new samples
+
+### compressed
 
 Let's presume we want to create a dataset of loot, compressed at various levels of detail.
 
@@ -47,3 +49,25 @@ cwipc_view --playback loot-compressed/depth6
 ```
 
 Now repeat for other parameters.
+
+### uncompressed
+
+Let's presume you want  uncompressed tiled loots with a certain size (in points per cloud).
+
+The first two steps are the same as for compressed. Next you need to determine the voxelization to get the desired number of points. Run
+
+```
+cwipc_view --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0039)' --playback ../../loot
+```
+
+Let it run for a while and stop it. Look at the number of points (the `voxelize: pointcount: ` line). Adjust the `voxelize` filter parameter until you get the right number of points.
+
+Now run
+
+```
+ cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0039)' --filter 'simulatecams(4)' --playback ../../loot loot-200K-4tiles
+```
+
+to create your dataset.
+
+Finally add a `tileconfig.json` (easiest is by copying from another sample, possibly modifying if you changed virtual cameras).
