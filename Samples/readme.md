@@ -13,7 +13,7 @@ The `loot-600K-4tiles` and `loot-600K-4tiles` dataset has been created using the
 The script to produce this set:
 
 ```
-cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0021)' --filter 'simulatecams(4)' --playback ../../loot loot-600K-4tiles
+cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0021)' --filter 'simulatecams(4,False,2)' --playback ../../loot loot-600K-4tiles
 ```
 
 ## Creating new samples
@@ -65,7 +65,7 @@ Let it run for a while and stop it. Look at the number of points (the `voxelize:
 Now run
 
 ```
- cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0039)' --filter 'simulatecams(4)' --playback ../../loot loot-200K-4tiles
+ cwipc_grab --cwipcdump --filter 'transform(-200,0,-300,0.0018)' --filter 'noise(0.0005)' --filter 'voxelize(0.0039)' --filter 'simulatecams(4,False,2)' --playback ../../loot loot-200K-4tiles
 ```
 
 to create your dataset.
